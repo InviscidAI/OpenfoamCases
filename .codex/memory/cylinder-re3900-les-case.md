@@ -15,8 +15,10 @@ Setup choices:
 
 - Paper-matched domain: `20D x 20D x piD`.
 - Scaling: `D = 1`, `Uinf = 1`, `nu = 1/3900`.
-- Mesh: generated pure-hex O-grid, default `512 x 128 x 64 = 4.19M`
-  cells.
+- Mesh: generated pure-hex O-grid. The startup preset is
+  `512 x 128 x 64 = 4.19M` cells. The benchmark preset is
+  `576 x 176 x 48 = 4.87M` cells to keep the paper's `Lz = piD`, spanwise
+  count, and statistics window while staying near the preferred 5M-cell budget.
 - Numerics: central `Gauss linear` velocity convection and off-centered
   `CrankNicolson 0.9` time integration for startup damping. Pure
   `CrankNicolson 1.0` produced strong odd-even force oscillations.
@@ -61,6 +63,43 @@ Observed during setup:
   signatures. This satisfies the recorded production-credibility ramp gate, but
   statistical validation still needs the longer `t=10-20` wake-development
   check and ultimately production averaging to `endTime=180`.
+- On 2026-07-01, increasing `system/controlDict` to `maxCo 1` and
+  `maxDeltaT 0.01` was picked up by the active 24-rank run. The run reached
+  `maxCo ~= 0.9997` around `t=5.36-5.37` with `deltaT ~= 0.00411`, bounded
+  continuity errors, and smooth force output in the observed log tail. This is
+  a CFL-cap push, not a long statistical validation.
+- A 2026-07-01 pre-HPC audit found the active CFL-1 run healthy at
+  `t~=7.20`: `running=yes`, `fatal=no`, `maxCo ~= 0.99986`, bounded probes,
+  bounded pressure history, and y+ on the cylinder roughly `0.5-6.3` through
+  the latest write. Mesh quality remained clean (`Mesh OK`, max skewness
+  `0.928`, max aspect ratio `8.64`). The main active force/probe output was
+  under `postProcessing/.../1`; short `postProcessing/.../5.0000817116` files
+  came from a stopped duplicate probe and should not be interpreted as the full
+  run history.
+- Benchmark setup adjustment on 2026-07-01: use `benchmark-5m`
+  (`576 x 176 x 48 = 4.87M`) instead of an exact paper-HR-equivalent 44M-cell
+  O-grid. Keep the paper HR statistics duration with `timeStart = 150` and
+  `endTime = 400`, giving `250 D/U` after transient removal. A first
+  `768 x 132 x 48` balanced-wake attempt started but failed `checkMesh` due to
+  9216 low-determinant cells, so it was stopped and replaced by the more
+  balanced `576 x 176 x 48`, `stretch=0.5` preset.
+- The corrected `benchmark-5m` mesh passed `checkMesh` on 2026-07-01:
+  `4,866,048` hex cells, max aspect ratio `11.61`, max non-orthogonality
+  `44.68`, max skewness `1.54`, minimum cell determinant `0.00459`, `Mesh OK`.
+  A bounded 24-rank start reached `t=0.039` with fixed `deltaT=0.003`,
+  bounded continuity, and no fatal signatures before being stopped deliberately.
+- Solver audit for the benchmark setup: use fixed `deltaT=0.003` to match the
+  paper and avoid adaptive-CFL temporal bias. Keep `CrankNicolson 0.9` for
+  startup because pure `CrankNicolson 1.0` previously caused odd-even force
+  oscillations. `bounded Gauss linear` velocity convection is effectively the
+  least-dissipative robust finite-volume choice currently proven stable in this
+  case. `nNonOrthogonalCorrectors 1` is justified by max non-orthogonality near
+  `45 deg`; dropping it would be faster but is not recommended for the
+  benchmark baseline.
+- HPC migration guards were added in `HPC_MIGRATION_GUARDS.md` rather than
+  hard-coded runtime choices. On the target HPC machine, Codex should retune
+  decomposition for that interconnect/node shape and retune force/probe/field
+  output for that filesystem before the long production run.
 - Future long runs should use `scripts/monitor_run.sh` or equivalent polling
   to leave an explicit status file.
 

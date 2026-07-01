@@ -38,6 +38,9 @@ High-risk guards that must never be missed should also be duplicated here in
 High-risk guard: Long CFD solver runs started by Codex require an active
 blocking wait or bounded polling loop; monitor/status files alone do not wake
 Codex.
+High-risk guard: Before starting an OpenFOAM MPI job, check outside the sandbox
+for existing solver processes when possible; sandboxed process checks can miss
+live jobs.
 
 ## Codex Setup Layout
 

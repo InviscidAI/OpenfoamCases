@@ -14,6 +14,25 @@ from collections import defaultdict
 from pathlib import Path
 
 
+PRESETS = {
+    "benchmark-5m": {
+        # Budget-capped body-fitted analogue of the Parnaudeau et al. HR LES.
+        # Keep the paper domain and spanwise count while using a flatter radial
+        # distribution than the startup mesh to improve wake resolution.
+        "ntheta": 576,
+        "nr": 176,
+        "nz": 48,
+        "stretch": 0.5,
+    },
+    "startup": {
+        "ntheta": 512,
+        "nr": 128,
+        "nz": 64,
+        "stretch": 2.9,
+    },
+}
+
+
 def foam_header(class_name: str, location: str, object_name: str) -> str:
     return f"""/*--------------------------------*- C++ -*----------------------------------*\\
 | =========                 |                                                 |
@@ -52,6 +71,8 @@ def radial_fraction(i: int, nr: int, stretch: float) -> float:
     if nr == 0:
         return 0.0
     eta = i / nr
+    if abs(stretch) < 1e-12:
+        return eta
     return (math.exp(stretch * eta) - 1.0) / (math.exp(stretch) - 1.0)
 
 
@@ -224,12 +245,18 @@ def make_mesh(case_dir: Path, ntheta: int, nr: int, nz: int, stretch: float) -> 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", default=".")
-    parser.add_argument("--ntheta", type=int, default=512)
-    parser.add_argument("--nr", type=int, default=128)
-    parser.add_argument("--nz", type=int, default=64)
-    parser.add_argument("--stretch", type=float, default=2.9)
+    parser.add_argument("--preset", choices=sorted(PRESETS), default="benchmark-5m")
+    parser.add_argument("--ntheta", type=int)
+    parser.add_argument("--nr", type=int)
+    parser.add_argument("--nz", type=int)
+    parser.add_argument("--stretch", type=float)
     args = parser.parse_args()
-    make_mesh(Path(args.case), args.ntheta, args.nr, args.nz, args.stretch)
+    preset = PRESETS[args.preset]
+    ntheta = args.ntheta if args.ntheta is not None else preset["ntheta"]
+    nr = args.nr if args.nr is not None else preset["nr"]
+    nz = args.nz if args.nz is not None else preset["nz"]
+    stretch = args.stretch if args.stretch is not None else preset["stretch"]
+    make_mesh(Path(args.case), ntheta, nr, nz, stretch)
 
 
 if __name__ == "__main__":

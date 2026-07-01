@@ -19,3 +19,7 @@ Minimum expectations:
   and state clearly that it will not wake Codex by itself.
 - For tuning loops, use bounded waits such as `timeout 10m ...` and inspect the
   result before launching longer runs.
+- Before launching an OpenFOAM MPI job in this sandboxed Codex environment,
+  check for existing `mpirun`/solver processes outside the sandbox when possible;
+  sandboxed `pgrep` can miss already-running jobs and a duplicate run can write
+  the same case concurrently.

@@ -5,11 +5,12 @@ cd "${0%/*}/.."
 
 interval="${1:-0}"
 status_file="${2:-run.status}"
+log_file="${3:-${LOG_FILE:-log.pimpleFoam}}"
 
 write_status()
 {
     now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    log="log.pimpleFoam"
+    log="$log_file"
 
     latest_time="none"
     latest_time="$(grep '^Time = ' "$log" 2>/dev/null | tail -1 | awk '{print $3}' || true)"
@@ -24,7 +25,7 @@ write_status()
     [ -n "$latest_exec" ] || latest_exec="none"
 
     fatal="no"
-    if grep -Eq 'Floating point exception|FOAM FATAL|Primary job.*terminated|exited on signal' "$log" 2>/dev/null; then
+    if grep -Eq 'FOAM FATAL|Floating point exception \(|Primary job.*terminated|exited on signal' "$log" 2>/dev/null; then
         fatal="yes"
     fi
 

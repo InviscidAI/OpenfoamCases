@@ -1,6 +1,6 @@
 #!/bin/sh
 cd "${0%/*}" || exit 1
 
-python3 scripts/generate_ogrid_mesh.py --case .
+python3 scripts/generate_ogrid_mesh.py --case . --preset benchmark-5m
 checkMesh -allTopology -allGeometry
 pimpleFoam
