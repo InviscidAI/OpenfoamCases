@@ -1,3 +1,9 @@
 .venv/
 tmp/
 .idea/
+log.*
+processor*/
+postProcessing/
+[0-9]*/
+[0-9]*.[0-9]*/
+cases/*/constant/polyMesh/

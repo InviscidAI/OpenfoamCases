@@ -35,6 +35,10 @@ required. If you skip the lookup for that reason, say so briefly.
 High-risk guards that must never be missed should also be duplicated here in
 `AGENTS.md` as one-line rules, with the full rationale kept in `.codex/memory/`.
 
+High-risk guard: Long CFD solver runs started by Codex require an active
+blocking wait or bounded polling loop; monitor/status files alone do not wake
+Codex.
+
 ## Codex Setup Layout
 
 Use the Codex-facing setup under `.codex/` for workflow discovery artifacts:

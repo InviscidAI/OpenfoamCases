@@ -37,11 +37,11 @@ cases: []
 
 ## Always Recall
 
-No always-recall memories have been recorded yet.
+- triggers: long-run, overnight, solver, OpenFOAM, polling, monitor, blocking-wait | category: guard | file: .codex/memory/long-run-blocking-wait-guard.md | recall: Long solver runs need active blocking waits or bounded polling; status files alone do not wake Codex.
 
 ## Triggered Recall
 
-No triggered memories have been recorded yet.
+- triggers: cylinder, Re3900, LES, O-grid, WALE, dynamicKEqn, OpenFOAM | category: case | file: .codex/memory/cylinder-re3900-les-case.md | recall: Paper-matched Re=3900 cylinder LES setup choices and startup stability findings.
 
 ## Candidate Workflow Counters
 
