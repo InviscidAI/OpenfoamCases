@@ -103,6 +103,15 @@ Observed during setup:
 - Future long runs should use `scripts/monitor_run.sh` or equivalent polling
   to leave an explicit status file.
 
+- GCP H4D launch on 2026-07-01: benchmarked 48/96/192-rank Scotch decompositions on the `benchmark-5m` mesh. The 10-step startup wall times were about `14.5 s`, `8.5 s`, and `5.3 s`, respectively, so the production run was launched on all `192` cores. Final `decomposePar` balance was good: max cells `25704` (`1.42%` above the `25344` average), `478329` processor faces, and max interprocessor faces `6582`.
+- For the GCP H4D production launch, field writes were changed to every `5 D/U` with `purgeWrite 2`; force and probe function objects were changed from every timestep to every `5` timesteps. At `deltaT=0.003`, this keeps about `320` samples per shedding period while reducing force/probe small-file writes by `5x`. The installed disk had about `238 GiB` free at launch; retained late-run binary checkpoint payload was estimated at about `1.23 GiB` for two post-average checkpoints, with mesh, logs, and dense samples well below the `256 GB` disk budget.
+- The detached 192-rank GCP H4D run was started with `setsid -f` through `tmp/cylinder_re3900_launch_production.sh`, `OMP_NUM_THREADS=1`, log `cases/cylinderRe3900_LES/log.pimpleFoam`, status `run.status`, and launcher PID in `run.pid`. Initial active polling reached `t=1.347` with `running=yes`, `fatal=no`, max Courant about `0.238`, bounded continuity/solver output, and smooth force output. This is a startup-stability check, not the full `t=5` inlet-ramp gate.
+
+- Follow-up polling on 2026-07-01 confirmed the GCP H4D production run cleared the startup ramp: status at `2026-07-01T14:57:46Z` was `running=yes`, `fatal=no`, `latest_time=11.811`, `ClockTime=1131 s`, and max Courant about `0.616`. The first post-ramp field writes were present at `processor0/5.001` and `processor0/9.999`; force and probe tails remained bounded. The then-current full-run ETA to `endTime=400` was about `2026-07-02T01:17Z` UTC if speed held.
+
+- Overnight GCP H4D production run completed cleanly on 2026-07-01/02: final solver time `t=399.99899999872662`, `running=no`, `fatal=no`, strict fatal scan clean, final `ClockTime = 32417 s` (~`9.00 h`), and final max Courant about `0.876`. Retained field writes were `395.0009999987501` and `399.99899999872662` as expected from `purgeWrite 2`; final cylinder y+ was min `1.66`, max `16.04`, average `8.96`.
+- Post-run analysis over the intended statistics window `t >= 150` did not validate against the recorded targets. Force analysis found mean `Cd = 1.635`, `Cl` mean near zero but `Cl_rms ~= 0.913`, and shedding `St ~= 0.183` from both spectral and zero-crossing estimates, below the target near `0.208`. Final `UMean` centerline sampling found mean reattachment at `x ~= 1.089` from cylinder center, or `0.589D` downstream of the rear surface, far shorter than the `Lr/D ~= 1.5-1.6` target. Treat the run as a clean numerical completion but a failed benchmark validation baseline. Analysis artifacts are under `tmp/cylinderRe3900_analysis/`.
+
 Validation targets:
 
 - Strouhal number near `0.208`.

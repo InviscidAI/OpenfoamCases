@@ -7,3 +7,5 @@ postProcessing/
 [0-9]*/
 [0-9]*.[0-9]*/
 cases/*/constant/polyMesh/
+cases/*/run.pid
+cases/*/run.status

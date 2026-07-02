@@ -45,7 +45,8 @@ cases: []
 
 ## Candidate Workflow Counters
 
-No candidate workflows have been recorded yet.
+- triggers: HPC, OpenFOAM, decomposition, output, disk, MPI, production-launch | category: candidate-workflow | file: .codex/memory/candidate-openfoam-hpc-production-launch.md | recall: First observed reusable workflow for node-specific rank/output/disk tuning before long OpenFOAM MPI production runs.
+- triggers: post-run, validation, forceCoeffs, probes, Strouhal, recirculation, yPlus, sampling | category: candidate-workflow | file: .codex/memory/candidate-openfoam-benchmark-wrapup.md | recall: First observed reusable workflow for clean-completion checks and benchmark metrics after long OpenFOAM runs.
 
 ## Retired Memories
 

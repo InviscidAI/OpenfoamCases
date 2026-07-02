@@ -26,7 +26,7 @@ maxCo           1;
 maxDeltaT       0.003;
 
 writeControl    runTime;
-writeInterval   1;
+writeInterval   5;
 purgeWrite      2;
 
 writeFormat     binary;
@@ -53,9 +53,9 @@ functions
         lRef            1;
         Aref            3.14159265358979;
         executeControl  timeStep;
-        executeInterval 1;
+        executeInterval 5;
         writeControl    timeStep;
-        writeInterval   1;
+        writeInterval   5;
     }
 
     probes
@@ -73,9 +73,9 @@ functions
             (10 0 1.5707963267949)
         );
         executeControl  timeStep;
-        executeInterval 1;
+        executeInterval 5;
         writeControl    timeStep;
-        writeInterval   1;
+        writeInterval   5;
     }
 
     fieldAverage
