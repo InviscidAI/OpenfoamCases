@@ -11,6 +11,37 @@ occurrences: 1
 Reusable shape observed after the overnight `cases/cylinderRe3900_LES` production run.
 Keep this as a candidate until it recurs in three separate cases or tasks.
 
+## Intended Promotion Target
+
+Likely `subagent` plus project code for the mechanical parsers. It is an
+isolated post-run validation unit that should be invoked by a case-level
+orchestrator after a solver run completes. It is too narrow to be an
+orchestrator skill by itself.
+
+## Subagent Contract
+
+Inputs:
+
+- Case path, solver log, status file, and expected final time or completion
+  markers.
+- Validation target definitions and statistics window.
+- Paths or function-object names for forces, probes, y+, and averaged fields.
+- Sampling definitions for spatial metrics such as recirculation length.
+
+Outputs:
+
+- Completion/fatal audit result.
+- Force/probe/y+ statistics and validation metric comparisons.
+- Generated analysis artifacts under `tmp/` and a concise case-memory update.
+- Pass/fail benchmark validation summary.
+
+Completion signal:
+
+- Success: all required outputs are parsed/sampled, metrics are reported against
+  targets, and case memory records the validation outcome.
+- Failure: required outputs are missing, completion is not clean, sampling fails,
+  or the statistics window is insufficient.
+
 ## Candidate Inputs
 
 - Completed OpenFOAM solver log and `run.status`.
@@ -45,4 +76,4 @@ Keep this as a candidate until it recurs in three separate cases or tasks.
 
 ## Promotion Criteria
 
-Promote only after post-run validation wrap-up recurs in at least three cases or tasks and the common metrics/field-sampling steps stabilize enough to justify reusable code or a skill.
+Promote only after post-run validation wrap-up recurs in at least three cases or tasks and the common metrics/field-sampling steps stabilize enough to justify a subagent contract and reusable parser/sampling code.

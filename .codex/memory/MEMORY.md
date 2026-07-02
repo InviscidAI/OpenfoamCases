@@ -48,6 +48,8 @@ cases: []
 - triggers: HPC, OpenFOAM, decomposition, output, disk, MPI, production-launch | category: candidate-workflow | file: .codex/memory/candidate-openfoam-hpc-production-launch.md | recall: First observed reusable workflow for node-specific rank/output/disk tuning before long OpenFOAM MPI production runs.
 - triggers: post-run, validation, forceCoeffs, probes, Strouhal, recirculation, yPlus, sampling | category: candidate-workflow | file: .codex/memory/candidate-openfoam-benchmark-wrapup.md | recall: First observed reusable workflow for clean-completion checks and benchmark metrics after long OpenFOAM runs.
 
+- triggers: OpenFOAM, wall-resolved, wall-function, yPlus, mesh, boundary-layer, startup-gate | category: candidate-workflow | file: .codex/memory/candidate-openfoam-wall-resolved-remediation.md | recall: First observed reusable workflow for replacing inappropriate wall modeling with resolved-wall mesh/y+ startup validation.
+
 ## Retired Memories
 
 No memories have been retired yet.

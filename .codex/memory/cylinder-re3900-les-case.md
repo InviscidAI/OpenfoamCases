@@ -111,6 +111,44 @@ Observed during setup:
 
 - Overnight GCP H4D production run completed cleanly on 2026-07-01/02: final solver time `t=399.99899999872662`, `running=no`, `fatal=no`, strict fatal scan clean, final `ClockTime = 32417 s` (~`9.00 h`), and final max Courant about `0.876`. Retained field writes were `395.0009999987501` and `399.99899999872662` as expected from `purgeWrite 2`; final cylinder y+ was min `1.66`, max `16.04`, average `8.96`.
 - Post-run analysis over the intended statistics window `t >= 150` did not validate against the recorded targets. Force analysis found mean `Cd = 1.635`, `Cl` mean near zero but `Cl_rms ~= 0.913`, and shedding `St ~= 0.183` from both spectral and zero-crossing estimates, below the target near `0.208`. Final `UMean` centerline sampling found mean reattachment at `x ~= 1.089` from cylinder center, or `0.589D` downstream of the rear surface, far shorter than the `Lr/D ~= 1.5-1.6` target. Treat the run as a clean numerical completion but a failed benchmark validation baseline. Analysis artifacts are under `tmp/cylinderRe3900_analysis/`.
+- Follow-up diagnosis on 2026-07-02 found the failed benchmark does not look
+  like simple global numerical over-dissipation. The force/probe signal remains
+  highly energetic (`Cl` range about `-1.69..1.72`, `Cl_rms ~= 0.91`) and the
+  SGS viscosity is modest in most cells (`nut/nu` median about `6e-4`, 95th
+  percentile about `0.30`, max about `12.2`). The stronger suspect is local
+  wall/near-separation modeling: the `benchmark-5m` mesh has first cylinder
+  wall-normal spacing about `0.0417D`, much coarser than the circumferential
+  spacing about `0.00545D`, giving final cylinder y+ around `1.66-16.04` while
+  using `nutUSpaldingWallFunction` on a separating cylinder. A multi-z
+  `UMean` centerline sample at `z/pi = 0.25, 0.5, 0.75` confirmed the short
+  bubble is not a midspan artifact: reattachment was about `0.57-0.67D` behind
+  the rear surface, with a three-line average about `0.60D`. Scratch sampling
+  dictionary: `tmp/cylinderRe3900_analysis/spanCenterlineControlDict`.
+- Wall-resolved correction on 2026-07-02: do not use a turbulent wall
+  function on the cylinder because the upstream cylinder boundary layer is
+  laminar/transitional before separation. The workspace `0/nut` cylinder patch
+  was changed to `fixedValue uniform 0` and the tracked `benchmark-5m` mesh
+  preset was retuned from radial `stretch=0.5` to `stretch=4.6`. This keeps the
+  same `576 x 176 x 48 = 4.87M` cells but changes first wall-normal spacing to
+  about `0.00255D`, near-wall radial growth ratio to about `1.0265`, and the
+  old-run y+ scaling estimate to average `~0.55`, max `~0.98`. Actual y+ must
+  be checked from the `yPlus` function object after a fresh startup/wake proof
+  run because the corrected wall treatment can change wall shear. `controlDict`
+  now starts from `startTime` to avoid accidental restart from the invalid
+  wall-function latest time.
+- Wall-resolved launch audit on 2026-07-02: stale wall-function run artifacts
+  (`processor*`, `postProcessing`, `constant/polyMesh`, old launch/status/logs)
+  were archived under `tmp/cylinderRe3900_wallFunction_archive_20260702T024927Z`
+  before regenerating. The new `benchmark-5m` mesh passed `checkMesh`: 4,866,048
+  hex cells, max aspect ratio `26.99`, max non-orthogonality `44.66`, max
+  skewness `1.15`, min determinant `0.0218`, and `Mesh OK`. The 192-rank Scotch
+  decomposition completed with average `25344` cells/rank and max `25928`
+  cells/rank (`~2.3%` above average). The 192-rank wall-resolved run was then
+  launched detached and actively polled to the startup gate `t >= 10`. At
+  `t=10.203`, it was still running with no fatal signatures, max Courant about
+  `0.849`, and `ClockTime = 890 s`. Measured cylinder y+ was `min/max/avg =
+  0.0345/1.486/0.661` at `t=5.001` and `0.0138/1.342/0.594` at `t=9.999`,
+  confirming resolved-wall behavior without extreme over-refinement.
 
 Validation targets:
 

@@ -17,12 +17,13 @@ from pathlib import Path
 PRESETS = {
     "benchmark-5m": {
         # Budget-capped body-fitted analogue of the Parnaudeau et al. HR LES.
-        # Keep the paper domain and spanwise count while using a flatter radial
-        # distribution than the startup mesh to improve wake resolution.
+        # Keep the paper domain, spanwise count, and near-5M budget while
+        # resolving the laminar cylinder wall layer without a wall function.
+        # stretch=4.6 gives first wall-normal spacing about 0.00255D.
         "ntheta": 576,
         "nr": 176,
         "nz": 48,
-        "stretch": 0.5,
+        "stretch": 4.6,
     },
     "startup": {
         "ntheta": 512,

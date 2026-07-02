@@ -102,10 +102,14 @@ On promotion:
 Promote the smallest unit that is actually reusable:
 
 - Orchestrator workflows that compose several sub-steps belong in
-  `.agents/skills/` when they should be invokable by Codex, with any supporting
-  notes mirrored in `.codex/skills/` only if useful.
-- Isolated, delegable sub-steps that are complex, high-variance, or produce a
-  lot of output belong in `.codex/agents/`.
+  `.agents/skills/` when they should be invokable by Codex. One promoted
+  orchestrator skill should correspond to an end-to-end case arc or major case
+  phase, not a narrow setup or validation step. Mirror supporting notes in
+  `.codex/skills/` only if useful.
+- Isolated, delegable sub-steps belong in `.codex/agents/` as subagent
+  candidates. They may be short, mechanical, complex, or high-variance; the
+  promotion driver is isolation and a clear contract, not size or LLM
+  difficulty.
 - Decision rules, contracts, and lessons worth auto-recall belong in
   `.codex/memory/`.
 - Purely mechanical reusable behavior belongs in project code with a clear
@@ -113,7 +117,8 @@ Promote the smallest unit that is actually reusable:
 
 Each promoted unit should be subagent-consumable: explicit inputs, explicit
 outputs, no hidden reliance on conversation state, and a clear pass/fail or
-completion signal.
+completion signal. Candidate workflow notes should state the likely promotion
+target explicitly: `orchestrator-skill`, `subagent`, or `project-code`.
 
 ## Reuse Discipline
 
