@@ -1,0 +1,116 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2512                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+FoamFile
+{
+    format          ascii;
+    class           dictionary;
+    object          controlDict;
+}
+
+application     pimpleFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         60;
+
+deltaT          0.001;
+
+writeControl    adjustableRunTime;
+
+writeInterval   0.12083333333333333;
+
+purgeWrite      0;
+
+writeFormat     binary;
+
+writePrecision  7;
+
+timePrecision   15;
+
+runTimeModifiable true;
+
+adjustTimeStep  yes;
+
+maxCo           0.5;
+
+maxDeltaT       0.008;
+
+functions
+{
+    magU
+    {
+        type            mag;
+        libs            ( fieldFunctionObjects );
+        field           U;
+        result          magU;
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    writeTime;
+    }
+    domainMeanSpeed
+    {
+        type            volFieldValue;
+        libs            ( fieldFunctionObjects );
+        fields          ( magU );
+        operation       volAverage;
+        regionType      all;
+        writeFields     false;
+        executeControl  runTime;
+        executeInterval 0.1;
+        writeControl    runTime;
+        writeInterval   0.1;
+    }
+    domainMaxSpeed
+    {
+        type            volFieldValue;
+        libs            ( fieldFunctionObjects );
+        fields          ( magU );
+        operation       max;
+        regionType      all;
+        writeFields     false;
+        executeControl  runTime;
+        executeInterval 0.1;
+        writeControl    runTime;
+        writeInterval   0.1;
+    }
+    domainMeanK
+    {
+        type            volFieldValue;
+        libs            ( fieldFunctionObjects );
+        fields          ( k );
+        operation       volAverage;
+        regionType      all;
+        writeFields     false;
+        executeControl  runTime;
+        executeInterval 0.1;
+        writeControl    runTime;
+        writeInterval   0.1;
+    }
+    fanFlow
+    {
+        type            surfaceFieldValue;
+        libs            ( fieldFunctionObjects );
+        regionType      patch;
+        name            fan;
+        operation       sum;
+        fields          ( phi );
+        executeControl  runTime;
+        executeInterval 0.1;
+        writeControl    runTime;
+        writeInterval   0.1;
+        writeFields     false;
+    }
+}
+
+
+// ************************************************************************* //

@@ -1,0 +1,45 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [ 0 2 -2 0 0 0 0 ];
+
+internalField   uniform 0.0001;
+
+boundaryField
+{
+    fan
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.0135;
+        value           uniform 0.0001;
+    }
+    vent
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.0135;
+        value           uniform 0.0001;
+    }
+    walls
+    {
+        type            kqRWallFunction;
+        value           uniform 0.0001;
+    }
+    furniture
+    {
+        type            kqRWallFunction;
+        value           uniform 0.0001;
+    }
+    frontAndBack
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

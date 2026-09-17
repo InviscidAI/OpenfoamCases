@@ -1,0 +1,24 @@
+#!/bin/sh
+cd "${0%/*}" || exit 1
+# Usage: ./Allrun [in|out]
+#
+# The two runs of this case differ in exactly one setting, the fan's direction, so the
+# direction is an argument rather than a second copy of the case. That is not tidiness:
+# the comparison is only worth anything if nothing else differs, and a single set of files
+# makes that true by construction rather than by inspection.
+direction=${1:-in}
+case "$direction" in
+    in|out) ;;
+    *) echo "usage: $0 [in|out]" >&2; exit 1 ;;
+esac
+
+python3 scripts/generate_room_mesh.py --case .
+python3 scripts/write_initial_fields.py --case . --direction "$direction"
+
+blockMesh
+checkMesh -allGeometry -allTopology
+
+rm -rf 0
+cp -r 0.orig 0
+
+pimpleFoam

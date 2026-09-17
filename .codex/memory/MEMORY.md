@@ -38,10 +38,12 @@ cases: []
 ## Always Recall
 
 - triggers: long-run, overnight, solver, OpenFOAM, polling, monitor, blocking-wait | category: guard | file: .codex/memory/long-run-blocking-wait-guard.md | recall: Long solver runs need active blocking waits or bounded polling; status files alone do not wake Codex.
+- triggers: boundary, pressure, opening, inlet, outlet, fan, totalPressure, fixedValue, energy, unphysical, overspeed | category: guard | file: .codex/memory/boundary-energy-budget-guard.md | recall: Fixed-velocity fans and fixedValue pressure openings can do unbounded work on the fluid while mass still balances; budget the boundaries before blaming turbulence or mesh.
 
 ## Triggered Recall
 
 - triggers: cylinder, Re3900, LES, O-grid, WALE, dynamicKEqn, OpenFOAM | category: case | file: .codex/memory/cylinder-re3900-les-case.md | recall: Paper-matched Re=3900 cylinder LES setup choices and startup stability findings.
+- triggers: room, fan, ventilation, 2D, fanPressure, totalPressure, furniture, cold-start, blockMesh | category: case | file: .codex/memory/room-fan-in-out-2d-case.md | recall: 2-D room ventilation pair: why 2-D at all, block cut-outs for furniture, cold-start development window, and why the settled field had nothing to show.
 
 ## Candidate Workflow Counters
 
