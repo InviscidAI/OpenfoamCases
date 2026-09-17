@@ -32,6 +32,30 @@ The direction is an **argument to `Allrun`**, not a second copy of the case. The
 comparison is only worth something if nothing else differs, and one set of files makes
 that true by construction instead of by inspection.
 
+## Why two dimensions
+
+Not a simplification of convenience. The clip is a plan view, and in 3-D a plan view could
+not show this subject: seeding streamlines across the fan and integrating, only about **3%**
+of the air that turned toward the vent passed within 0.15 m of the rendered plane. The rest
+went over and under it — the flow is genuinely three-dimensional and no single plane
+contains the story. Going 2-D makes the plan view *be* the solution domain instead of a
+sample of it.
+
+What that costs: 2-D removes floor and ceiling friction, which are the largest wall areas
+in a room this shape. Expect a 2-D room to circulate more freely than the same room in 3-D,
+and do not treat a 3-D version of this case as interchangeable with it.
+
+## Mesh generation with cut-outs
+
+`scripts/generate_room_mesh.py` splits the block grid at every coordinate where a feature
+starts or ends, drops blocks whose centre lies inside a fitted solid, and turns the faces
+newly exposed by those drops into the `furniture` patch.
+
+Splitting at feature coordinates is what puts openings on exact cell boundaries, so `fan`
+spans precisely `y 0.99..2.01` rather than the nearest cell edge to it. Everything this
+case claims about its geometry is therefore true of the mesh, which is the point of
+generating it rather than describing it.
+
 ## Boundary conditions worth looking at
 
 | patch | `p` | `U` |
@@ -98,11 +122,20 @@ changes is mixing: extraction moves 14.2% more of the room.
 Mesh, initial fields and patches are all generated, so the case runs from a clean clone.
 `constant/polyMesh` is not tracked.
 
-The published clip is the flow developing from rest over `t = 2..60 s`, 481 writes. The end
-of development was chosen from pilots continued to `t = 240`: the last monitored quantity
-to enter and stay within 0.5% of its `t = 220..240` mean was supply mean speed at
+The published clip is the flow **developing from rest** over `t = 2..60 s`, 481 writes —
+not a settled field. A settled 2-D room here is visually static: over the last 40 s of a
+long run its maximum speed moves 0.0–0.5%. The establishing flow is the part with anything
+to show, so the initial condition is a real modelling choice rather than a formality.
+
+The end of development was chosen from pilots continued to `t = 240`: the last monitored
+quantity to enter and stay within 0.5% of its `t = 220..240` mean was supply mean speed at
 `t = 50.9 s`, and at `t = 60` the RMS velocity difference from `t = 240` is 0.0011 m/s
-(supply) and 0.0003 (extraction).
+(supply) and 0.0003 (extraction). Start at 2 s rather than 0 to omit the uniform-`k`/
+`epsilon` startup artefact.
+
+The same room **empty** needed `t = 100` to reach the same criterion. Furniture shortens
+settling by breaking up the slow room-scale recirculation, so a development window should
+not be inherited across a geometry change.
 
 ## Limits
 
