@@ -7,6 +7,7 @@ made anywhere else can be checked here.
 | case | what it is |
 |---|---|
 | [`cases/roomFanInOut2D`](cases/roomFanInOut2D) | A fan in a room, blowing in versus blowing out. Two runs differing in one setting. Backs a published clip. |
+| [`cases/motorcycleWindscreen`](cases/motorcycleWindscreen) | A windscreen at three heights, and how much the air on the rider's helmet fluctuates. Three runs differing in one thing. Backs a published clip, and its limits say why it names no winner. |
 | [`cases/cylinderRe3900_LES`](cases/cylinderRe3900_LES) | Re = 3900 circular cylinder LES, matched to Parnaudeau et al. (2008). |
 
 ## What you should be able to do

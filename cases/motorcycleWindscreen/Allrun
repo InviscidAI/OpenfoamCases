@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+name=${1:-}
+case "$name" in short|stock|tall) ;; *) echo "usage: ./Allrun {short|stock|tall}" >&2; exit 2;; esac
+C=case
+# shellcheck disable=SC1091
+source "$C/config/run.conf"
+geom="$PWD/geometry/$name"
+# The geometry is not in this repository: it is derived from the OpenFOAM tutorial
+# bike, which is GPL, and it is on every machine that has OpenFOAM. Built on demand.
+if [ ! -s "$geom/bike.obj" ] || [ ! -s "$geom/screen.obj" ]; then
+    python3 scripts/build_geometry.py --out "$PWD/geometry" --case "$name"
+fi
+for f in bike.obj screen.obj; do test -s "$geom/$f" || { echo "missing $geom/$f" >&2; exit 2; }; done
+cd "$C"
+rm -rf 0 [1-9]* constant/polyMesh constant/triSurface constant/extendedFeatureEdgeMesh \
+       processors* postProcessing results logs
+mkdir -p constant/triSurface logs results
+cp "$geom/screen.obj" constant/triSurface/screen.obj
+python3 scripts/split_geometry.py "$geom/bike.obj" constant/triSurface/helmet.obj constant/triSurface/bikeRest.obj | tee logs/geometry.log
+python3 scripts/make_mesh_dicts.py
+cp system/blockMeshDict.active system/blockMeshDict
+cp -a 0.orig 0
+cp constant/turbulenceProperties.steady constant/turbulenceProperties
+cp system/fvSchemes.steady system/fvSchemes
+cp system/fvSolution.steady system/fvSolution
+cp system/controlDict.steady system/controlDict
+# Record exact inputs before execution.
+sha256sum "$geom"/*.obj config/run.conf system/snappyHexMeshDict > results/input_sha256.txt
+surfaceFeatureExtract > logs/surfaceFeatures.log 2>&1
+blockMesh > logs/blockMesh.log 2>&1
+snappyHexMesh -overwrite > logs/snappy.log 2>&1
+checkMesh -allGeometry -allTopology > logs/checkMesh.log 2>&1 || true
+grep -q 'Cell volumes OK' logs/checkMesh.log || { echo 'mesh has invalid cell volumes' >&2; exit 1; }
+checkMesh > logs/checkMesh.basic.log 2>&1
+cells=$(awk '/cells:/{print $2;exit}' logs/checkMesh.basic.log)
+echo "$cells" > results/cell_count.txt
+# Parallel steady RANS initialization.
+decomposePar -force -fileHandler collated > logs/decomposeSteady.log 2>&1
+mpirun --oversubscribe -np "$NPROCS" simpleFoam -parallel -fileHandler collated > logs/simpleFoam.log 2>&1
+# SIMPLE pseudo-time 3000 becomes physical t=0, preserving its converged fields.
+rm -rf processors${NPROCS}/0
+mv processors${NPROCS}/${STEADY_ITERS} processors${NPROCS}/0
+rm -rf processors${NPROCS}/0/uniform
+# Fixed, identical DDES and sample policy for every geometry.
+cp constant/turbulenceProperties.transient constant/turbulenceProperties
+cp system/fvSchemes.transient system/fvSchemes
+cp system/fvSolution.transient system/fvSolution
+cp system/controlDict.transient system/controlDict
+mpirun --oversubscribe -np "$NPROCS" pimpleFoam -parallel -fileHandler collated > logs/pimpleFoam.log 2>&1
+reconstructPar -latestTime -fileHandler collated > logs/reconstruct.log 2>&1
+python3 scripts/extract_metric.py | tee logs/metric.log
+rm -rf processors${NPROCS}
+printf '%s\n' "$name" > results/geometry_name.txt
+printf 'case=%s cells=%s dt=%s sample=[%s,%s] nProcs=%s\n' "$name" "$cells" "$DELTA_T" "$WARMUP" "$SAMPLE_END" "$NPROCS" > results/run_summary.txt
+count=$(find postProcessing/centreline -name '*.vtp' | wc -l)
+echo "$count" > results/centreline_frame_count.txt
+test "$count" -ge 479 || { echo "only $count centreline frames" >&2; exit 1; }
+echo "Completed $name: $cells cells, $count planes; $(cat logs/metric.log)"

@@ -1,0 +1,8 @@
+FoamFile { format ascii; class dictionary; object surfaceFeatureExtractDict; }
+screen.obj
+{
+ extractionMethod extractFromSurface;
+ includedAngle 150;
+ subsetFeatures { nonManifoldEdges no; openEdges yes; }
+ writeObj yes;
+}

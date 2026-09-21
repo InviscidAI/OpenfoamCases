@@ -1,0 +1,7 @@
+{
+  "definition": "rho * areaAverage_helmet(sqrt(timeAverage((p-timeAverage(p))^2)))",
+  "rho_kg_m3": 1.225,
+  "pRMS_kinematic_m2_s2": 15.98335,
+  "helmet_pRMS_Pa": 19.57960375,
+  "source": "postProcessing/helmetMetric/0/surfaceFieldValue.dat"
+}

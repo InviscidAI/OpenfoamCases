@@ -1,0 +1,9 @@
+FoamFile { format ascii; class dictionary; object turbulenceProperties; }
+simulationType LES;
+LES
+{
+ LESModel kOmegaSSTDDES; turbulence on; printCoeffs on;
+ delta DeltaOmegaTilde;
+ kOmegaSSTDDESCoeffs { useSigma true; }
+ DeltaOmegaTildeCoeffs {}
+}

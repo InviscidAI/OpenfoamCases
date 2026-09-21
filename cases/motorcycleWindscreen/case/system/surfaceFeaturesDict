@@ -1,0 +1,4 @@
+FoamFile { format ascii; class dictionary; object surfaceFeaturesDict; }
+surfaces ("screen.obj");
+includedAngle 150;
+writeObj yes;

@@ -1,0 +1,41 @@
+FoamFile { format ascii; class dictionary; object snappyHexMeshDict; }
+castellatedMesh true; snap true; addLayers false;
+geometry
+{
+ bikeRest.obj { type triSurfaceMesh; name bike; }
+ helmet.obj { type triSurfaceMesh; name helmet; }
+ screen.obj { type triSurfaceMesh; name screen; }
+ nearWake { type searchableBox; min (-0.20 -0.60 0.70); max (1.50 0.60 1.60); }
+ wake { type searchableBox; min (-0.30 -1.0 0.35); max (3.0 1.0 2.0); }
+}
+castellatedMeshControls
+{
+ maxLocalCells 1000000; maxGlobalCells 5000000; minRefinementCells 0; maxLoadUnbalance 0.10; nCellsBetweenLevels 3;
+ features ( { file "screen.eMesh"; level 5; } );
+ refinementSurfaces
+ {
+  bike { level (2 2); patchInfo { type wall; } }
+  helmet { level (3 3); patchInfo { type wall; } }
+  screen { level (5 5); patchInfo { type wall; } }
+ }
+ resolveFeatureAngle 30;
+ refinementRegions
+ {
+  wake { mode inside; levels ((1e15 2)); }
+  nearWake { mode inside; levels ((1e15 3)); }
+ }
+ locationInMesh (-2 0 1);
+ allowFreeStandingZoneFaces true;
+}
+snapControls
+{
+ nSmoothPatch 5; tolerance 1.5; nSolveIter 100; nRelaxIter 8;
+ nFeatureSnapIter 20; implicitFeatureSnap false; explicitFeatureSnap true; multiRegionFeatureSnap false;
+}
+addLayersControls { relativeSizes true; layers {}; expansionRatio 1.2; finalLayerThickness 0.3; minThickness 0.1; nGrow 0; featureAngle 60; nRelaxIter 5; nSmoothSurfaceNormals 1; nSmoothNormals 3; nSmoothThickness 10; maxFaceThicknessRatio 0.5; maxThicknessToMedialRatio 0.3; minMedialAxisAngle 90; nBufferCellsNoExtrude 0; nLayerIter 50; }
+meshQualityControls
+{
+ #includeEtc "caseDicts/meshQualityDict"
+ maxNonOrtho 70; nSmoothScale 4; errorReduction 0.75; relaxed { maxNonOrtho 75; }
+}
+debug 0; mergeTolerance 1e-6;
