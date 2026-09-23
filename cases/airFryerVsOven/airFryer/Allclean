@@ -1,0 +1,4 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+rm -rf 0 constant/polyMesh processor* processors* postProcessing mesh.msh [1-9]* log.*
+find constant system -type f -delete 2>/dev/null || true

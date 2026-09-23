@@ -1,0 +1,10 @@
+0/
+constant/
+system/
+mesh.msh
+processor*/
+processors*/
+postProcessing/
+[1-9]*/
+log.*
+*.foam

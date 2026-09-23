@@ -1,0 +1,13 @@
+{
+  "case": "convection_oven_front_return",
+  "n_times": 481,
+  "window_s": [
+    5.000000004,
+    25.00000002
+  ],
+  "common_speed_metric_m_s": 0.6747259780308773,
+  "common_speed_metric_std_m_s": 0.019116332931732146,
+  "fan_flux_fraction": 0.8095577796365409,
+  "fan_flux_fraction_std": 0.024772077012915273,
+  "flux_definition": "gross positive-x one-way flux through x=0.225 m gate over y=0.08..0.32 m, divided by 0.12 m2/s"
+}

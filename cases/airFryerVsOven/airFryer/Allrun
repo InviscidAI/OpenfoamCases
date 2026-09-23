@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+./Allclean
+python3 build.py > log.build 2>&1
+checkMesh > log.checkMesh 2>&1
+decomposePar -force -fileHandler collated > log.decomposePar 2>&1
+mpirun -np 4 pimpleFoam -parallel -fileHandler collated > log.foamRun 2>&1
+reconstructPar -fileHandler collated > log.reconstructPar 2>&1

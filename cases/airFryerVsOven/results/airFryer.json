@@ -1,0 +1,14 @@
+{
+  "case": "corrected_air_fryer",
+  "n_times": 481,
+  "window_s": [
+    5.000000004,
+    25.00000002
+  ],
+  "common_speed_metric_m_s": 1.0404192571693491,
+  "common_speed_metric_std_m_s": 0.00730117538520646,
+  "fan_flux_fraction": 0.9244294500811322,
+  "fan_flux_fraction_std": 0.0016751974507661397,
+  "flux_definition": "gross upward one-way flux through all perforated-base openings",
+  "fan_supply_flux_m2_s": 0.12
+}
