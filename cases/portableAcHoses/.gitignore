@@ -1,0 +1,5 @@
+run_*/
+validation/freejet_coarse/
+validation/freejet_medium/
+validation/freejet_fine/
+__pycache__/

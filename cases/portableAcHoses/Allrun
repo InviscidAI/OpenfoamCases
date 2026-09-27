@@ -1,0 +1,13 @@
+#!/bin/bash
+# ./Allrun single | ./Allrun dual
+# Writes run_<mode>/ from config.py and solves it from switch-on to 150 s, 481 writes.
+# Serial on purpose: the mesh is ~5,200 cells and a parallel run is slower, not faster.
+set -euo pipefail
+cd "$(dirname "$0")"
+mode=${1:?usage: ./Allrun single|dual}
+python3 generate_case.py "$mode" central "run_$mode"
+cd "run_$mode"
+blockMesh > log.blockMesh 2>&1
+checkMesh > log.checkMesh 2>&1
+buoyantBoussinesqPimpleFoam > log.solver 2>&1
+echo "run_$mode: $(grep -c '^Time =' log.solver) steps, last $(grep '^Time =' log.solver | tail -1)"

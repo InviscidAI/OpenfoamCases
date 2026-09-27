@@ -1,0 +1,11 @@
+{
+  "_source": "Room means are volume averages from postProcessing/roomMean, reproduced from a clean copy with ./Allrun on 27 Sep 2026. Leak inflows are the summed door and window patch fluxes, scaled from the 0.1 m plane to the 2.5 m room.",
+  "switch_on_C": 26.7,
+  "outdoor_C": 35.0,
+  "single": {"leak_inflow_cfm": 271.9, "room_mean_C_150s": 27.82, "room_mean_C_900s": 28.95},
+  "dual":   {"leak_inflow_cfm": 101.1, "room_mean_C_150s": 25.50, "room_mean_C_900s": 26.45,
+             "first_thermostat_stop_s": [442.5, 444.4]},
+  "unit": {"sensible_cooling_W": 2000.0, "exhaust_cfm": 271.9, "dual_outdoor_intake_cfm": 170.8,
+           "supply_plan_width_m": 0.30, "supply_velocity_mps": 1.229, "represented_to_real_flow": 4.884},
+  "mesh_cells": 5206
+}

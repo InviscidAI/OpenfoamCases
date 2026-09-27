@@ -1,0 +1,4 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+rm -rf run_single run_dual __pycache__ \
+       validation/freejet_coarse validation/freejet_medium validation/freejet_fine
