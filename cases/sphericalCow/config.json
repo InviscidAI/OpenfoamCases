@@ -1,0 +1,68 @@
+{
+  "Uinf": 8.0,
+  "rho": 1.225,
+  "nu": 1.5e-05,
+  "turbulenceIntensity": 0.01,
+  "turbulenceLengthScale": 0.2,
+  "domain": {
+    "xmin": -6.0,
+    "xmax": 12.0,
+    "ymin": -5.0,
+    "ymax": 5.0,
+    "zmin": 0.0,
+    "zmax": 6.0
+  },
+  "baseCell": 0.3,
+  "surfaceMinLevel": 2,
+  "surfaceMaxLevel": 3,
+  "wakeLevel": 2,
+  "nLayers": 3,
+  "expansionRatio": 1.3,
+  "solver": "pimpleFoam",
+  "initialDeltaT": 0.001,
+  "maxDeltaT": 0.005,
+  "maxCo": 4.0,
+  "settleEnd": 5.0,
+  "sampleWindow": 20.0,
+  "sampleRateHz": 24.0,
+  "mpiRanksPerCase": 8,
+  "totalRankEnvelope": 24,
+  "memoryEnvelopeGB": 10,
+  "wallClockEnvelopeHours": 3.0,
+  "sphereEmbed": 0.075,
+  "configurations": {
+    "cow": {
+      "body": "Spot",
+      "placement": "grounded",
+      "turbulenceModel": "kOmegaSST"
+    },
+    "sphere": {
+      "body": "equal-volume sphere",
+      "placement": "grounded",
+      "turbulenceModel": "kOmegaSST"
+    },
+    "isolated": {
+      "body": "equal-volume sphere",
+      "placement": "free air at z=3 m",
+      "turbulenceModel": "kOmegaSST"
+    },
+    "cow-floating": {
+      "body": "Spot",
+      "placement": "free air, bounding-box centre z=3 m",
+      "turbulenceModel": "kOmegaSSTSAS"
+    },
+    "sphere-floating": {
+      "body": "equal-volume sphere",
+      "placement": "free air at z=3 m",
+      "turbulenceModel": "kOmegaSSTSAS"
+    }
+  },
+  "floatingNumerics": {
+    "delta": "cubeRootVol",
+    "deltaCoeff": 1,
+    "momentumConvection": "bounded Gauss LUST grad(U)",
+    "turbulenceConvection": "bounded Gauss limitedLinear 1",
+    "maxCo": 1.0,
+    "initialVelocity": "rest except 8 m/s inlet"
+  }
+}

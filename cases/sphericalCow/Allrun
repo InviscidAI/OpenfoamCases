@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+mode=${1:-}
+case "$mode" in cow|sphere|isolated|cow-floating|sphere-floating) ;; *) echo "Usage: ./Allrun cow|sphere|isolated|cow-floating|sphere-floating"; exit 2;; esac
+python3 scripts/process_spot.py > log.geometry.spot 2>&1
+python3 scripts/generate_transient_case.py "$mode"
+cd "runs/$mode"
+blockMesh > log.blockMesh
+snappyHexMesh -overwrite > log.snappyHexMesh
+checkMesh > log.checkMesh.standard
+grep -q 'Mesh OK' log.checkMesh.standard
+checkMesh -allTopology -allGeometry > log.checkMesh || true
+decomposePar -force -fileHandler collated
+mpirun -np 8 pimpleFoam -parallel -fileHandler collated
+reconstructPar -latestTime -fileHandler collated > log.reconstructPar 2>&1

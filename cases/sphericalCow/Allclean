@@ -1,0 +1,7 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+rm -rf runs log.geometry.spot
+rm -f geometry/cow.stl geometry/cow_grounded.stl geometry/cow_floating.stl geometry/sphere.stl geometry/isolated.stl \
+      geometry/spot_scaled_grounded.obj geometry/geometry.json
+# The public-domain source geometry/spot/spot_triangulated.obj and README.txt are retained.

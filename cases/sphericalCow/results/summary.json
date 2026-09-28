@@ -1,0 +1,234 @@
+{
+  "geometry": {
+    "source": "geometry/spot/spot_triangulated.obj",
+    "license": "public domain; see geometry/spot/README.txt",
+    "source_axes": "x across, y up, z longitudinal; muzzle toward -z",
+    "cfd_axes": "x streamwise with head toward -x, y lateral, z up",
+    "source_points_obj": 17568,
+    "welded_points": 2930,
+    "triangles": 5856,
+    "source_open_edges_after_texture_seam_weld": 0,
+    "repair_operations": "none",
+    "ground_source_y": -0.736784,
+    "withers_measurement": {
+      "definition": "highest dorsal mesh vertex in shoulder/back band source z=0.10..0.30, |x|<0.30, relative to lowest hoof plane",
+      "source_point": [
+        0.0,
+        0.327327,
+        0.102505
+      ],
+      "raw_height": 1.064111
+    },
+    "uniform_scale_m_per_source_unit": 1.3259894879387584,
+    "measurements_m": {
+      "withers_height_m": 1.411,
+      "rump_height_m": 1.276455824627318,
+      "chest_floor_height_m": 0.31361512241150435,
+      "trunk_length_m": 1.0574699866837203,
+      "rump_length_m": 0.3314973719846896,
+      "head_length_m": 1.0228868548487893,
+      "head_width_m": 0.8715331438016113,
+      "chest_width_m": 1.0194699810790453,
+      "hip_width_m": 0.9174901429793525,
+      "thorax_perimeter_m": 3.2807998610575657,
+      "shin_perimeter_m": 1.1862976669972156
+    },
+    "holstein_means_m": {
+      "withers_height_m": 1.411,
+      "rump_height_m": 1.442,
+      "chest_floor_height_m": 0.763,
+      "trunk_length_m": 1.708,
+      "rump_length_m": 0.543,
+      "head_length_m": 0.519,
+      "head_width_m": 0.213,
+      "chest_width_m": 0.483,
+      "hip_width_m": 0.559,
+      "thorax_perimeter_m": 2.068,
+      "shin_perimeter_m": 0.193
+    },
+    "percent_difference": {
+      "withers_height_m": 0.0,
+      "rump_height_m": -11.48017859727336,
+      "chest_floor_height_m": -58.897100601375584,
+      "trunk_length_m": -38.08723731359951,
+      "rump_length_m": -38.95076022381407,
+      "head_length_m": 97.08802598242568,
+      "head_width_m": 309.17049004770485,
+      "chest_width_m": 111.0703894573593,
+      "hip_width_m": 64.13061591759434,
+      "thorax_perimeter_m": 58.64602809756121,
+      "shin_perimeter_m": 514.6620036255003
+    },
+    "measurement_definitions": {
+      "rump_height": "highest dorsal point over source z=0.65..0.85",
+      "chest_floor": "ventral bound of transverse slice at source z=0.30",
+      "trunk_length": "source-z distance from measured withers to pin landmark z=0.90",
+      "rump_length": "source-z distance from hip landmark z=0.65 to pin z=0.90",
+      "head_length": "source-z distance from muzzle extreme to measured withers",
+      "head_width": "transverse width at source z=-0.52",
+      "chest_width": "transverse width at source z=0.30",
+      "hip_width": "transverse width at source z=0.70",
+      "thorax_perimeter": "slice perimeter at source z=0.40",
+      "shin_perimeter": "positive-x fore-shin loop perimeter at source y=-0.60"
+    },
+    "volume_m3": 1.6745618458460867,
+    "equal_volume_sphere_diameter_m": 1.473332796844872,
+    "cow_bounds_cfd_m": [
+      [
+        -0.8869663023876269,
+        -0.6252729950164975,
+        0.0
+      ],
+      [
+        1.3909629728477575,
+        0.6252729950164975,
+        2.2414924100963156
+      ]
+    ],
+    "overall_length_m": 2.277929275235384,
+    "maximum_width_m": 1.250545990032995,
+    "maximum_height_m": 2.2414924100963156,
+    "reference_frontal_area_m2": 1.438472143302533,
+    "cow_ground_embed_m": 0.04,
+    "sphere_ground_embed_m": 0.075
+  },
+  "air": {
+    "rho_kg_m3": 1.225,
+    "nu_m2_s": 1.5e-05,
+    "speed_m_s": 8.0
+  },
+  "runs": {
+    "cow": {
+      "cells": 253197,
+      "Re": 563983.9928979841,
+      "Aref_m2": 1.438472143302533,
+      "Cd_mean_t5_25": 0.929798709656258,
+      "Cd_std_t5_25": 0.01557197214357732,
+      "drag_N_mean_t5_25": 52.429590074591346,
+      "Cd_mean_t1_5": 0.9242864256878902,
+      "settled_mean_change_percent": 0.5963826596571797,
+      "linear_drift_percent_over_20s": -1.4829682566626452,
+      "one_second_Cd_means": [
+        0.9395799731770834,
+        0.9347904589322916,
+        0.9407060285989584,
+        0.93566878025,
+        0.9322539834479168,
+        0.9360698498906249,
+        0.9307183492812502,
+        0.91794406878125,
+        0.9250654980312499,
+        0.9245491468541666,
+        0.9256189987239584,
+        0.940563803859375,
+        0.9326167725625,
+        0.9204212364479166,
+        0.9319001434145079,
+        0.9350202354843749,
+        0.926743867828125,
+        0.9220172929895835,
+        0.9244152527291666,
+        0.9193798198963732
+      ],
+      "dominant_Cd_frequency_Hz": 1.1500000000000001,
+      "samples_retained": 3843,
+      "final_Cd": 0.924797499
+    },
+    "sphere": {
+      "cells": 224610,
+      "Re": 785777.4916505984,
+      "Aref_m2": 1.7048712783345465,
+      "Cd_mean_t5_25": 0.6461115759065834,
+      "Cd_std_t5_25": 0.1711010591799773,
+      "drag_N_mean_t5_25": 43.18025307981413,
+      "Cd_mean_t1_5": 0.63613230737625,
+      "settled_mean_change_percent": 1.5687410330553986,
+      "linear_drift_percent_over_20s": -2.854235404768007,
+      "one_second_Cd_means": [
+        0.6501491993854166,
+        0.6750996652083333,
+        0.6730769884166667,
+        0.6585860598541666,
+        0.6448074912552083,
+        0.643720938171875,
+        0.625090877484375,
+        0.6194628825104166,
+        0.63008256071875,
+        0.644253606546875,
+        0.654132804984375,
+        0.6538178642604167,
+        0.664372302734375,
+        0.6665507766458334,
+        0.6448507621139897,
+        0.6307816033125,
+        0.620039263484375,
+        0.6388019290364584,
+        0.6408354192343749,
+        0.6435563768911918
+      ],
+      "dominant_Cd_frequency_Hz": 1.1,
+      "samples_retained": 3843,
+      "final_Cd": 0.681059598
+    },
+    "isolated": {
+      "cells": 262640,
+      "Re": 785777.4916505984,
+      "Aref_m2": 1.7048712783345465,
+      "Cd_mean_t5_25": 0.21717813270932268,
+      "Cd_std_t5_25": 0.00023889065343495698,
+      "drag_N_mean_t5_25": 14.51422182094735,
+      "Cd_mean_t1_5": 0.21610404195125,
+      "settled_mean_change_percent": 0.497024835062998,
+      "linear_drift_percent_over_20s": 0.03905505336605683,
+      "one_second_Cd_means": [
+        0.21731847133999999,
+        0.21711610003499998,
+        0.21714929944000003,
+        0.21716674905000002,
+        0.21709453871999998,
+        0.21715919793000002,
+        0.21712656465,
+        0.21711177950500002,
+        0.217127112465,
+        0.21718142276000002,
+        0.217133410565,
+        0.21719890150499999,
+        0.217141429365,
+        0.21712243170499998,
+        0.21713380689,
+        0.21731518215,
+        0.2171934677,
+        0.21731525642500002,
+        0.217214133225,
+        0.21724277860499996
+      ],
+      "dominant_Cd_frequency_Hz": 1.5,
+      "samples_retained": 4001,
+      "final_Cd": 0.217302164
+    }
+  },
+  "achenbach": {
+    "Re": 785777.4916505984,
+    "reference_Cd_approx": 0.13,
+    "reference_reading_uncertainty": 0.01,
+    "source": "Achenbach (1972), J. Fluid Mech. 54, 565-575; approximate interpolation of smooth-sphere supercritical data near Re=7.86e5",
+    "computed_Cd": 0.21717813270932268,
+    "relative_difference_percent": 67.06010208409437
+  },
+  "sampling": {
+    "settle_interval_s": [
+      0,
+      5
+    ],
+    "retained_window_s": [
+      5,
+      25
+    ],
+    "plane_rate_Hz": 24,
+    "plane_times_per_ground_case": 481,
+    "planes": [
+      "vertical y=0",
+      "horizontal at run mid-body z"
+    ]
+  }
+}

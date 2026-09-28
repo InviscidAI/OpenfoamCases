@@ -1,0 +1,8 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+geometry/*.stl
+geometry/geometry.json
+geometry/spot_scaled_grounded.obj
+spot_*.png

@@ -1,0 +1,166 @@
+{
+  "window_s": [
+    5,
+    25
+  ],
+  "model": "kOmegaSSTSAS",
+  "delta": "cubeRootVol, deltaCoeff 1",
+  "schemes": {
+    "U": "bounded Gauss LUST grad(U)",
+    "k_omega": "bounded Gauss limitedLinear 1"
+  },
+  "maxCo": 1,
+  "runs": {
+    "cow-floating": {
+      "Cd_mean": 0.696614742754698,
+      "Cd_std": 0.029606896699690476,
+      "Cd_force_mean_N": 39.28078736100653,
+      "Cd_force_std_N": 1.6694768891639058,
+      "Cs_mean": -0.02720394264251024,
+      "Cs_std": 0.09627141853293077,
+      "Cs_force_mean_N": -1.5339788562266345,
+      "Cs_force_std_N": 5.428563147228933,
+      "Cl_mean": -0.02645550978803803,
+      "Cl_std": 0.049617575777454404,
+      "Cl_force_mean_N": -1.49177614358484,
+      "Cl_force_std_N": 2.7978412225035707,
+      "cells": 289463,
+      "samples": 19849,
+      "dominant_Cd_frequency_Hz": 0.25,
+      "dominant_Cs_frequency_Hz": 0.30000000000000004,
+      "Cd_mean_5_15": 0.6887127339410163,
+      "Cd_mean_15_25": 0.7045026399675796,
+      "Cd_half_window_change_percent": 2.292669388615609,
+      "Cd_fitted_drift_percent_over_20s": 2.506654676125837,
+      "five_second_blocks": [
+        {
+          "window": [
+            5,
+            10
+          ],
+          "Cd_mean": 0.6938536089945706,
+          "Cd_std": 0.02550900703554537,
+          "Cs_mean": -0.05345308618848568,
+          "Cs_std": 0.10576194478436997
+        },
+        {
+          "window": [
+            10,
+            15
+          ],
+          "Cd_mean": 0.6835460783272653,
+          "Cd_std": 0.030044298663429104,
+          "Cs_mean": -0.03837879760876711,
+          "Cs_std": 0.09511428265443089
+        },
+        {
+          "window": [
+            15,
+            20
+          ],
+          "Cd_mean": 0.7050581281317259,
+          "Cd_std": 0.028284161058114408,
+          "Cs_mean": -0.018890509606518415,
+          "Cs_std": 0.08300848315563125
+        },
+        {
+          "window": [
+            20,
+            25
+          ],
+          "Cd_mean": 0.7039353954401709,
+          "Cd_std": 0.029182488165179717,
+          "Cs_mean": 0.0021140603759478007,
+          "Cs_std": 0.09072448042559934
+        }
+      ]
+    },
+    "sphere-floating": {
+      "Cd_mean": 0.3323425477076834,
+      "Cd_std": 0.02394016858864584,
+      "Cd_force_mean_N": 22.210769554890046,
+      "Cd_force_std_N": 1.5999443083505525,
+      "Cs_mean": 0.0158215063751428,
+      "Cs_std": 0.08701996227167895,
+      "Cs_force_mean_N": 1.0573663665195412,
+      "Cs_force_std_N": 5.815627105294659,
+      "Cl_mean": 0.007565959540596937,
+      "Cl_std": 0.09244296368131102,
+      "Cl_force_mean_N": 0.5056402948611544,
+      "Cl_force_std_N": 6.1780514636441195,
+      "cells": 262640,
+      "samples": 5193,
+      "dominant_Cd_frequency_Hz": 0.6000000000000001,
+      "dominant_Cs_frequency_Hz": 0.35000000000000003,
+      "Cd_mean_5_15": 0.32854201167919406,
+      "Cd_mean_15_25": 0.3361235328193647,
+      "Cd_half_window_change_percent": 2.3076260784491875,
+      "Cd_fitted_drift_percent_over_20s": 3.478960222171403,
+      "five_second_blocks": [
+        {
+          "window": [
+            5,
+            10
+          ],
+          "Cd_mean": 0.3293197340116369,
+          "Cd_std": 0.020770120517440045,
+          "Cs_mean": -0.00815733107540962,
+          "Cs_std": 0.09107059160261972
+        },
+        {
+          "window": [
+            10,
+            15
+          ],
+          "Cd_mean": 0.32770791777536795,
+          "Cd_std": 0.025989279230611107,
+          "Cs_mean": 0.01324327274931928,
+          "Cs_std": 0.09060339829925217
+        },
+        {
+          "window": [
+            15,
+            20
+          ],
+          "Cd_mean": 0.3329266156165644,
+          "Cd_std": 0.023267869844309855,
+          "Cs_mean": 0.03818795701592019,
+          "Cs_std": 0.054484177082520874
+        },
+        {
+          "window": [
+            20,
+            25
+          ],
+          "Cd_mean": 0.3393082387265088,
+          "Cd_std": 0.023782830176383125,
+          "Cs_mean": 0.019695738192657335,
+          "Cs_std": 0.09874794648372129
+        }
+      ]
+    }
+  },
+  "achenbach": {
+    "Re": 785777.4916505984,
+    "reference_Cd_approx": 0.13,
+    "reference_reading_uncertainty": 0.01,
+    "computed_Cd": 0.3323425477076834,
+    "relative_difference_percent": 155.64811362129493,
+    "result": "failed quantitative validation check"
+  },
+  "sampling": {
+    "plane_rate_Hz": 24,
+    "times_per_case": 481,
+    "planes": [
+      "vertical y=0",
+      "horizontal z=3 m"
+    ]
+  },
+  "compute": {
+    "pre_run_estimate_wall_minutes": 36,
+    "pre_run_upper_minutes": 47,
+    "actual_mesh_to_completed_solve_minutes_approx": 79,
+    "actual_useful_rank_hours_approx": 17.6,
+    "actual_including_discarded_three_layer_cow_rank_hours_approx": 19.0
+  }
+}
