@@ -4,6 +4,7 @@
 # as the case was checked; it was computed from the 2 s field by hand, not by a script here.
 set -euo pipefail
 cd "$(dirname "$0")"
+rm -rf 0 && cp -r 0.orig 0
 blockMesh > log.blockMesh
 topoSet > log.topoSet
 setExprFields > log.setExprFields

@@ -2,4 +2,4 @@
 # Remove every run and the swirl check's outputs; the committed inputs stay.
 cd "$(dirname "$0")"
 rm -rf runs __pycache__
-(cd verification/swirl && rm -rf constant/polyMesh [1-9]* 0.[0-9]* log.* && true)
+(cd verification/swirl && rm -rf 0 constant/polyMesh [1-9]* 0.[0-9]* log.* && true)
