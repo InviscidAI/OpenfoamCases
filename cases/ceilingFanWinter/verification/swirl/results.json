@@ -1,0 +1,10 @@
+{
+  "time_s": 1.999598,
+  "omega_rad_s": 1.0,
+  "pressure_rmse_m2_s2": 0.0036636912695937928,
+  "exact_pressure_range_m2_s2": 5.875375690934894,
+  "relative_rmse": 0.0006235671491180547,
+  "Utheta_relative_rms_error": 0.030534697941458865,
+  "minimum_cell_radius_m": 0.01332063013414666,
+  "max_abs_Utheta_in_innermost_cells_mps": 0.013028300367295742
+}

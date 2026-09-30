@@ -1,0 +1,5 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+verification/swirl/constant/polyMesh/

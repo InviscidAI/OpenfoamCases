@@ -11,6 +11,7 @@ made anywhere else can be checked here.
 | [`cases/airFryerVsOven`](cases/airFryerVsOven) | An air fryer and a convection oven with the same fan and the same food, and where the air goes. Two runs differing in the appliance. Backs a published clip, and its limits say why it names no winner. |
 | [`cases/portableAcHoses`](cases/portableAcHoses) | A portable air conditioner with one hose and with two, in the same room. One case, run two ways. Backs a published clip; the README says what the numbers can and cannot carry. |
 | [`cases/sphericalCow`](cases/sphericalCow) | The physics joke taken literally: a cow (Keenan Crane's public-domain Spot) and a sphere of the same volume in the same wind. Floating runs under SST-SAS back a published clip; grounded SST runs and a failed sphere drag check are kept, and the README says what that leaves standing. |
+| [`cases/ceilingFanWinter`](cases/ceilingFanWinter) | A ceiling fan in a heated room, off, blowing down and reversed, from switch-on. An axisymmetric wedge with swirl and a check that the wedge carries the swirl's fictitious forces unaided. Backs a published clip; the README says why the fan-off room is the weakest of the three. |
 | [`cases/cylinderRe3900_LES`](cases/cylinderRe3900_LES) | Re = 3900 circular cylinder LES, matched to Parnaudeau et al. (2008). |
 
 ## What you should be able to do

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Solid-body swirl on the same kind of 5-degree wedge, no source terms, no MRF: the
+# pressure should settle to p(r) - p(0) = Omega^2 r^2 / 2. results.json is the comparison
+# as the case was checked; it was computed from the 2 s field by hand, not by a script here.
+set -euo pipefail
+cd "$(dirname "$0")"
+blockMesh > log.blockMesh
+topoSet > log.topoSet
+setExprFields > log.setExprFields
+pimpleFoam > log.solver

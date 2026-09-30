@@ -1,0 +1,9 @@
+FoamFile
+{
+ version 2.0; format ascii; class dictionary; location "system"; object topoSetDict;
+}
+actions
+(
+ { name fanZone; type cellZoneSet; action new; source boxToCell; box (0 -0.16010661599367043 2.6) (0.76 0.16010661599367043 2.74); }
+ { name heaterZone; type cellZoneSet; action new; source boxToCell; box (3.276159024534323 -0.16010661599367043 0.0) (3.4432820779999997 0.16010661599367043 0.2); }
+);
