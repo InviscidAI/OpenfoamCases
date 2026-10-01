@@ -5,8 +5,8 @@ helps is an old argument. This case puts one runner at women's world-record mara
 through the air three ways, and measures the air resistance on her:
 
     ./Allrun alone       # the runner on her own
-    ./Allrun behind      # one pacer directly ahead, 1.3 m hip to hip      (the published clip)
-    ./Allrun pair        # two pacers side by side ahead, 1.3 m axial       (the published clip)
+    ./Allrun behind      # one pacer directly ahead, 1.3 m hip to hip
+    ./Allrun pair        # two pacers side by side ahead, 1.3 m axial
 
 All three are in the published clip, with the drag on her read live from each run.
 
