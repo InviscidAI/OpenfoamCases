@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+mode=${1:-}
+case "$mode" in alone|behind|pair);; *) echo "Usage: ./Allrun alone|behind|pair"; exit 2;; esac
+source config.sh
+python3 scripts/makeCase.py "$mode"
+cd "runs/$mode"
+# Preserve supplied surfaces: only placement translations are performed on working copies.
+if [[ "$mode" != alone ]]; then surfaceTransformPoints -translate "($HIP_SPACING 0 $ZLIFT)" constant/triSurface/pacerSource.stl constant/triSurface/pacer.stl; rm constant/triSurface/pacerSource.stl; fi
+if [[ "$mode" == pair ]]; then
+  # shoulder/skin clear gap about 0.30 m: pacer width 0.623 -> centre separation 0.923 m
+  surfaceTransformPoints -translate "($HIP_SPACING $PAIR_OFFSET $ZLIFT)" constant/triSurface/pacer2Source.stl constant/triSurface/pacer2.stl
+  surfaceTransformPoints -translate "(0 -$PAIR_OFFSET 0)" constant/triSurface/pacer.stl constant/triSurface/pacer.tmp.stl
+  mv constant/triSurface/pacer.tmp.stl constant/triSurface/pacer.stl; rm constant/triSurface/pacer2Source.stl
+fi
+surfaceTransformPoints -translate "(0 0 $ZLIFT)" constant/triSurface/runner.stl constant/triSurface/runner.tmp.stl
+mv constant/triSurface/runner.tmp.stl constant/triSurface/runner.stl
+blockMesh
+snappyHexMesh -overwrite
+checkMesh -allGeometry -allTopology
+decomposePar -fileHandler collated
+mpirun -np "$NPROCS" pimpleFoam -parallel -fileHandler collated
+# Add the exact t=0 sampled planes after the parallel force history exists.
+reconstructPar -latestTime -fileHandler collated
+pimpleFoam -postProcess -time 0

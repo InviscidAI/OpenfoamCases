@@ -1,0 +1,138 @@
+{
+  "model": "kOmegaSSTSAS",
+  "window_s": [
+    2.5,
+    4.0
+  ],
+  "qA_N": 6.88385712,
+  "cases": {
+    "alone": {
+      "runner": {
+        "samples": 2100,
+        "Cd_mean": 0.7968064928619047,
+        "Cd_temporal_SD": 0.03415588933886091,
+        "drag_N_mean": 5.485102049149652,
+        "drag_N_temporal_SD": 0.2351242620152498,
+        "drag_N_firstHalf": 5.540593297923609,
+        "drag_N_secondHalf": 5.430136783776396,
+        "half_change_pct_of_mean": -2.013754952186111,
+        "linear_slope_N_per_s": -0.21005629526547265
+      }
+    },
+    "behind": {
+      "runner": {
+        "samples": 2445,
+        "Cd_mean": 0.4716443296441718,
+        "Cd_temporal_SD": 0.0437505752408785,
+        "drag_N_mean": 3.246732176728659,
+        "drag_N_temporal_SD": 0.30117270887601716,
+        "drag_N_firstHalf": 3.1936068909698774,
+        "drag_N_secondHalf": 3.299727253453718,
+        "half_change_pct_of_mean": 3.2685283758380366,
+        "linear_slope_N_per_s": 0.10719029097265892
+      },
+      "pacer": {
+        "samples": 2445,
+        "Cd_mean": 0.8005664112310837,
+        "Cd_temporal_SD": 0.03172319618619857,
+        "drag_N_mean": 5.510984789985944,
+        "drag_N_temporal_SD": 0.2183779499355199,
+        "drag_N_firstHalf": 5.515606156548488,
+        "drag_N_secondHalf": 5.50637475030223,
+        "half_change_pct_of_mean": -0.1675091947818756,
+        "linear_slope_N_per_s": -0.13662857566370284
+      }
+    },
+    "pair": {
+      "runner": {
+        "samples": 2366,
+        "Cd_mean": 0.7034113272020287,
+        "Cd_temporal_SD": 0.04543865611648077,
+        "drag_N_mean": 4.842183073048335,
+        "drag_N_temporal_SD": 0.3127932164306677,
+        "drag_N_firstHalf": 4.864593760420081,
+        "drag_N_secondHalf": 4.82003604082214,
+        "half_change_pct_of_mean": -0.9201989872285065,
+        "linear_slope_N_per_s": 0.022448954280442232
+      },
+      "pacer": {
+        "samples": 2366,
+        "Cd_mean": 0.8926553182797972,
+        "Cd_temporal_SD": 0.020105764978357657,
+        "drag_N_mean": 6.144911668446248,
+        "drag_N_temporal_SD": 0.138405213399314,
+        "drag_N_firstHalf": 6.189051777131142,
+        "drag_N_secondHalf": 6.1012908551576475,
+        "half_change_pct_of_mean": -1.4281885030852748,
+        "linear_slope_N_per_s": -0.10056330816056971
+      },
+      "pacer2": {
+        "samples": 2366,
+        "Cd_mean": 0.876035288224852,
+        "Cd_temporal_SD": 0.0189980166822985,
+        "drag_N_mean": 6.0305017562179,
+        "drag_N_temporal_SD": 0.1307796324043193,
+        "drag_N_firstHalf": 6.0885012887123935,
+        "drag_N_secondHalf": 5.973184571164518,
+        "half_change_pct_of_mean": -1.9122242594320593,
+        "linear_slope_N_per_s": -0.12347230166479672
+      }
+    }
+  },
+  "runner_drag_reduction_pct": {
+    "behind": 40.80817188748574,
+    "pair": 11.721185318712312
+  },
+  "URANS_comparison": {
+    "alone": {
+      "SAS_2.5_4": {
+        "samples": 2100,
+        "Cd_mean": 0.7968064928619047,
+        "Cd_temporal_SD": 0.03415588933886091,
+        "drag_N_mean": 5.485102049149652,
+        "drag_N_temporal_SD": 0.2351242620152498,
+        "drag_N_firstHalf": 5.540593297923609,
+        "drag_N_secondHalf": 5.430136783776396,
+        "half_change_pct_of_mean": -2.013754952186111,
+        "linear_slope_N_per_s": -0.21005629526547265
+      },
+      "URANS_2_3": {
+        "samples": 1222,
+        "Cd_mean": 0.7054838960883797,
+        "Cd_temporal_SD": 0.0039443331740979795,
+        "drag_N_mean": 4.856450341133333,
+        "drag_N_temporal_SD": 0.027152226004166575,
+        "drag_N_firstHalf": 4.849761817102514,
+        "drag_N_secondHalf": 4.863160794751138,
+        "half_change_pct_of_mean": 0.2759006415681369,
+        "linear_slope_N_per_s": 0.02703266238516317
+      }
+    },
+    "behind": {
+      "SAS_2.5_4": {
+        "samples": 2445,
+        "Cd_mean": 0.4716443296441718,
+        "Cd_temporal_SD": 0.0437505752408785,
+        "drag_N_mean": 3.246732176728659,
+        "drag_N_temporal_SD": 0.30117270887601716,
+        "drag_N_firstHalf": 3.1936068909698774,
+        "drag_N_secondHalf": 3.299727253453718,
+        "half_change_pct_of_mean": 3.2685283758380366,
+        "linear_slope_N_per_s": 0.10719029097265892
+      },
+      "URANS_2_3": {
+        "samples": 1101,
+        "Cd_mean": 0.37183182970935513,
+        "Cd_temporal_SD": 0.0071683561877948455,
+        "drag_N_mean": 2.559637188387372,
+        "drag_N_temporal_SD": 0.049345939782047606,
+        "drag_N_firstHalf": 2.5614407951854545,
+        "drag_N_secondHalf": 2.5578303023042017,
+        "half_change_pct_of_mean": -0.1410548689335041,
+        "linear_slope_N_per_s": -0.0017617550289659389
+      }
+    }
+  },
+  "literature_scaled_N": 4.899858791332678,
+  "SAS_alone_vs_scaled_literature_pct": 11.944084161204938
+}

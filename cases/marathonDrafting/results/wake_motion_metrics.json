@@ -1,0 +1,11 @@
+{
+  "plane": "torsoHorizontal z=1.05 m",
+  "ROI": "-3 <= x <= -0.5 m, |y| <= 0.75 m",
+  "comparison_lag_s": 0.04,
+  "settled_windows": {"SAS": [2.5, 4.0], "URANS": [2.0, 3.0]},
+  "metrics": {
+    "alone": {"SAS_spatiotemporal_RMS_speed_m_s": 0.55333, "URANS_spatiotemporal_RMS_speed_m_s": 0.08704, "SAS_mean_abs_40ms_change_m_s": 0.37892, "URANS_mean_abs_40ms_change_m_s": 0.01642},
+    "behind": {"SAS_spatiotemporal_RMS_speed_m_s": 0.63267, "URANS_spatiotemporal_RMS_speed_m_s": 0.36452, "SAS_mean_abs_40ms_change_m_s": 0.43555, "URANS_mean_abs_40ms_change_m_s": 0.13094},
+    "pair": {"SAS_spatiotemporal_RMS_speed_m_s": 0.62269, "URANS_spatiotemporal_RMS_speed_m_s": 0.23060, "SAS_mean_abs_40ms_change_m_s": 0.52384, "URANS_mean_abs_40ms_change_m_s": 0.08337}
+  }
+}

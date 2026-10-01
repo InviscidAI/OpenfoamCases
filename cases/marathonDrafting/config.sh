@@ -1,0 +1,45 @@
+# Single source of numerical choices used by every configuration
+UINF=5.41
+RHO=1.225
+NU=1.50e-5
+AREF=0.384
+LREF=1.65
+END_TIME=4.0
+SAMPLE_DT=0.008333333333333333
+MAX_CO=1.0
+DT0=0.001
+NPROCS=8
+# Domain: air travels from XMAX toward XMIN in the runner-fixed frame
+XMIN=-7
+XMAX=4
+YMIN=-3
+YMAX=3
+ZMAX=3.5
+BASE_DX=0.20
+# Geometry is lifted to avoid a zero-clearance point contact defeating snappy
+ZLIFT=0.005
+# Placement
+HIP_SPACING=1.3
+PAIR_OFFSET=0.4615
+# Turbulence inlet
+TURB_INTENSITY=0.01
+TURB_LENGTH=0.10
+# Refinement levels and fixed boxes (metres)
+SURFACE_MIN_LEVEL=3
+SURFACE_MAX_LEVEL=4
+CORRIDOR_LEVEL=2
+WAKE_LEVEL=3
+CORRIDOR_XMIN=-2.2
+CORRIDOR_XMAX=2.5
+CORRIDOR_YMIN=-0.8
+CORRIDOR_YMAX=0.8
+CORRIDOR_ZMAX=2.1
+WAKE_XMIN=-3.5
+WAKE_XMAX=0.7
+WAKE_YMIN=-0.65
+WAKE_YMAX=0.65
+WAKE_ZMIN=0.05
+WAKE_ZMAX=1.9
+TORSO_PLANE_Z=1.05
+MAX_DT=0.004
+INLET_TURBULENCE_INTENSITY=0.01
