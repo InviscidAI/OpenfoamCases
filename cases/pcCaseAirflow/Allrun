@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+layout=${1:-}
+case "$layout" in positive|negative|even) ;; *) echo "usage: ./Allrun positive|negative|even" >&2; exit 2;; esac
+[ -d mesh/constant/polyMesh ] || ./Allmesh
+python3 scripts/make_case.py "$layout"
+cd "runs/$layout"
+createPatch -overwrite > log.createPatch
+checkMesh > log.checkMesh
+# Compile the quadratic vent-loss coded boundary once before MPI starts.
+pimpleFoam -dry-run > log.dryRun 2>&1 || { cat log.dryRun; exit 1; }
+rm -rf 0.00024
+decomposePar -fileHandler collated > log.decomposePar
+start=$(date +%s)
+mpirun -np 8 pimpleFoam -parallel -fileHandler collated > log.pimpleFoam 2>&1
+end=$(date +%s)
+printf "real_seconds %s\n" "$((end-start))" > wallclock.txt
+reconstructPar -latestTime -fileHandler collated > log.reconstructPar

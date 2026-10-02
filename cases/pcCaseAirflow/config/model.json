@@ -1,0 +1,57 @@
+{
+  "roomTemperature_K": 295.15,
+  "ambientPressure_Pa": 101325.0,
+  "rhoReference_kg_m3": 1.196,
+  "cp_J_kgK": 1007.0,
+  "fan120Flow_m3_s": 0.0165,
+  "fan140Flow_m3_s": 0.021,
+  "gpuFlow_m3_s": 0.04,
+  "gpuHeat_W": 300.0,
+  "cpuFlow_m3_s": 0.02,
+  "cpuHeat_W": 150.0,
+  "filterLossCoefficient": 3.0,
+  "slotLossCoefficient": 6.0,
+  "endTime_s": 8.0,
+  "planeInterval_s": 0.02,
+  "maxDeltaT_s": 0.002,
+  "maxCo": 10.0,
+  "settledWindow_s": [
+    6.0,
+    8.0
+  ],
+  "mpiRanksPerLayout": 8,
+  "layouts": {
+    "positive": {
+      "intake": [
+        "front_low",
+        "front_mid",
+        "front_high"
+      ],
+      "exhaust": [
+        "rear"
+      ]
+    },
+    "negative": {
+      "intake": [
+        "front_mid"
+      ],
+      "exhaust": [
+        "rear",
+        "top_front",
+        "top_rear"
+      ]
+    },
+    "even": {
+      "intake": [
+        "front_low",
+        "front_mid",
+        "front_high"
+      ],
+      "exhaust": [
+        "rear",
+        "top_front",
+        "top_rear"
+      ]
+    }
+  }
+}

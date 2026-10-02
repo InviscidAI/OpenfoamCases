@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+rm -rf runs mesh/constant/polyMesh mesh/[0-9]* mesh/processor* mesh/checkMesh*.log mesh/log.* mesh/*.obj mesh/named_*.obj mesh/fan_footprints_to_walls.obj mesh/cpu_in.obj mesh/coarse_mesh.png mesh/final_patches.png

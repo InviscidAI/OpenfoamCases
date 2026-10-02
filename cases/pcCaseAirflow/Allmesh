@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")/mesh"
+exec python3 rebuild_mesh.py
