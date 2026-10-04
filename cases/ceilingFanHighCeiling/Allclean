@@ -1,0 +1,4 @@
+#!/bin/bash
+# Remove every run; the committed inputs stay.
+cd "$(dirname "$0")"
+rm -rf runs __pycache__

@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+. ./config.sh
+if [ $# -lt 2 ] || [ $# -gt 3 ] || [[ ! "$1" =~ ^(down|up|off)$ ]] || [[ ! "$2" =~ ^(low|medium)$ ]] \
+   || [[ ! "${3:-$HEATER_W}" =~ ^[0-9]+$ ]]; then
+  echo "Usage: ./Allrun down|up|off low|medium [heater W, default $HEATER_W from config.sh]" >&2; exit 2
+fi
+dir=$1; speed=$2; heater=${3:-$HEATER_W}; case="runs/heater${heater}W/${dir}_${speed}"
+runStart=$(date +%s.%N)
+python3 makeCase.py "$case" "$dir" "$speed" "$heater"
+blockMesh -case "$case" > "$case/log.blockMesh"
+topoSet -case "$case" > "$case/log.topoSet"
+checkMesh -case "$case" -allGeometry -allTopology > "$case/log.checkMesh"
+grep -q 'Mesh OK' "$case/log.checkMesh" || { tail -100 "$case/log.checkMesh"; exit 1; }
+postProcess -case "$case" -time 0 -fields '(U T)' > "$case/log.sample0"
+decomposePar -case "$case" -force -fileHandler collated > "$case/log.decomposePar"
+solverStart=$(date +%s.%N)
+mpirun -np "$NPROCS" buoyantBoussinesqPimpleFoam -parallel -case "$case" -fileHandler collated > "$case/log.solver"
+solverEnd=$(date +%s.%N)
+reconstructPar -case "$case" -latestTime -fileHandler collated > "$case/log.reconstructPar"
+rm -rf "$case"/processors*
+python3 postprocess.py "$case"
+# Preserve every face while keeping the whole study below the storage cap.
+find "$case/postProcessing/rzFace" -name '*.vtp' -print0 | xargs -0 -r -P 4 gzip -f
+runEnd=$(date +%s.%N)
+python3 - "$runStart" "$solverStart" "$solverEnd" "$runEnd" "$case/results/wallclock.txt" <<'PYTIME'
+import sys
+a,b,c,d=map(float,sys.argv[1:5])
+open(sys.argv[5],'w').write(f"solver_wall_s={c-b:.3f}\nfull_run_wall_s={d-a:.3f}\n")
+PYTIME
+echo "COMPLETE $case"

@@ -1,0 +1,20 @@
+Mesh check for this case ("new") against ceilingFanWinter ("07"), 4 Oct 2026 (test build, deleted after this check).
+Built by ceilingFanWinter's makeCase.py with config.sh changed only in ROOM_HEIGHT, Z_BREAKS and Z_CELLS.
+Compared against ceilingFanWinter's solved mesh (its down_medium run), cell centres written into a copy.
+
+07 cells 11424 new cells 20720
+new cells below 3.05 m 11424
+unmatched 0
+max centre diff 7.7586468e-16
+fanZone 217 217 same cells
+heaterZone 325 325 same cells
+top centre 6.09038 z levels above 3.05: 83
+
+Case dictionaries: system/ differs from 07's only in blockMeshDict (the six added blocks); fvOptions, transportProperties, turbulenceProperties, g, caseInfo.txt and the 0/ boundary conditions are identical.
+
+checkMesh -allGeometry -allTopology:
+    cells:            20720
+    Max aspect ratio = 4.00381 OK.
+    Mesh non-orthogonality Max: 0 average: 0
+    Max skewness = 0.330796 OK.
+Mesh OK.
