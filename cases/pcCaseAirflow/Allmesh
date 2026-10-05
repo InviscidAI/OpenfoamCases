@@ -1,4 +1,6 @@
 #!/bin/bash
+# ./Allmesh          the mesh for positive, negative and even, in mesh/
+# ./Allmesh viewer   the viewer layout's mesh (turned cooler, bottom fans), in mesh/viewer/
 set -euo pipefail
 cd "$(dirname "$0")/mesh"
-exec python3 rebuild_mesh.py
+exec python3 rebuild_mesh.py "$@"

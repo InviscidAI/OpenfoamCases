@@ -52,6 +52,18 @@
         "top_front",
         "top_rear"
       ]
+    },
+    "viewer": {
+      "intake": [
+        "bottom_front",
+        "bottom_rear",
+        "rear",
+        "top_rear"
+      ],
+      "exhaust": [
+        "top_front"
+      ],
+      "geometry": "viewer"
     }
   }
 }

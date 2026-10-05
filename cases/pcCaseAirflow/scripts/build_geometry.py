@@ -26,7 +26,19 @@ A vent rectangle covers the whole mesh area of its panel; the fans mounted on th
 are cut out of it in the mesh by giving fan patches priority, so one vent file serves
 every fan layout.
 
+The "viewer" layout is a viewer's build from the clip's comments and needs a slightly
+different PC, so it has its own geometry, written by --viewer to geometry/viewer/ as the
+files that differ from geometry/ (everything else is shared):
+
+  - the CPU tower cooler turned round on its socket to blow toward the front: the same fin
+    stack in the same place, its 120 mm fan moved from the stack's front face to its rear
+    face, so cpu_in is the fan's rear face and cpu_out the stack's front face (the RAM
+    stays where it was; memory slots do not move when a cooler is turned);
+  - two 120 mm bottom fans, fan_bottom_front and fan_bottom_rear, in the top of the PSU
+    shroud, in its front 265 mm; the rear 175 mm is left for an ATX power supply.
+
     python3 build_geometry.py [--layout positive|negative|even] [--out ../geometry]
+    python3 build_geometry.py --viewer [--out ../geometry/viewer]
 """
 import argparse
 import json
@@ -84,6 +96,24 @@ LAYOUTS = {
 }
 
 
+# The viewer layout's PC (see the docstring); applied by turn_for_viewer().
+VIEWER_BOTTOM_FANS = [("bottom_front", 75.0), ("bottom_rear", 205.0)]               # x
+VIEWER_LAYOUTS = {"viewer": dict(intake=["bottom_front", "bottom_rear", "rear", "top_rear"],
+                                 exhaust=["top_front"])}
+VIEWER_FILES = ["solids/cpu_cooler.stl", "faces/cpu_in.stl", "faces/cpu_out.stl",
+                "faces/fan_bottom_front.stl", "faces/fan_bottom_rear.stl"]
+cooler_turned = False
+
+
+def turn_for_viewer():
+    """Turn the cooler round and add the bottom fans; the rest of the PC is unchanged."""
+    global CPU_FAN, BOTTOM_FANS, LAYOUTS, cooler_turned
+    CPU_FAN = dict(CPU_FAN, x0=CPU_STACK["x1"], x1=CPU_STACK["x1"] + 25)
+    BOTTOM_FANS = VIEWER_BOTTOM_FANS
+    LAYOUTS = VIEWER_LAYOUTS
+    cooler_turned = True
+
+
 def box(d):
     return pv.Box(bounds=(d["x0"], d["x1"], d["y0"], d["y1"], d["z0"], d["z1"])).triangulate()
 
@@ -138,6 +168,8 @@ def parts(eps=0.0):
     for name, x in TOP_FANS:
         faces[f"fan_{name}"] = annulus((x, HEIGHT, FAN_Z), (0, 1, 0), FAN_140[1], HUB)
     faces["fan_rear"] = annulus((DEPTH, REAR_FAN[1], REAR_FAN[2]), (1, 0, 0), FAN_120[1], HUB)
+    for name, x in globals().get("BOTTOM_FANS", []):
+        faces[f"fan_{name}"] = annulus((x, SHROUD_TOP, FAN_Z), (0, 1, 0), FAN_120[1], HUB)
     for name, v in VENTS.items():
         faces[name] = rect(v["wall"], v["a"], v["b"])
     zc = (GPU["z0"] + GPU["z1"]) / 2
@@ -148,8 +180,12 @@ def parts(eps=0.0):
     faces["gpu_out_front_end"] = face(GPU, "x0", eps)
     ft = dict(GPU, x1=GPU["x0"] + GPU_FLOW_THROUGH)
     faces["gpu_out_flow_through"] = face(ft, "y1", eps)
-    faces["cpu_in"] = face(CPU_FAN, "x0", eps)
-    faces["cpu_out"] = face(CPU_STACK, "x1", eps)
+    if cooler_turned:       # air in at the fan's rear face, out of the stack's front face
+        faces["cpu_in"] = face(CPU_FAN, "x1", eps)
+        faces["cpu_out"] = face(CPU_STACK, "x0", eps)
+    else:
+        faces["cpu_in"] = face(CPU_FAN, "x0", eps)
+        faces["cpu_out"] = face(CPU_STACK, "x1", eps)
     return solids, faces
 
 
@@ -214,18 +250,29 @@ def render(solids, faces, layout, path, view):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument("--layout", default="positive", choices=LAYOUTS)
-    p.add_argument("--out", default=str(HERE.parent / "geometry"))
+    p.add_argument("--layout", default="positive", choices=list(LAYOUTS) + list(VIEWER_LAYOUTS))
+    p.add_argument("--viewer", action="store_true",
+                   help="write the viewer layout's PC, only the files that differ")
+    p.add_argument("--out", default=None)
     p.add_argument("--previews", default=str(HERE.parent / "previews"))
     a = p.parse_args()
-    out, prev = Path(a.out), Path(a.previews)
+    if a.viewer:
+        turn_for_viewer()
+        a.layout = "viewer"
+    elif a.layout not in LAYOUTS:
+        p.error("the viewer layout's geometry is written with --viewer")
+    out = Path(a.out or HERE.parent / "geometry" / ("viewer" if a.viewer else ""))
+    prev = Path(a.previews)
     solids, faces = parts()
     for sub, group in (("solids", solids), ("faces", faces)):
         (out / sub).mkdir(parents=True, exist_ok=True)
         for k, m in group.items():
+            if a.viewer and f"{sub}/{k}.stl" not in VIEWER_FILES:
+                continue
             m.scale(1e-3, inplace=False).save(out / sub / f"{k}.stl")
     dims = {k: v for k, v in globals().items()
-            if k.isupper() and isinstance(v, (int, float, dict, list, tuple))}
+            if k.isupper() and not k.startswith("VIEWER_")
+            and isinstance(v, (int, float, dict, list, tuple))}
     (out / "dimensions_mm.json").write_text(json.dumps(dims, indent=1, default=list))
     prev.mkdir(parents=True, exist_ok=True)
     for layout in LAYOUTS:

@@ -9,10 +9,14 @@ fan layouts and measures the air each part breathes:
     ./Allrun positive    # 3 front fans in, rear fan out
     ./Allrun negative    # 1 front fan in, rear and 2 top fans out
     ./Allrun even        # 3 in, 3 out
+    ./Allrun viewer      # a viewer's build: 2 bottom fans, rear and rear top fan in,
+                         # front top fan out, no front fans, the CPU cooler turned round
 
 The published clip shows `positive` against `negative`. `even` is here because equal fan
 counts are not equal flows: two 140 mm top fans and a 120 mm rear fan move more air than
-three 120 mm front fans, so "3 in, 3 out" is slightly negative.
+three 120 mm front fans, so "3 in, 3 out" is slightly negative. `viewer` is a layout asked
+for in the clip's comments, on the same PC with its cooler turned round and two bottom fans
+added; it has [its own section](#a-viewers-layout-bottom-intakes-and-the-cooler-turned-round).
 
 ## The PC
 
@@ -148,6 +152,79 @@ card or cooler.
   a local Courant number up to 10 rules out fine-scale turbulence claims.
 - **Eight seconds of flow,** two of them averaged.
 
+## A viewer's layout: bottom intakes and the cooler turned round
+
+A viewer asked, under the published clip: "Make one w 2 bottom intake, 1 intake next to the
+processor, CPU tower cooler facing front, and two in top, behind cpu tower is intake, one
+closer to front blowing out. No front cooler." This layout is that build, in this PC:
+
+| the comment | here |
+|---|---|
+| "2 bottom intake" | two 120 mm fans blowing up through the top of the PSU shroud (100 mm up), centred 75 and 205 mm from the front, leaving the shroud's rear 175 mm for a power supply. They take in room air at 22 C, as through a filtered floor; the shroud's inside is not modelled. |
+| "1 intake next to the processor" | the rear 120 mm fan, as an intake. It is the fan next to the CPU in an ATX case, 375 mm up, with the socket 330 mm up. |
+| "CPU tower cooler facing front" | the cooler turned round to blow toward the front (below). |
+| "two in top, behind cpu tower is intake, one closer to front blowing out" | the two 140 mm top fans: the rear one (centre 360 mm from the front, above the turned cooler's fan) in, the front one (220 mm) out. |
+| "No front cooler" | no front fans. The three front mounts stay filter mesh, open to the room with the same loss as the rest of the front panel. |
+
+"Next to the processor" could also mean a fan in the glass side panel. The rear fan is the
+reading the rest of the comment supports, so it is the one used. The fan flows are the
+other layouts': 33 L/s from the bottom, 16.5 from the rear and 21 from the top in, 21 out.
+That leaves 49.5 L/s to leave through the openings, against 33 in `positive`.
+
+**The cooler, turned.** In the other layouts the cooler's 120 mm fan is on the front face of
+its fin stack and blows toward the rear. Turned, the fin stack stays where it was (52 mm
+deep, centred on the socket) and the fan moves to its rear face, so the cooler draws air
+in 369 mm from the front, facing the rear fan, and returns it out of the stack's front face
+292 mm from the front, toward the front. It is the same black box, with the same 0.020 m3/s and 150 W.
+The RAM stays where it was. `scripts/build_geometry.py --viewer` makes the changed parts
+(the cooler, its two faces and the two bottom fan faces), into `geometry/viewer/`; every
+other part is the shared `geometry/`.
+
+**Its own mesh.** A turned cooler is a different solid, so this layout cannot run on the
+mesh of the other three. `./Allmesh viewer` builds `mesh/viewer/` the same way, with the
+same settings: 382,688 cells, the same count as the shared mesh, and `checkMesh` reports
+"Mesh OK". The other three layouts' geometry, mesh and cases are unchanged, so `positive`
+and `viewer` compare two meshes built alike, not one.
+
+**Result.** Solved on 8 ranks in 1,775 s of wall clock, 8 s from still air. Means over
+6-8 s, in `results/summary.csv` with the others:
+
+| layout | air into the card | air into the CPU cooler | case pressure | entering air through unfiltered slots |
+|---|---:|---:|---:|---:|
+| positive | 29.9 C (+7.94) | 34.8 C (+12.78) | +0.39 Pa | 6.1% |
+| viewer | 26.3 C (+4.29) | 22.3 C (+0.33) | +0.63 Pa | 3.9% |
+
+The two halves of the window agree within 0.09 K on the card and 0.06 K on the cooler, and
+both intakes level off by about 2 s.
+
+**Both parts get cooler air.** The card's is 3.7 K cooler than in `positive`: the bottom
+fans blow room air up under its front half, where its fans draw. The cooler's is almost room
+air: turned round, its fan faces the rear and the rear top intakes, where in `positive` it
+breathed the card's exhaust.
+
+**The front panel becomes the way out.** With no front fans and more air pushed in than
+pulled out, the front filter mesh lets out 30.3 L/s and the three empty front mounts about
+17 more, about 47 L/s in all. Vent flows, L/s in / out, 6-8 s:
+
+| layout | front mesh | top mesh | slot covers |
+|---|---:|---:|---:|
+| positive | 1.77 / 12.62 | 0.03 / 8.46 | 3.34 / 2.83 |
+| viewer | 0.46 / 30.26 | 1.69 / 5.24 | 2.94 / 2.08 |
+
+Some air still comes in through every opening, as in `positive`: the card's fans pull hard
+near the slot covers.
+
+**What it cannot say,** on top of everything in the limits above:
+
+- **Fans are fixed flows.** This layout pushes more air into the case than `positive`, and a
+  real fan blowing in against that pressure, or a bottom fan behind the shroud's floor and
+  filter, would move somewhat less air than its fixed flow here. The cooler's inlet sits
+  right in the rear and top intake jets, so its near-room air is the optimistic end.
+- **Air into the parts, not part temperatures.** The 0.33 K is the air the cooler breathes,
+  not a CPU temperature; the 4.29 K is the card's air, not its core.
+- **One reading of one comment.** A side-panel fan, a different bottom-fan position or a
+  shroud with a real power supply in it are different builds.
+
 ## Running it
 
 You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Python 3
@@ -156,6 +233,7 @@ with NumPy, pandas and PyVista.
     cd cases/pcCaseAirflow
     ./Allmesh                  # about 1-6 minutes
     ./Allrun positive          # negative, even
+    ./Allrun viewer            # builds mesh/viewer/ first if it is not there
     python3 scripts/summarize.py
     python3 scripts/plot_results.py
 

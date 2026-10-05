@@ -6,11 +6,14 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 C=json.loads((ROOT/'config/model.json').read_text())
 layout=sys.argv[1] if len(sys.argv)>1 else 'positive'
-if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, or even')
+if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, or viewer')
+# A layout with its own geometry (the viewer's turned cooler and bottom fans) has its own mesh.
+variant=C['layouts'][layout].get('geometry','')
+MESH=ROOT/'mesh'/variant if variant else ROOT/'mesh'
 out=ROOT/'runs'/layout
 if out.exists(): shutil.rmtree(out)
 (out/'constant').mkdir(parents=True); (out/'system').mkdir(); (out/'0').mkdir()
-shutil.copytree(ROOT/'mesh/constant/polyMesh',out/'constant/polyMesh')
+shutil.copytree(MESH/'constant/polyMesh',out/'constant/polyMesh')
 # snappy leaves an empty frozenPoints zone; omit it (and avoid simplified-mesh dry-run bug).
 for z in ('pointZones','faceZones','cellZones'):
     (out/'constant/polyMesh'/z).unlink(missing_ok=True)
@@ -20,7 +23,8 @@ hdr=lambda cls,obj: f'''FoamFile\n{{\n version 2.0; format ascii; class {cls}; o
 cp=hdr('dictionary','createPatchDict')+'''pointSync false;\npatches\n(\n { name gpu_in; patchInfo { type patch; } constructFrom patches; patches (gpu_in_1 gpu_in_2 gpu_in_3); }\n { name gpu_out; patchInfo { type patch; } constructFrom patches; patches (gpu_out_board_side gpu_out_flow_through gpu_out_front_end gpu_out_glass_side); }\n);\n'''
 (out/'system/createPatchDict').write_text(cp)
 
-allfans=['front_low','front_mid','front_high','rear','top_front','top_rear']
+bottom=['bottom_front','bottom_rear'] if variant=='viewer' else []
+allfans=['front_low','front_mid','front_high']+bottom+['rear','top_front','top_rear']
 active=C['layouts'][layout]; intake=set(active['intake']); exhaust=set(active['exhaust'])
 Q120=C['fan120Flow_m3_s']; Q140=C['fan140Flow_m3_s']
 def qfan(n): return Q140 if n.startswith('top_') else Q120

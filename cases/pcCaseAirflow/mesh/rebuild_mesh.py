@@ -1,13 +1,30 @@
 #!/usr/bin/env python3
-"""Rebuild the OpenFOAM v2512 PC-case air mesh from the unchanged local geometry STLs."""
+"""Rebuild the OpenFOAM v2512 PC-case air mesh from the unchanged local geometry STLs.
+
+    python3 rebuild_mesh.py           # geometry/ -> mesh/ (positive, negative, even)
+    python3 rebuild_mesh.py viewer    # geometry/ with geometry/viewer/ over it -> mesh/viewer/
+"""
 from pathlib import Path
-import os, shutil, subprocess, json
+import os, sys, shutil, subprocess, json, tempfile
 import numpy as np
 import pyvista as pv
-CASE=Path(__file__).resolve().parent
-os.chdir(CASE)
-GEOM=CASE.parent/'geometry'
+variant=sys.argv[1] if len(sys.argv)>1 else ''
+if variant not in ('','viewer'): raise SystemExit('usage: rebuild_mesh.py [viewer]')
+HERE=Path(__file__).resolve().parent
+GEOM=HERE.parent/'geometry'
 if not (GEOM/'solids').is_dir() or not (GEOM/'faces').is_dir(): raise SystemExit('Missing ../geometry/solids or ../geometry/faces')
+CASE=HERE/variant if variant else HERE
+if variant:
+    # The variant's PC: the shared geometry with the variant's own files laid over it.
+    merged=Path(tempfile.mkdtemp(prefix='pcCase_geometry_'))
+    for sub in ('solids','faces'):
+        (merged/sub).mkdir()
+        for p in (GEOM/sub).glob('*.stl'): shutil.copy2(p,merged/sub/p.name)
+        for p in (GEOM/variant/sub).glob('*.stl'): shutil.copy2(p,merged/sub/p.name)
+    shutil.copy2(GEOM/variant/'dimensions_mm.json',merged/'dimensions_mm.json')
+    GEOM=merged
+CASE.mkdir(exist_ok=True)
+os.chdir(CASE)
 def run(args):
     print('+',' '.join(map(str,args)),flush=True)
     subprocess.run(list(map(str,args)),check=True)
@@ -56,6 +73,7 @@ d=json.loads((GEOM/'dimensions_mm.json').read_text()); disks=[]
 for _,y in d['FRONT_FANS']: disks.append(('walls',disk_mesh((0,y/1000,d['FAN_Z']/1000),0,0.057)))
 for _,x in d['TOP_FANS']: disks.append(('walls',disk_mesh((x/1000,d['HEIGHT']/1000,d['FAN_Z']/1000),1,0.067)))
 _,y,z=d['REAR_FAN']; disks.append(('walls',disk_mesh((d['DEPTH']/1000,y/1000,z/1000),0,0.057)))
+for _,x in d.get('BOTTOM_FANS',[]): disks.append(('walls',disk_mesh((x/1000,d['SHROUD_TOP']/1000,d['FAN_Z']/1000),1,0.057)))
 write_obj('fan_footprints_to_walls.obj',disks)
 # Priority: devices; vents; full fan disks reset to walls; annuli win last.
 for obj in ('named_devices.obj','named_vents.obj','fan_footprints_to_walls.obj','named_fans.obj'):
@@ -66,4 +84,5 @@ run(['createPatch','-overwrite'])
 with open('checkMesh.log','w') as f: subprocess.run(['checkMesh'],stdout=f,stderr=subprocess.STDOUT,check=True)
 if 'Mesh OK.' not in Path('checkMesh.log').read_text(): raise SystemExit('Binding checkMesh did not report Mesh OK')
 with open('checkMesh_all.log','w') as f: subprocess.run(['checkMesh','-allGeometry','-allTopology'],stdout=f,stderr=subprocess.STDOUT)
+if variant: shutil.rmtree(GEOM,ignore_errors=True)
 print('Rebuilt mesh; see checkMesh.log and checkMesh_all.log')

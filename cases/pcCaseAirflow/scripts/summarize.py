@@ -4,7 +4,8 @@ from pathlib import Path
 import json, numpy as np, pandas as pd
 R=Path(__file__).resolve().parents[1]; C=json.loads((R/'config/model.json').read_text())
 Troom=C['roomTemperature_K']; rho=C['rhoReference_kg_m3']; a,b=C['settledWindow_s']
-layouts=['positive','negative','even']; quantities=['gpuIntake','cpuIntake','casePressure']
+# Layouts without a run here keep their published row in results/summary.csv.
+layouts=[x for x in C['layouts'] if (R/'runs'/x/'postProcessing').is_dir()]; quantities=['gpuIntake','cpuIntake','casePressure']
 vents=['vent_front','vent_top','vent_slots']
 def read_dat(p):
     rows=[]
@@ -38,5 +39,9 @@ for layout in layouts:
         row[v+'_in_L_s']=1000*w[v+'_in'].mean(); row[v+'_out_L_s']=1000*w[v+'_out'].mean()
     summary.append(row)
 (R/'results').mkdir(exist_ok=True)
+old=pd.read_csv(R/'results/summary.csv') if (R/'results/summary.csv').exists() else pd.DataFrame(columns=['layout'])
+kept=[r for r in old.to_dict('records') if r['layout'] not in layouts]
+order={x:i for i,x in enumerate(C['layouts'])}
+summary=sorted(kept+summary,key=lambda r:order.get(r['layout'],len(order)))
 pd.DataFrame(summary).to_csv(R/'results/summary.csv',index=False)
 print(pd.DataFrame(summary).to_string(index=False,float_format=lambda x:f'{x:.4g}'))
