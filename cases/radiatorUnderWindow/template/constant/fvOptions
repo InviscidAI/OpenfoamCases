@@ -1,0 +1,26 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+#include "../../config/caseSettings"
+
+// The radiator: radPowerPerM (60 W per metre, config/caseSettings) released in the radiator
+// box as an enthalpy source. Air passes freely up through the box, as it does
+// through a convector's fins, so the plume carries the whole output.
+radiator
+{
+    type            scalarSemiImplicitSource;
+    selectionMode   cellZone;
+    cellZone        radiator;
+    volumeMode      absolute;        // total W over the zone, mesh-independent
+    sources
+    {
+        h   ($radPowerPerM  0);
+    }
+}
+
+// The first solve's room-mass sink is not used (see README.md).
+
+// Buoyancy production/destruction in the k equation (Devolder et al. form).
+buoyancyTurb
+{
+    type            buoyancyTurbSource;
+    selectionMode   all;
+}

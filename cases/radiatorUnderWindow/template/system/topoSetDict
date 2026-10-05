@@ -1,0 +1,16 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+#include "runConfig"
+
+actions
+(
+    { name radiatorCells; type cellSet;  action new; source boxToCell;
+      box ($radXmin $radYmin -1) ($radXmax $radYmax 2); }
+    { name radiator;      type cellZoneSet; action new; source setToCellZone;
+      set radiatorCells; }
+    { name roomAirCells;  type cellSet;  action new;      source boxToCell;
+      box (-1 -1 -1) (5 5 2); }
+    { name roomAirCells;  type cellSet;  action subtract; source boxToCell;
+      box ($radXmin $radYmin -1) ($radXmax $radYmax 2); }
+    { name roomAir;       type cellZoneSet; action new; source setToCellZone;
+      set roomAirCells; }
+);

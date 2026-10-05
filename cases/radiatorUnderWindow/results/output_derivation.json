@@ -1,0 +1,73 @@
+{
+ "measured": {
+  "window": {
+   "first_solve": {
+    "room_mean_C": 21.8643,
+    "glass_W_per_m": 82.8347
+   },
+   "second_solve": {
+    "room_mean_C": 40.0663,
+    "glass_W_per_m": 114.3377,
+    "ceiling_W_per_m": 315.1838,
+    "innerWall_W_per_m": 183.0899
+   }
+  },
+  "opposite": {
+   "first_solve": {
+    "room_mean_C": 21.7414,
+    "glass_W_per_m": 56.8197
+   },
+   "second_solve": {
+    "room_mean_C": 38.9933,
+    "glass_W_per_m": 103.9472,
+    "ceiling_W_per_m": 292.0195,
+    "innerWall_W_per_m": 214.0952
+   }
+  }
+ },
+ "runs": {
+  "window": {
+   "glass_W_per_mK": {
+    "first": 3.7885823008282906,
+    "second": 2.853712471578359
+   },
+   "walls_W_per_mK_at_dT": [
+    24.83136901172613,
+    20.0663
+   ]
+  },
+  "opposite": {
+   "glass_W_per_mK": {
+    "first": 2.613433357557471,
+    "second": 2.6657707862632813
+   },
+   "walls_W_per_mK_at_dT": [
+    26.647012367519075,
+    18.993299999999998
+   ]
+  }
+ },
+ "loss_W_per_m_at_room_mean": {
+  "window": {
+   "20.00": 57.1,
+   "20.25": 59.2,
+   "20.50": 62.1,
+   "20.75": 65.4,
+   "21.00": 69.1
+  },
+  "opposite": {
+   "20.00": 53.3,
+   "20.25": 55.6,
+   "20.50": 58.6,
+   "20.75": 62.1,
+   "21.00": 66.0
+  }
+ },
+ "target_room_mean_C": 20.5,
+ "output_at_target_W_per_m": 60.36961874008041,
+ "chosen_output_W_per_m": 60,
+ "predicted_settled_room_mean_C": {
+  "window": 20.321116323598844,
+  "opposite": 20.602225905768258
+ }
+}

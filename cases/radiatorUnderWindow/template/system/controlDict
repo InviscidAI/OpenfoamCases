@@ -1,0 +1,146 @@
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+
+#include "../../config/caseSettings"
+#include "runConfig"
+
+application     buoyantPimpleFoam;
+
+startFrom       latestTime;
+startTime       0;
+stopAt          endTime;
+endTime         $tEnd;
+
+deltaT          0.01;
+adjustTimeStep  yes;
+maxCo           $maxCoNum;
+maxDeltaT       $maxDt;
+
+writeControl    adjustableRunTime;
+writeInterval   $writeInt;      // tEnd/480 -> 481 writes including t=0
+purgeWrite      4;              // full fields: keep the last few only;
+                                // the clip itself is the surfaces output
+writeFormat     binary;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   8;
+runTimeModifiable true;
+
+functions
+{
+    // Added 4 Oct 2026 during the third solve, monitoring only: the room's internal
+    // energy is (cv/R) * integral of p dV for a perfect gas in a closed box, so this
+    // checks the heat budget without going through the volume-mean temperature.
+    energyCheck
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        fields          (p rho);
+        operation       volIntegrate;
+        regionType      all;
+        writeFields     false;
+        writeControl    timeStep;
+        writeInterval   1;
+        log             false;
+    }
+
+    // boundedness monitor: min/max of T with location, every write
+    minMaxT
+    {
+        type            fieldMinMax;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        fields          (T);
+        log             false;
+    }
+
+
+    // ---- point histories: ankle (0.1 m) and seated head (1.1 m) ----------
+    probes
+    {
+        type            probes;
+        libs            (sampling);
+        writeControl    writeTime;
+        fields          (T U);
+        probeLocations
+        (
+            (0.5 0.1 0.5)
+            (1.0 0.1 0.5)
+            (2.0 0.1 0.5)
+            (0.5 1.1 0.5)
+            (1.0 1.1 0.5)
+            (2.0 1.1 0.5)
+        );
+    }
+
+    // ---- room mean air temperature ---------------------------------------
+    roomMeanT
+    {
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        writeFields     false;
+        regionType      all;
+        operation       volAverage;
+        fields          (T);
+    }
+
+    // ---- glass: inside surface temperature and heat loss ------------------
+    glassTs
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        writeFields     false;
+        regionType      patch;
+        name            glass;
+        operation       areaAverage;
+        fields          (T);
+    }
+    wallHeatFlux
+    {
+        type            wallHeatFlux;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        writeFields     false;
+        patches         (glass floor ceiling innerWall outerWall);
+    }
+
+    // ---- the clip plane and the two flux lines ----------------------------
+    clip
+    {
+        type            surfaces;
+        libs            (sampling);
+        writeControl    writeTime;
+        surfaceFormat   vtk;
+        formatOptions   { vtk { format binary; } }
+        interpolate     false;
+        fields          (T U);
+        surfaces
+        {
+            clip
+            {
+                type        cuttingPlane;
+                point       (2.0 1.2 0.5);
+                normal      (0 0 1);
+                interpolate false;
+            }
+            sillLine        // y = 0.90, x = 0 .. 0.30
+            {
+                type        cuttingPlane;
+                point       (0.15 0.9 0.5);
+                normal      (0 1 0);
+                bounds      (-0.01 0.85 -0.1) (0.30 0.95 1.1);
+                interpolate false;
+            }
+            floorLine       // x = 1.00, y = 0 .. 0.30
+            {
+                type        cuttingPlane;
+                point       (1.0 0.15 0.5);
+                normal      (1 0 0);
+                bounds      (0.95 -0.01 -0.1) (1.05 0.30 1.1);
+                interpolate false;
+            }
+        }
+    }
+}

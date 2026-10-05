@@ -1,0 +1,5 @@
+FoamFile { version 2.0; format ascii; class dictionary; object decomposeParDict; }
+#include "runConfig"
+numberOfSubdomains $nProcs;
+method          simple;
+coeffs { n ($nProcs 1 1); }

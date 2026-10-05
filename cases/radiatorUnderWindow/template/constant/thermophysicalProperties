@@ -1,0 +1,35 @@
+FoamFile { version 2.0; format ascii; class dictionary; object thermophysicalProperties; }
+#include "../../config/caseSettings"
+
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          hConst;
+    equationOfState perfectGas;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+pRef            100000;
+
+mixture
+{
+    specie
+    {
+        molWeight       28.96;
+    }
+    thermodynamics
+    {
+        Cp              1005;
+        Hf              0;
+        Tref            $Tamb;   // hs = Cp*(T - Tamb): lets the room-mass sink
+        Href            0;       // be a pure implicit Sp term
+    }
+    transport
+    {
+        mu              1.82e-05;
+        Pr              0.71;
+    }
+}

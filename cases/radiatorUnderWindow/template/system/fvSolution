@@ -1,0 +1,64 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvSolution; }
+
+solvers
+{
+    "rho.*"
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       0;
+        relTol          0;
+    }
+    p_rgh
+    {
+        solver          GAMG;
+        smoother        DICGaussSeidel;
+        tolerance       1e-8;
+        relTol          0.01;
+    }
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0;
+        // Added during the third solve: at 60 W/m this solve
+        // stalls at its round-off floor, 1.2-1.4e-8 against the 1e-8 tolerance, and
+        // spends 1000 iterations there (3.7 s per step against 0.12 s). See README.md.
+        maxIter         100;
+    }
+    "(U|h|e|k|omega)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-7;
+        relTol          0.1;
+    }
+    "(U|h|e|k|omega)Final"
+    {
+        $U;
+        relTol          0;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor           yes;
+    nOuterCorrectors            2;
+    nCorrectors                 2;
+    nNonOrthogonalCorrectors    0;
+    // pRefCell 0 is the bottom-left corner cell of this mesh. setReference()
+    // pins p_rgh there every pressure solve, so continuity is not enforced in
+    // that cell and the residual imbalance acts as a spurious source in the
+    // enthalpy equation. The first solve's fixed-20 C floor anchored it by
+    // diffusion; with the floor adiabatic it runs away (T -> -140 C by t=35 s).
+    // The reference is therefore placed in the middle of the room instead.
+    pRefPoint                   (1.503 1.174 0.5);
+    pRefValue                   1e5;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        ".*"    1;
+    }
+}

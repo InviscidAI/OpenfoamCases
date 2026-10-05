@@ -1,0 +1,22 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object T; }
+#include "../../config/caseSettings"
+dimensions      [0 0 0 1 0 0 0];
+internalField   uniform $Tamb;
+boundaryField
+{
+    glass
+    {
+        // Overall U = 2.8 W/m2K with the inside film left to the solver.
+        type            externalWallHeatFluxTemperature;
+        mode            coefficient;
+        h               uniform $hGlassExt;
+        Ta              uniform $Tout;
+        kappaMethod     fluidThermo;
+        value           uniform $Tamb;
+    }
+    outerWall   { type zeroGradient; }                       // insulated wall
+    floor       { type zeroGradient; }                       // adiabatic: the floor responds
+    ceiling     { type fixedValue; value uniform $Tamb; }
+    innerWall   { type fixedValue; value uniform $Tamb; }
+    frontAndBack{ type empty; }
+}

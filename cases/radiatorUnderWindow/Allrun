@@ -1,0 +1,57 @@
+#!/bin/bash
+# A radiator under a cold window, or on the opposite wall: one 2-D room section.
+#
+#   ./Allrun window|opposite [hour|start300] [nProcs]
+#   ./Allrun --setup-only window|opposite [hour|start300] [nProcs]
+#
+# hour     (default) 0-3600 s, a section written every 7.5 s: the third solve.
+# start300 0-300 s, a section written every 0.625 s: the same case re-solved for the clip.
+# nProcs   MPI ranks, default 6 (both solves used 6).
+# --setup-only meshes, sets and decomposes the case but does not solve it.
+#
+# The run is written to runs/<variant>/<run>/, beside runs/<variant>/config/caseSettings,
+# which every dictionary #includes as ../../config/caseSettings.
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+setupOnly=false
+if [ "$1" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=$1; variant=${2:-hour}; nproc=${3:-6}
+case "$run" in
+  window)   radXmin=0.040; radXmax=0.123 ;;
+  opposite) radXmin=3.877; radXmax=3.960 ;;
+  *) echo "usage: $0 [--setup-only] window|opposite [hour|start300] [nProcs]" >&2; exit 2 ;;
+esac
+radYmin=0.15; radYmax=0.75
+
+base="runs/$variant"
+mkdir -p "$base/config"
+case "$variant" in
+  hour)     cp config/caseSettings "$base/config/caseSettings" ;;
+  start300) sed -e 's|^tEnd .*|tEnd            300;        // start300: the first 300 s of the hour|' \
+                -e 's|^writeInt .*|writeInt        0.625;      // = tEnd/480 -> 481 writes (hour: 7.5)|' \
+                config/caseSettings > "$base/config/caseSettings" ;;
+  *) echo "usage: $0 [--setup-only] window|opposite [hour|start300] [nProcs]" >&2; exit 2 ;;
+esac
+
+rm -rf "$base/$run"; mkdir -p "$base/$run"
+cp -r template/constant template/system "$base/$run"/
+cp -r template/0.orig "$base/$run"/0
+cat > "$base/$run/system/runConfig" <<CFG
+// written by Allrun - the ONLY difference between the two runs
+runName  $run;
+nProcs   $nproc;
+radXmin  $radXmin;
+radXmax  $radXmax;
+radYmin  $radYmin;
+radYmax  $radYmax;
+CFG
+
+cd "$base/$run" || exit 1
+runApplication blockMesh
+runApplication topoSet
+runApplication checkMesh -constant
+runApplication decomposePar -fileHandler collated
+$setupOnly && { echo "set up, not solved: $base/$run"; exit 0; }
+runParallel -n "$nproc" buoyantPimpleFoam -fileHandler collated
+runApplication reconstructPar -latestTime -fileHandler collated

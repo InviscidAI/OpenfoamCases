@@ -1,0 +1,53 @@
+// -------------------------------------------------------------------------
+// caseSettings - the single config file BOTH runs read.
+// Nothing here differs between `window` and `opposite`; the only difference
+// between the two runs is the radiator box, written by Allrun into
+// system/runConfig. `./Allrun <run> start300` changes tEnd and writeInt only.
+// -------------------------------------------------------------------------
+
+// ---- temperatures ---------------------------------------------------------
+Tamb            293.15;     // 20 C : initial air, ceiling/inner wall
+Tout            273.15;     // 0 C  : outside air on the far side of the glass
+
+// ---- glass ----------------------------------------------------------------
+// Overall U = 2.8 W/m2K including the inside surface film (Rsi = 0.13 m2K/W).
+// Resistance left for the external BC: 1/2.8 - 0.13 = 0.2271 m2K/W
+// -> external coefficient h = 4.403 W/m2K. Inside film is then the solver's.
+hGlassExt       4.403;
+
+// ---- radiator -------------------------------------------------------------
+// Applied as a volumetric enthalpy source filling the radiator box, volumeMode
+// absolute, so the total is exactly this value whatever the cell count.
+// 60 W/m is this section's own steady heat loss at a 20.5 C room mean,
+// derived in README.md (derive_output.py). The first two solves used 620 W/m,
+// a Stelrad Compact K1 600x1000 (980 W at dT50, EN 442) at dT35.
+radPowerPerM    60;         // W per metre of radiator length
+
+// ---- room thermal mass ----------------------------------------------------
+// Not used. The first solve held the floor at 20 C and relaxed every cell
+// towards 20 C with a distributed sink; this case has no sink and an
+// adiabatic floor (see README.md).
+roomMassC       0.0;        // W/(m3 K)
+roomMassSp      0.0;        // = -roomMassC/Cp, Cp = 1005
+
+// ---- time window ----------------------------------------------------------
+// 480 intervals, 481 writes, same window for both runs.
+tEnd            3600;       // 0-3600 s
+writeInt        7.5;        // = tEnd/480 -> 481 writes
+maxCoNum        1;          // at 5 the window run lost about 10 W/m of heat in bursts; see README.md
+maxDt           0.25;
+
+// ---- mesh ----------------------------------------------------------------
+// x: 5 mm uniform over the first and last 200 mm (glass layer, radiator,
+//    inner wall), expanding to ~22 mm in the middle of the room.
+// y: ~3 mm at floor and ceiling, 10 mm through the radiator/sill band,
+//    12 mm over the window height.
+nx1   40;   // 0.00 - 0.20 m
+nx2   60;   // 0.20 - 1.00 m
+nx3   90;   // 1.00 - 3.00 m
+nx4   60;   // 3.00 - 3.80 m
+nx5   40;   // 3.80 - 4.00 m
+ny1   20;   // 0.00 - 0.10 m
+ny2   80;   // 0.10 - 0.90 m
+ny3  100;   // 0.90 - 2.10 m  (window height)
+ny4   30;   // 2.10 - 2.40 m
