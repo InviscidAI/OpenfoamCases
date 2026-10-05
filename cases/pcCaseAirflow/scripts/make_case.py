@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 C=json.loads((ROOT/'config/model.json').read_text())
 layout=sys.argv[1] if len(sys.argv)>1 else 'positive'
-if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, or viewer')
+if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, viewer, or twoInTwoOut')
 # A layout with its own geometry (the viewer's turned cooler and bottom fans) has its own mesh.
 variant=C['layouts'][layout].get('geometry','')
 MESH=ROOT/'mesh'/variant if variant else ROOT/'mesh'

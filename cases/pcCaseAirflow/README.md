@@ -11,12 +11,16 @@ fan layouts and measures the air each part breathes:
     ./Allrun even        # 3 in, 3 out
     ./Allrun viewer      # a viewer's build: 2 bottom fans, rear and rear top fan in,
                          # front top fan out, no front fans, the CPU cooler turned round
+    ./Allrun twoInTwoOut # another viewer's build: 2 low front fans in, rear and
+                         # rear top fan out
 
 The published clip shows `positive` against `negative`. `even` is here because equal fan
 counts are not equal flows: two 140 mm top fans and a 120 mm rear fan move more air than
-three 120 mm front fans, so "3 in, 3 out" is slightly negative. `viewer` is a layout asked
-for in the clip's comments, on the same PC with its cooler turned round and two bottom fans
-added; it has [its own section](#a-viewers-layout-bottom-intakes-and-the-cooler-turned-round).
+three 120 mm front fans, so "3 in, 3 out" is slightly negative. `viewer` is the first layout
+asked for in the clip's comments, on the same PC with its cooler turned round and two bottom
+fans added; it has [its own section](#a-viewers-layout-bottom-intakes-and-the-cooler-turned-round).
+`twoInTwoOut` is a second, from another comment, using only the fan positions the PC already
+has; it has [its own section too](#a-second-viewers-layout-two-in-two-out).
 
 ## The PC
 
@@ -225,6 +229,83 @@ near the slot covers.
 - **One reading of one comment.** A side-panel fan, a different bottom-fan position or a
   shroud with a real power supply in it are different builds.
 
+## A second viewer's layout: two in, two out
+
+Another viewer wrote, under the published clip: "With four fans, I imagine it would be best
+to have two at the front-bottom for intake, and two for exhaust, split between one at the
+rear and another at the top, positioned towards the back." Every fan in it is one of this
+PC's positions, so this layout is `positive` with a different set of fans switched on:
+
+| the comment | here |
+|---|---|
+| "two at the front-bottom for intake" | the lower two of the three front 120 mm fans, as intakes: `front_low` (centre 160 mm above the floor, just above the PSU shroud) and `front_mid` (280 mm). The top front mount, `front_high` (400 mm), is not used. |
+| "one at the rear" | the rear 120 mm fan (centre 375 mm up), as an exhaust, as in every layout here. |
+| "another at the top, positioned towards the back" | the rear 140 mm top fan, `top_rear` (centre 360 mm from the front, over the cooler), as an exhaust. The front top mount, `top_front` (220 mm), is not used. |
+
+The unused mounts are filter mesh open to the room with its loss, as in the other layouts.
+The fan flows are the others': 33 L/s in, 16.5 + 21 = 37.5 L/s out, so 4.5 L/s has to come
+in through the openings, a nearly balanced, slightly negative layout against `positive`'s
+33 L/s pushed out. The cooler is as in `positive`, on the front face of its fin stack and
+blowing toward the rear.
+
+**The shared mesh.** No part moves and no fan position is added, so this layout runs on the
+mesh of `positive`, `negative` and `even` (`checkMesh`: the same 382,688 cells, 1,178,265
+faces and 412,994 points), and `positive` and `twoInTwoOut` compare on one mesh. The only
+changes are the layout in `config/model.json` and its name in `Allrun`.
+
+**Result.** Solved on 8 ranks in 2,710 s of wall clock, 8 s from still air. Means over
+6-8 s, in `results/summary.csv` with the others:
+
+| layout | air into the card | air into the CPU cooler | case pressure |
+|---|---:|---:|---:|
+| positive | 29.9 C (+7.94) | 34.8 C (+12.78) | +0.39 Pa |
+| twoInTwoOut | 27.5 C (+5.47) | 32.6 C (+10.61) | -0.32 Pa |
+
+The two halves of the window agree within 0.01 K on the card and 0.11 K on the cooler, and
+the card's and the cooler's intakes level off by about 1.5-2 s in both layouts.
+
+**Both parts get somewhat cooler air:** 2.5 K at the card and 2.2 K at the cooler, with one
+intake fewer than `positive`. That is close to `even` (+5.44 and +10.46), which has the same
+rear and rear top exhausts and the front top one as well: 0.03 K apart at the card, inside
+the card's moment-to-moment spread (one standard deviation 0.16-0.19 K), and 0.15 K at the
+cooler, about one standard deviation (0.11-0.12 K). This model does not tell the two apart.
+
+**No opening carries much either way.** The openings take in 13.9 L/s and let out 11.2, and
+the two unused mounts let in 1.74 L/s net, which with the fans' 4.5 L/s shortfall balances.
+`positive` lets 21 L/s out through the front and top mesh alone. Vent flows, L/s in / out,
+6-8 s:
+
+| layout | front mesh | top mesh | slot covers |
+|---|---:|---:|---:|
+| positive | 1.77 / 12.62 | 0.03 / 8.46 | 3.34 / 2.83 |
+| twoInTwoOut | 4.79 / 5.95 | 4.55 / 2.86 | 4.58 / 2.35 |
+
+**Why the gain is smaller than `viewer`'s** (3.7 K at the card, 12.4 K at the cooler):
+
+- **The cooler is not turned.** In `viewer` the cooler faced the rear and the rear top
+  intake and breathed almost room air. Here it faces the front, as in `positive`, and draws
+  from the upper front of the case: on the card-middle section the card's exhaust still
+  reaches the cooler's intake, as it does in `positive`. The top exhaust sits over the cooler's
+  outlet, downstream of it, so it can carry the cooler's warm air out but cannot change what
+  the cooler draws in.
+- **The card's air comes in from the front wall.** In `viewer` two bottom fans blew room air
+  straight up under the card's front half, where its fans draw. Here both intakes blow
+  horizontally through the front panel toward the rear, not up into the card's fans, which
+  face down.
+
+**What it cannot say,** on top of everything in the limits above:
+
+- **No buoyancy.** In a real case warm air rising toward the top fan would help a top
+  exhaust slightly; this model leaves that out, as for every layout here.
+- **Small differences are not rankings.** The 2.5 and 2.2 K against `positive` are larger
+  than the spread; the gap to `even` is not, and nothing here says which of the two is
+  better.
+- **Air into the parts, not part temperatures.** The 5.47 K is the card's air, not its core;
+  the 10.61 K is the air the cooler breathes, not a CPU temperature.
+- **One reading of one comment.** "Front-bottom" is read as the lower two of this case's
+  three front mounts, and the unused mounts are open filter mesh. A case with lower front
+  mounts, bottom fans or blanked-off unused mounts is a different build.
+
 ## Running it
 
 You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Python 3
@@ -232,7 +313,7 @@ with NumPy, pandas and PyVista.
 
     cd cases/pcCaseAirflow
     ./Allmesh                  # about 1-6 minutes
-    ./Allrun positive          # negative, even
+    ./Allrun positive          # negative, even, twoInTwoOut
     ./Allrun viewer            # builds mesh/viewer/ first if it is not there
     python3 scripts/summarize.py
     python3 scripts/plot_results.py

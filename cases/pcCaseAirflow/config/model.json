@@ -64,6 +64,16 @@
         "top_front"
       ],
       "geometry": "viewer"
+    },
+    "twoInTwoOut": {
+      "intake": [
+        "front_low",
+        "front_mid"
+      ],
+      "exhaust": [
+        "rear",
+        "top_rear"
+      ]
     }
   }
 }

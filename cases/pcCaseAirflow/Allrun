@@ -3,9 +3,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 layout=${1:-}
 case "$layout" in
-  positive|negative|even) [ -d mesh/constant/polyMesh ] || ./Allmesh ;;
+  positive|negative|even|twoInTwoOut) [ -d mesh/constant/polyMesh ] || ./Allmesh ;;
   viewer) [ -d mesh/viewer/constant/polyMesh ] || ./Allmesh viewer ;;
-  *) echo "usage: ./Allrun positive|negative|even|viewer" >&2; exit 2;;
+  *) echo "usage: ./Allrun positive|negative|even|viewer|twoInTwoOut" >&2; exit 2;;
 esac
 python3 scripts/make_case.py "$layout"
 cd "runs/$layout"

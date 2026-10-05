@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import pandas as pd, matplotlib.pyplot as plt
-R=Path(__file__).resolve().parents[1]; out=R/'results'; colors={'positive':'#2b6cb0','negative':'#c53030','even':'#2f855a','viewer':'#b7791f'}
+R=Path(__file__).resolve().parents[1]; out=R/'results'; colors={'positive':'#2b6cb0','negative':'#c53030','even':'#2f855a','viewer':'#b7791f','twoInTwoOut':'#6b46c1'}
 # Only the layouts solved here (with a results/<layout>_history.csv) are drawn.
 colors={k:v for k,v in colors.items() if (out/f'{k}_history.csv').exists()}
 fig,ax=plt.subplots(3,1,figsize=(10,9),sharex=True)
