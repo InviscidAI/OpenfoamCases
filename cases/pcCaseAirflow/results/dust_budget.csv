@@ -1,0 +1,5 @@
+layout,field,held_at_end_m3,net_in_m3,came_in_m3,residual_pct_of_inflow
+positive,dustF,0.0269704,0.0269628,0.412921,0.00186247
+positive,dustU,0.00202288,0.00202112,0.0271601,0.00649295
+negative,dustF,0.0252767,0.0252661,0.455379,0.00232734
+negative,dustU,0.00371665,0.00371466,0.0449274,0.00441749

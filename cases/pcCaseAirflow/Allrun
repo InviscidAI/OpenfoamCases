@@ -2,13 +2,20 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 layout=${1:-}
+usage="usage: ./Allrun positive|negative|even|viewer|twoInTwoOut [dust]"
+# ./Allrun <layout> dust: the same layout with two passive dust fields, in runs/<layout>_dust
+case "${2:-}" in
+  "") run=$layout; dust= ;;
+  dust) run=${layout}_dust; dust=--dust ;;
+  *) echo "$usage" >&2; exit 2;;
+esac
 case "$layout" in
   positive|negative|even|twoInTwoOut) [ -d mesh/constant/polyMesh ] || ./Allmesh ;;
   viewer) [ -d mesh/viewer/constant/polyMesh ] || ./Allmesh viewer ;;
-  *) echo "usage: ./Allrun positive|negative|even|viewer|twoInTwoOut" >&2; exit 2;;
+  *) echo "$usage" >&2; exit 2;;
 esac
-python3 scripts/make_case.py "$layout"
-cd "runs/$layout"
+python3 scripts/make_case.py "$layout" $dust
+cd "runs/$run"
 createPatch -overwrite > log.createPatch
 checkMesh > log.checkMesh
 # Compile the quadratic vent-loss coded boundary once before MPI starts.

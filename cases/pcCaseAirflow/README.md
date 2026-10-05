@@ -13,6 +13,8 @@ fan layouts and measures the air each part breathes:
                          # front top fan out, no front fans, the CPU cooler turned round
     ./Allrun twoInTwoOut # another viewer's build: 2 low front fans in, rear and
                          # rear top fan out
+    ./Allrun positive dust  # either layout again, with the room's dust carried on its flow
+    ./Allrun negative dust
 
 The published clip shows `positive` against `negative`. `even` is here because equal fan
 counts are not equal flows: two 140 mm top fans and a 120 mm rear fan move more air than
@@ -20,7 +22,10 @@ three 120 mm front fans, so "3 in, 3 out" is slightly negative. `viewer` is the 
 asked for in the clip's comments, on the same PC with its cooler turned round and two bottom
 fans added; it has [its own section](#a-viewers-layout-bottom-intakes-and-the-cooler-turned-round).
 `twoInTwoOut` is a second, from another comment, using only the fan positions the PC already
-has; it has [its own section too](#a-second-viewers-layout-two-in-two-out).
+has; it has [its own section too](#a-second-viewers-layout-two-in-two-out). The clip's
+comments also said the choice is about dust, not temperature, so `positive` and `negative`
+were run again with the room's dust carried on the flow; that has
+[a section of its own as well](#dust-where-the-rooms-dust-goes).
 
 ## The PC
 
@@ -306,6 +311,142 @@ the two unused mounts let in 1.74 L/s net, which with the fans' 4.5 L/s shortfal
   three front mounts, and the unused mounts are open filter mesh. A case with lower front
   mounts, bottom fans or blanked-off unused mounts is a different build.
 
+## Dust: where the room's dust goes
+
+Most comments under the published clip said the choice is about dust, not temperature.
+`./Allrun positive dust` and `./Allrun negative dust` solve those two layouts again from
+switch-on, as they are, with the dust in the air carried on the flow as a passive scalar:
+an advection-diffusion equation with no source, advanced every time step beside the
+temperature. They write `runs/positive_dust` and `runs/negative_dust`. Nothing that sets the
+flow changes, and without `dust` every layout's case is generated exactly as before.
+
+**The room and the openings.** The room's air carries a uniform, fixed dust concentration,
+called 100%, and the case starts clean at switch-on. Air coming in through an unfiltered
+opening carries the room's 100%; through a filter, what the filter lets past:
+
+| opening | filtered |
+|---|---|
+| front panel, filter mesh, with the three front fan positions behind it | yes |
+| top panel, filter mesh, with the two top fan positions | yes |
+| expansion-slot covers, perforated, below the card at the rear | no |
+| rear fan position | no, but it exhausts in both layouts, so nothing comes in there |
+
+The PSU is inside the closed shroud and draws no case air, and the case has no seams or
+cut-outs that leak, so the slot covers are the only unfiltered way in, in either layout.
+That is how a current airflow case is filtered: Corsair's 4000D Airflow ships magnetic dust
+filters for the front, the top and the PSU intake and sells them as spares, with none for
+the rear fan or the slot covers
+([spare parts](https://help.corsair.com/hc/en-us/articles/4423638037773-4000-Series-Cases-Spare-Parts),
+[top filter](https://www.corsair.com/us/en/p/pc-components-accessories/cc-8900447/icue-4000x-4000d-4000d-airflow-top-magnetic-dust-filter-gray-cc-8900447)).
+
+**The filter catches 50%.** A stock case filter is one layer of woven nylon or polyester
+mesh. DustEND, which makes PC case filter material, gives a capture for each grade
+([dustend.com](https://www.dustend.com/)): 50% for its woven polyester G1, 80% for its
+non-woven G2, 90% for its 60 ppi foam G3. The grade names are EN 779's coarse classes, whose
+average arrestance of the standard synthetic test dust is 50-65% for G1, 65-80% for G2 and
+80-90% for G3 (EN 779:2012, since replaced by ISO 16890). DEMCiflex
+([why DEMCiflex](https://www.demcifilter.com/why-demciflex)) and Silverstone describe their
+mesh but give no fraction. So 50% is the maker's own figure for the kind of filter a case
+ships with, a test-dust average over a mix of particle sizes.
+
+**Two fields, so the 50% is not built in.** The dust is passive, so its concentration is
+linear in what comes in. The solve carries two fields: `dustF`, the dust that came in
+through filter mesh or a filtered fan position, counted at the room's full concentration,
+and `dustU`, the dust that came in through an unfiltered opening. A filter catching a
+fraction eta gives (1 - eta) dustF + dustU, so one solve answers for any filter, and 0.8 and
+0.9 are given below to show what a better filter changes. The card and the CPU cooler return
+the flow-weighted mean of what they draw in and catch nothing. The dust is carried with
+bounded first-order upwind, so both fields stay between 0 and 1 without clipping, and a
+diffusivity of 1e-6 nu (Brownian diffusion, negligible) plus nu_t/0.85 (a turbulent Schmidt
+number of 0.85). Its linear solves converge to an absolute 1e-8, so the budget closes.
+`scripts/make_case.py --dust` writes it; `scripts/summarize_dust.py` reads the runs.
+
+**Result.** Solved on 8 ranks each, the two at the same time, in 4,431 s (`positive`) and
+4,132 s (`negative`) of wall clock, 8 s from still air. The dust in the air the card breathes, flow-weighted over its fan
+openings, as a share of the room's, means over 6-8 s (`results/dust_summary.csv`):
+
+| filter capture | positive | negative |
+|---|---:|---:|
+| 0.5, woven mesh, the clip's | 59.0% | 65.0% |
+| 0.8 | 34.4% | 44.0% |
+| 0.9 | 26.2% | 37.0% |
+
+The two halves of the window agree within 0.2 points, and the every-step record agrees with
+the 0.02 s one within 0.01. The card's dust reaches half its settled value by 0.4 s and
+levels off by about 2 s (`results/dust_card.png`). Over the whole case, the mean at 8 s is
+53.5% (`positive`) and 56.4% (`negative`) of the room's dust at a capture of 0.5.
+
+**The slot leak is the difference.** The slot covers take in 3.5 L/s of room air in
+`positive` and 5.8 L/s in `negative`, 6.4% and 9.3% of all the air coming in. Positive
+pressure does not stop it: 3.5 L/s comes in through the covers while 2.9 L/s goes out through
+other parts of them, because the card's fans face down just above them and pull hard there.
+The card breathes dustier air than the case's mean in both layouts. `negative` brings it more
+dust at every capture, and the gap widens as the filter gets better (6.0, 9.6 and 10.8
+points), because the slot leak is then a larger part of what the card breathes. One-way
+flows, L/s in / out, 6-8 s:
+
+| layout | front mesh | top mesh | slot covers (unfiltered) |
+|---|---:|---:|---:|
+| positive | 1.9 / 12.7 | 0.0 / 8.5 | 3.5 / 2.9 |
+| negative | 21.4 / 0.0 | 9.2 / 2.0 | 5.8 / 1.9 |
+
+**The flow is the one above.** The dust does not act on the flow. The card's intake rise is
+7.85 K (`positive`) and 7.37 K (`negative`), against 7.94 and 7.57 K in the runs above, and
+the vent flows of `positive` are within 0.2 L/s of the table in the results. In `negative`
+the front takes in 0.5 L/s less and the slot covers 0.6 L/s more (5.8 against 5.2): with
+nothing that sets the flow changed, that is the scatter of a 2 s mean of this unsteady flow
+from one solve to the next.
+
+**The budget closes.** Over 0-8 s, the dust each field holds at 8 s equals what came in less
+what left, through every boundary by advection and diffusion, to within 0.007% of what came
+in, for both fields in both layouts (`results/dust_budget.csv`). The numerics neither lose
+nor make dust.
+
+**The dust's numerics against the temperature's.** Upwind and the nu_t/0.85 diffusivity
+both smear the dust more than the temperature in the same runs, which is carried with
+`limitedLinear 1` and, through the `nut nut` entry of its function object, a diffusivity of
+nu_t exactly. `scripts/dust_scheme_check.sh <layout>` tests that directly: it restarts the
+layout's dust run from its 8 s flow with the dust set to zero and carries it to 9.5 s twice,
+as solved ("upwind") and with the temperature's scheme and diffusivity ("as T"). The flow
+equations are the same in both, so they differ only in the dust's numerics. Filling a clean
+case on a developed flow gives the steepest fronts the dust ever has, a harder test than the
+start from still air. At a capture of 0.5 (`results/dust_scheme_check.csv`):
+
+| | card's dust, 8.5-9.0 s | card's dust, 9.0-9.5 s | section, mean / 95th percentile difference, 8.5 s | the same at 9.5 s |
+|---|---:|---:|---:|---:|
+| positive, upwind / as T | 46.6 / 46.6% | 54.1 / 54.2% | 1.3 / 4.5 points | 0.3 / 1.0 points |
+| negative, upwind / as T | 52.2 / 52.1% | 60.7 / 60.4% | 1.5 / 5.6 points | 0.6 / 2.1 points |
+
+The card's number moves by 0.3 points at most, and the gap between the layouts stays at
+6 points either way. On the card-middle section the upwind dust is softer, as expected: its
+mean gradient is 16-31% lower than with the temperature's scheme. The structures are the
+same, in the same places, so the runs stand as solved.
+
+**What the clip shows.** The card-middle section of `positive` and `negative` from
+switch-on, with the case's front on the right, as a standard ATX build looks through its
+left-side glass (the first clip drew it the other way round). Dust is grey, lighter is
+cleaner, on 40-80% of the room's: on 0-100% the filled case sits at 50-65% and both halves
+come out the same grey. Air above 80%, the core of the slot-leak plume at the rear, is drawn
+black, about 1% of the section and 4.1% in the worst frame. Air below 40% is drawn white, and
+only in the first 1.3 s, while the fans replace the clean air the case starts with. The
+number on the card is the dust it breathes at a capture of 0.5, averaged over the last 0.5 s
+of flow: 59% and 66% at the end, against 59.0 and 65.0% over 6-8 s.
+
+**What it cannot say,** on top of everything in the limits above:
+
+- **Dusty air, not dust.** The dust has no weight and no inertia, and it does not settle,
+  stick, bounce or come loose again; the filter does not load or clog, and the flow does not
+  feel it. So this is where dusty air goes, not where dust ends up: the air carries dust into
+  the card's and the cooler's fins, but how much stays there is not modelled.
+- **One filter figure.** 50% is a maker's test-dust average for woven mesh, not an
+  efficiency by particle size; a filter that catches more changes the numbers, which is why
+  0.8 and 0.9 are given.
+- **One leak.** The slot covers are the only unfiltered opening, and how much comes in
+  through them rests on their prescribed loss (K = 6). Real cases also leak at panel seams
+  and cable cut-outs.
+- **The room's dust is fixed and uniform,** and the case starts clean. Nothing here says how
+  fast a real case gets dusty over weeks.
+
 ## Running it
 
 You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Python 3
@@ -317,13 +458,18 @@ with NumPy, pandas and PyVista.
     ./Allrun viewer            # builds mesh/viewer/ first if it is not there
     python3 scripts/summarize.py
     python3 scripts/plot_results.py
+    ./Allrun positive dust     # and negative: runs/<layout>_dust
+    scripts/dust_scheme_check.sh positive    # optional, after the dust run
+    python3 scripts/summarize_dust.py
 
 `Allmesh` builds the shared mesh from `geometry/` (`mesh/rebuild_mesh.py`) and checks it.
 `Allrun` writes the layout's case into `runs/<layout>/` from `config/model.json`
 (`scripts/make_case.py`), which holds every number above, and solves to 8 s on 8 MPI ranks:
 36-44 minutes each here. `summarize.py` writes the statistics to `results/summary.csv`, where
 the published ones already are, with `comparison.png` and `histories.png`. `./Allclean`
-removes the runs and the mesh.
+removes the runs and the mesh. The two dust runs took 69-74 minutes here, run at the same time; `summarize_dust.py`
+writes `results/dust_summary.csv`, `dust_budget.csv`, `dust_card.png` and, with the check's
+runs, `dust_scheme_check.csv`, and needs NumPy 2 and matplotlib.
 
 The case was set up by an agent and checked by us, in one build, from geometry we built and
 reviewed first.
