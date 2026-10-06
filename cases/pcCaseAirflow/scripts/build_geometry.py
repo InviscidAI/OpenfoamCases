@@ -37,8 +37,26 @@ files that differ from geometry/ (everything else is shared):
   - two 120 mm bottom fans, fan_bottom_front and fan_bottom_rear, in the top of the PSU
     shroud, in its front 265 mm; the rear 175 mm is left for an ATX power supply.
 
+The "aio" layouts are another viewer's build, a PC cooled by an all-in-one liquid cooler,
+written by --aio to geometry/aio/ in the same way. Against geometry/:
+
+  - the CPU tower cooler is gone, and with it cpu_in and cpu_out (geometry/aio/ has no such
+    files, and the mesh is built without them); the AIO's pump block sits on the socket, a
+    closed 70 x 70 mm box standing 42.4 mm off the board, with no flow and no heat of its
+    own. The radiator is not a solid: it sits on case-fan mounts, outside the air volume;
+  - the top holds a 360 mm mount, three 120 mm fans at 120 mm pitch (x 100, 220 and 340),
+    in place of the two 140 mm fans, so a 360 mm radiator fits on them. The mount is centred
+    on the top, and its middle fan sits where the front top fan was;
+  - the top filter mesh, vent_top, covers the new mount (x 40-400, the span of the three fan
+    frames), as it covered the two 140 mm frames; its width is unchanged;
+  - the viewer layout's two bottom fans, fan_bottom_front and fan_bottom_rear, the same
+    files. In aioFrontIn they are closed shroud: the case merges them into the walls.
+
+The RAM stays where it is (memory slots do not move when the cooler is changed).
+
     python3 build_geometry.py [--layout positive|negative|even] [--out ../geometry]
     python3 build_geometry.py --viewer [--out ../geometry/viewer]
+    python3 build_geometry.py --aio [--out ../geometry/aio]
 """
 import argparse
 import json
@@ -114,6 +132,44 @@ def turn_for_viewer():
     cooler_turned = True
 
 
+# The AIO PC (see the docstring); applied by fit_aio().
+AIO_PUMP = dict(x0=CPU_C[0] - 35, x1=CPU_C[0] + 35, y0=CPU_C[1] - 35, y1=CPU_C[1] + 35,
+                z0=7.6, z1=50.0)
+AIO_TOP_FANS = [("top_front", 100.0), ("top_mid", 220.0), ("top_rear", 340.0)]  # x, 120 mm
+AIO_TOP = ["top_front", "top_mid", "top_rear"]
+AIO_LAYOUTS = {
+    "aioFrontIn": dict(intake=["front_low", "front_mid", "front_high"],
+                       exhaust=["rear"] + AIO_TOP),
+    "aioFrontBottomIn": dict(intake=["bottom_front", "bottom_rear",
+                                     "front_low", "front_mid", "front_high"],
+                             exhaust=["rear"] + AIO_TOP),
+}
+AIO_FILES = ["solids/pump.stl", "faces/fan_top_front.stl", "faces/fan_top_mid.stl",
+             "faces/fan_top_rear.stl", "faces/vent_top.stl",
+             "faces/fan_bottom_front.stl", "faces/fan_bottom_rear.stl"]
+aio = False
+
+
+def fit_aio():
+    """Swap the tower cooler for the AIO's pump block, put a 360 mm mount of three 120 mm fans
+    in the top with its filter mesh, and add the bottom fans; the rest of the PC is unchanged."""
+    global PUMP, TOP_FANS, BOTTOM_FANS, VENTS, LAYOUTS, RADIATORS, aio
+    global CPU_STACK, CPU_FAN
+    PUMP = AIO_PUMP
+    TOP_FANS = AIO_TOP_FANS
+    BOTTOM_FANS = VIEWER_BOTTOM_FANS
+    VENTS = dict(VENTS, vent_top=dict(wall="y1", a=(40.0, 400.0), b=(30.0, 180.0)))  # x, z
+    LAYOUTS = AIO_LAYOUTS
+    # The radiator as drawn in the previews (outside the top wall, 27 mm core + tanks); the
+    # same 360 mm radiator (397 mm with its tanks) on the three top fans in both layouts.
+    rad = dict(size="360 mm", fans=AIO_TOP,
+               draw=dict(x0=TOP_FANS[1][1] - 198.5, x1=TOP_FANS[1][1] + 198.5,
+                         y0=HEIGHT + 3, y1=HEIGHT + 30, z0=FAN_Z - 60, z1=FAN_Z + 60))
+    RADIATORS = {k: rad for k in AIO_LAYOUTS}
+    del CPU_STACK, CPU_FAN
+    aio = True
+
+
 def box(d):
     return pv.Box(bounds=(d["x0"], d["x1"], d["y0"], d["y1"], d["z0"], d["z1"])).triangulate()
 
@@ -160,13 +216,17 @@ def parts(eps=0.0):
         "ram": box(RAM),
         "psu_shroud": box(dict(x0=0, x1=DEPTH, y0=0, y1=SHROUD_TOP, z0=0, z1=WIDTH)),
         "gpu": box(GPU),
-        "cpu_cooler": box(CPU_STACK).merge(box(CPU_FAN)),
     }
+    if aio:
+        solids["pump"] = box(PUMP)
+    else:
+        solids["cpu_cooler"] = box(CPU_STACK).merge(box(CPU_FAN))
     faces = {}
     for name, y in FRONT_FANS:
         faces[f"fan_{name}"] = annulus((0.0, y, FAN_Z), (1, 0, 0), FAN_120[1], HUB)
     for name, x in TOP_FANS:
-        faces[f"fan_{name}"] = annulus((x, HEIGHT, FAN_Z), (0, 1, 0), FAN_140[1], HUB)
+        faces[f"fan_{name}"] = annulus((x, HEIGHT, FAN_Z), (0, 1, 0),
+                                       (FAN_120 if aio else FAN_140)[1], HUB)
     faces["fan_rear"] = annulus((DEPTH, REAR_FAN[1], REAR_FAN[2]), (1, 0, 0), FAN_120[1], HUB)
     for name, x in globals().get("BOTTOM_FANS", []):
         faces[f"fan_{name}"] = annulus((x, SHROUD_TOP, FAN_Z), (0, 1, 0), FAN_120[1], HUB)
@@ -180,13 +240,21 @@ def parts(eps=0.0):
     faces["gpu_out_front_end"] = face(GPU, "x0", eps)
     ft = dict(GPU, x1=GPU["x0"] + GPU_FLOW_THROUGH)
     faces["gpu_out_flow_through"] = face(ft, "y1", eps)
-    if cooler_turned:       # air in at the fan's rear face, out of the stack's front face
+    if aio:                 # no cooler, so no cooler faces
+        pass
+    elif cooler_turned:     # air in at the fan's rear face, out of the stack's front face
         faces["cpu_in"] = face(CPU_FAN, "x1", eps)
         faces["cpu_out"] = face(CPU_STACK, "x0", eps)
     else:
         faces["cpu_in"] = face(CPU_FAN, "x0", eps)
         faces["cpu_out"] = face(CPU_STACK, "x1", eps)
     return solids, faces
+
+
+def aio_labels(layout):
+    d = RADIATORS[layout]["draw"]
+    return {"AIO pump (CPU 150 W -> radiator)": (CPU_C[0], PUMP["y1"] + 5, PUMP["z1"]),
+            f"{RADIATORS[layout]['size']} radiator": ((d["x0"] + d["x1"]) / 2, d["y1"], d["z1"])}
 
 
 def render(solids, faces, layout, path, view):
@@ -199,9 +267,12 @@ def render(solids, faces, layout, path, view):
     pl.add_mesh(tray, color=(0.85, 0.86, 0.88))
     colours = {"motherboard": (0.30, 0.42, 0.34), "io_stack": (0.35, 0.35, 0.38),
                "ram": (0.25, 0.25, 0.30), "psu_shroud": (0.55, 0.56, 0.60),
-               "gpu": (0.45, 0.47, 0.52), "cpu_cooler": (0.70, 0.72, 0.75)}
+               "gpu": (0.45, 0.47, 0.52), "cpu_cooler": (0.70, 0.72, 0.75),
+               "pump": (0.15, 0.15, 0.18)}
     for k, m in solids.items():
         pl.add_mesh(m, color=colours[k], smooth_shading=False, show_edges=False)
+    if aio:
+        pl.add_mesh(box(RADIATORS[layout]["draw"]), color=(0.75, 0.20, 0.55), opacity=0.8)
     used = LAYOUTS[layout]
     for k, m in faces.items():
         name = k.removeprefix("fan_")
@@ -220,7 +291,8 @@ def render(solids, faces, layout, path, view):
             pl.add_mesh(m, color=(1.0, 0.65, 0.0), opacity=0.85)
     labels = {
         "graphics card (300 W)": ((GPU["x0"] + GPU["x1"]) / 2, GPU["y1"] + 5, GPU["z1"]),
-        "CPU cooler (150 W)": (CPU_C[0], CPU_STACK["y1"] + 5, CPU_STACK["z1"]),
+        **(aio_labels(layout) if aio else
+           {"CPU cooler (150 W)": (CPU_C[0], CPU_STACK["y1"] + 5, CPU_STACK["z1"])}),
         "RAM": ((RAM["x0"] + RAM["x1"]) / 2, RAM["y1"] + 5, RAM["z1"]),
         "PSU shroud (closed)": (DEPTH / 2, SHROUD_TOP, WIDTH),
         "motherboard": (BOARD["x0"] + 20, BOARD["y1"] - 15, BOARD["z1"]),
@@ -243,25 +315,35 @@ def render(solids, faces, layout, path, view):
         pl.camera.parallel_projection = True
         pl.camera.parallel_scale = 0.62 * DEPTH
     pl.add_text(f"{view}  |  {layout}: blue = intake, red = exhaust, grey ring = no fan, "
-                "green = open filter mesh", font_size=12, color="black")
+                "green = open filter mesh" + (", magenta = radiator (drawn, not meshed)" if aio else ""),
+                font_size=12, color="black")
     pl.screenshot(str(path))
     pl.close()
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument("--layout", default="positive", choices=list(LAYOUTS) + list(VIEWER_LAYOUTS))
+    p.add_argument("--layout", default="positive",
+                   choices=list(LAYOUTS) + list(VIEWER_LAYOUTS) + list(AIO_LAYOUTS))
     p.add_argument("--viewer", action="store_true",
                    help="write the viewer layout's PC, only the files that differ")
+    p.add_argument("--aio", action="store_true",
+                   help="write the aio layouts' PC, only the files that differ")
     p.add_argument("--out", default=None)
     p.add_argument("--previews", default=str(HERE.parent / "previews"))
     a = p.parse_args()
+    if a.viewer and a.aio:
+        p.error("--viewer or --aio, not both")
     if a.viewer:
         turn_for_viewer()
         a.layout = "viewer"
+    elif a.aio:
+        fit_aio()
+        a.layout = a.layout if a.layout in AIO_LAYOUTS else "aioFrontIn"
     elif a.layout not in LAYOUTS:
-        p.error("the viewer layout's geometry is written with --viewer")
-    out = Path(a.out or HERE.parent / "geometry" / ("viewer" if a.viewer else ""))
+        p.error("the viewer layout's geometry is written with --viewer, the aio layouts' with --aio")
+    variant = "viewer" if a.viewer else "aio" if a.aio else ""
+    out = Path(a.out or HERE.parent / "geometry" / variant)
     prev = Path(a.previews)
     solids, faces = parts()
     for sub, group in (("solids", solids), ("faces", faces)):
@@ -269,9 +351,11 @@ def main():
         for k, m in group.items():
             if a.viewer and f"{sub}/{k}.stl" not in VIEWER_FILES:
                 continue
+            if a.aio and f"{sub}/{k}.stl" not in AIO_FILES:
+                continue
             m.scale(1e-3, inplace=False).save(out / sub / f"{k}.stl")
     dims = {k: v for k, v in globals().items()
-            if k.isupper() and not k.startswith("VIEWER_")
+            if k.isupper() and not k.startswith(("VIEWER_", "AIO_"))
             and isinstance(v, (int, float, dict, list, tuple))}
     (out / "dimensions_mm.json").write_text(json.dumps(dims, indent=1, default=list))
     prev.mkdir(parents=True, exist_ok=True)

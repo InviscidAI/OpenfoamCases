@@ -1,0 +1,210 @@
+{
+ "DEPTH": 440.0,
+ "HEIGHT": 460.0,
+ "WIDTH": 210.0,
+ "SHROUD_TOP": 100.0,
+ "BOARD": {
+  "x0": 184.0,
+  "x1": 428.0,
+  "y0": 135.0,
+  "y1": 440.0,
+  "z0": 6.0,
+  "z1": 7.6
+ },
+ "IO_STACK": {
+  "x0": 410.0,
+  "x1": 440.0,
+  "y0": 275.0,
+  "y1": 440.0,
+  "z0": 7.6,
+  "z1": 45.0
+ },
+ "CPU_C": [
+  318.0,
+  330.0
+ ],
+ "RAM": {
+  "x0": 221.0,
+  "x1": 259.0,
+  "y0": 264.0,
+  "y1": 397.0,
+  "z0": 7.6,
+  "z1": 52.0
+ },
+ "GPU": {
+  "x0": 140.0,
+  "x1": 440.0,
+  "y0": 190.0,
+  "y1": 245.0,
+  "z0": 12.0,
+  "z1": 152.0
+ },
+ "GPU_FAN_D": 88.0,
+ "GPU_HUB_D": 30.0,
+ "GPU_FAN_X": [
+  192.0,
+  288.0,
+  384.0
+ ],
+ "GPU_FLOW_THROUGH": 80.0,
+ "FAN_120": [
+  120.0,
+  114.0
+ ],
+ "FAN_140": [
+  140.0,
+  134.0
+ ],
+ "HUB": 42.0,
+ "FAN_Z": 105.0,
+ "FRONT_FANS": [
+  [
+   "front_low",
+   160.0
+  ],
+  [
+   "front_mid",
+   280.0
+  ],
+  [
+   "front_high",
+   400.0
+  ]
+ ],
+ "TOP_FANS": [
+  [
+   "top_front",
+   100.0
+  ],
+  [
+   "top_mid",
+   220.0
+  ],
+  [
+   "top_rear",
+   340.0
+  ]
+ ],
+ "REAR_FAN": [
+  "rear",
+  375.0,
+  100.0
+ ],
+ "VENTS": {
+  "vent_front": {
+   "wall": "x0",
+   "a": [
+    100.0,
+    460.0
+   ],
+   "b": [
+    0.0,
+    210.0
+   ]
+  },
+  "vent_top": {
+   "wall": "y1",
+   "a": [
+    40.0,
+    400.0
+   ],
+   "b": [
+    30.0,
+    180.0
+   ]
+  },
+  "vent_slots": {
+   "wall": "x1",
+   "a": [
+    105.0,
+    185.0
+   ],
+   "b": [
+    12.0,
+    152.0
+   ]
+  }
+ },
+ "LAYOUTS": {
+  "aioFrontIn": {
+   "intake": [
+    "front_low",
+    "front_mid",
+    "front_high"
+   ],
+   "exhaust": [
+    "rear",
+    "top_front",
+    "top_mid",
+    "top_rear"
+   ]
+  },
+  "aioFrontBottomIn": {
+   "intake": [
+    "bottom_front",
+    "bottom_rear",
+    "front_low",
+    "front_mid",
+    "front_high"
+   ],
+   "exhaust": [
+    "rear",
+    "top_front",
+    "top_mid",
+    "top_rear"
+   ]
+  }
+ },
+ "PUMP": {
+  "x0": 283.0,
+  "x1": 353.0,
+  "y0": 295.0,
+  "y1": 365.0,
+  "z0": 7.6,
+  "z1": 50.0
+ },
+ "BOTTOM_FANS": [
+  [
+   "bottom_front",
+   75.0
+  ],
+  [
+   "bottom_rear",
+   205.0
+  ]
+ ],
+ "RADIATORS": {
+  "aioFrontIn": {
+   "size": "360 mm",
+   "fans": [
+    "top_front",
+    "top_mid",
+    "top_rear"
+   ],
+   "draw": {
+    "x0": 21.5,
+    "x1": 418.5,
+    "y0": 463.0,
+    "y1": 490.0,
+    "z0": 45.0,
+    "z1": 165.0
+   }
+  },
+  "aioFrontBottomIn": {
+   "size": "360 mm",
+   "fans": [
+    "top_front",
+    "top_mid",
+    "top_rear"
+   ],
+   "draw": {
+    "x0": 21.5,
+    "x1": 418.5,
+    "y0": 463.0,
+    "y1": 490.0,
+    "z0": 45.0,
+    "z1": 165.0
+   }
+  }
+ }
+}

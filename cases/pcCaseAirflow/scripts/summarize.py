@@ -4,8 +4,9 @@ from pathlib import Path
 import json, numpy as np, pandas as pd
 R=Path(__file__).resolve().parents[1]; C=json.loads((R/'config/model.json').read_text())
 Troom=C['roomTemperature_K']; rho=C['rhoReference_kg_m3']; a,b=C['settledWindow_s']
-# Layouts without a run here keep their published row in results/summary.csv.
-layouts=[x for x in C['layouts'] if (R/'runs'/x/'postProcessing').is_dir()]; quantities=['gpuIntake','cpuIntake','casePressure']
+# Layouts without a run here keep their published row in results/summary.csv. The aio layouts
+# have no CPU cooler and are summarized by summarize_aio.py.
+layouts=[x for x in C['layouts'] if (R/'runs'/x/'postProcessing').is_dir() and C['layouts'][x].get('geometry')!='aio']; quantities=['gpuIntake','cpuIntake','casePressure']
 vents=['vent_front','vent_top','vent_slots']
 def read_dat(p):
     rows=[]

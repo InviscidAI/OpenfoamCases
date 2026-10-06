@@ -13,9 +13,14 @@ C=json.loads((ROOT/'config/model.json').read_text())
 layout=sys.argv[1] if len(sys.argv)>1 else 'positive'
 dust=sys.argv[2:]==['--dust']
 if sys.argv[2:] and not dust: raise SystemExit('usage: make_case.py <layout> [--dust]')
-if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, viewer, or twoInTwoOut')
-# A layout with its own geometry (the viewer's turned cooler and bottom fans) has its own mesh.
+if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, viewer, twoInTwoOut, aioFrontIn or aioFrontBottomIn')
+# A layout with its own geometry (the viewer's turned cooler and bottom fans, or the aio PC's
+# pump block, three top fans and bottom fans) has its own mesh.
 variant=C['layouts'][layout].get('geometry','')
+# The aio PC has no tower cooler (no cpu_in, cpu_out or CPU heat in the case air), a radiator
+# on the three top fans, outside the air volume, and every case fan 120 mm.
+aio=variant=='aio'
+if aio and dust: raise SystemExit('the aio layouts have no dust run')
 MESH=ROOT/'mesh'/variant if variant else ROOT/'mesh'
 out=ROOT/'runs'/(layout+('_dust' if dust else ''))
 if out.exists(): shutil.rmtree(out)
@@ -28,13 +33,21 @@ for z in ('pointZones','faceZones','cellZones'):
 hdr=lambda cls,obj: f'''FoamFile\n{{\n version 2.0; format ascii; class {cls}; object {obj};\n}}\n'''
 # Merge black-box openings so mapped heat BC sees all source/sink faces together.
 cp=hdr('dictionary','createPatchDict')+'''pointSync false;\npatches\n(\n { name gpu_in; patchInfo { type patch; } constructFrom patches; patches (gpu_in_1 gpu_in_2 gpu_in_3); }\n { name gpu_out; patchInfo { type patch; } constructFrom patches; patches (gpu_out_board_side gpu_out_flow_through gpu_out_front_end gpu_out_glass_side); }\n);\n'''
+if aio:
+    # The aio mesh has the two bottom fan positions; where a layout does not use them they are
+    # closed shroud, merged into the walls, and appear in no field or monitor.
+    active=C['layouts'][layout]
+    bottomUnused=not {'bottom_front','bottom_rear'} & set(active['intake']+active['exhaust'])
+    if bottomUnused: cp=cp.replace('(\n','(\n { name walls; patchInfo { type wall; } constructFrom patches; patches (walls fan_bottom_front fan_bottom_rear); }\n',1)
 (out/'system/createPatchDict').write_text(cp)
 
 bottom=['bottom_front','bottom_rear'] if variant=='viewer' else []
 allfans=['front_low','front_mid','front_high']+bottom+['rear','top_front','top_rear']
+if aio:
+    allfans=['front_low','front_mid','front_high','rear','top_front','top_mid','top_rear']+([] if bottomUnused else ['bottom_front','bottom_rear'])
 active=C['layouts'][layout]; intake=set(active['intake']); exhaust=set(active['exhaust'])
 Q120=C['fan120Flow_m3_s']; Q140=C['fan140Flow_m3_s']
-def qfan(n): return Q140 if n.startswith('top_') else Q120
+def qfan(n): return Q140 if n.startswith('top_') and not aio else Q120
 
 def openU(): return '''type pressureInletOutletVelocity; value uniform (0 0 0);'''
 def flowU(q): return f'''type flowRateInletVelocity; volumetricFlowRate constant {q:.8g}; extrapolateProfile no; value uniform (0 0 0);'''
@@ -45,14 +58,14 @@ def field(obj,dims,internal,entries):
     return hdr('vol'+('Vector' if str(internal).startswith('(') else 'Scalar')+'Field',obj)+f'''dimensions {dims};\ninternalField uniform {internal};\nboundaryField\n{{\n{entries}\n}}\n'''
 
 # velocity
-E=['walls { type noSlip; }','gpu_in { '+flowU(-C['gpuFlow_m3_s'])+' }','gpu_out { '+flowU(C['gpuFlow_m3_s'])+' }','cpu_in { '+flowU(-C['cpuFlow_m3_s'])+' }','cpu_out { '+flowU(C['cpuFlow_m3_s'])+' }']
+E=['walls { type noSlip; }','gpu_in { '+flowU(-C['gpuFlow_m3_s'])+' }','gpu_out { '+flowU(C['gpuFlow_m3_s'])+' }']+([] if aio else ['cpu_in { '+flowU(-C['cpuFlow_m3_s'])+' }','cpu_out { '+flowU(C['cpuFlow_m3_s'])+' }'])
 for v in ('vent_front','vent_top','vent_slots'): E.append(v+' { '+openU()+' }')
 for n in allfans:
     q=qfan(n) if n in intake else (-qfan(n) if n in exhaust else None)
     E.append('fan_'+n+' { '+(flowU(q) if q is not None else openU())+' }')
 (out/'0/U').write_text(field('U','[0 1 -1 0 0 0 0]','(0 0 0)','\n'.join(E)))
 # pressure: active fixed-flow boundaries Neumann; room-connected openings quadratic loss
-E=['walls { type zeroGradient; }','gpu_in { type zeroGradient; }','gpu_out { type zeroGradient; }','cpu_in { type zeroGradient; }','cpu_out { type zeroGradient; }']
+E=['walls { type zeroGradient; }','gpu_in { type zeroGradient; }','gpu_out { type zeroGradient; }']+([] if aio else ['cpu_in { type zeroGradient; }','cpu_out { type zeroGradient; }'])
 for v,K in [('vent_front',C['filterLossCoefficient']),('vent_top',C['filterLossCoefficient']),('vent_slots',C['slotLossCoefficient'])]: E.append(v+' { '+pLoss(K)+' }')
 for n in allfans: E.append('fan_'+n+' { '+('type zeroGradient;' if n in intake or n in exhaust else pLoss(C['filterLossCoefficient']))+' }')
 (out/'0/p').write_text(field('p','[0 2 -2 0 0 0 0]',0,'\n'.join(E)))
@@ -61,7 +74,7 @@ T0=C['roomTemperature_K']
 def mappedT(patch,source,heat,flow):
     rise=heat/(C['rhoReference_kg_m3']*C['cp_J_kgK']*flow)
     return f'''{patch} {{ type codedFixedValue; name mappedHeat{patch.title().replace('_','')}; value uniform {T0}; code #{{ const volScalarField& Tf=db().lookupObject<volScalarField>("T"); const label id=patch().boundaryMesh().findPatchID("{source}"); const scalarField& Ts=Tf.boundaryField()[id]; const scalarField& a=patch().boundaryMesh()[id].magSf(); operator==(gSum(a*Ts)/gSum(a) + {rise}); #}}; }}'''
-E=['walls { type zeroGradient; }','gpu_in { type zeroGradient; }',mappedT('gpu_out','gpu_in',C['gpuHeat_W'],C['gpuFlow_m3_s']), 'cpu_in { type zeroGradient; }',mappedT('cpu_out','cpu_in',C['cpuHeat_W'],C['cpuFlow_m3_s'])]
+E=['walls { type zeroGradient; }','gpu_in { type zeroGradient; }',mappedT('gpu_out','gpu_in',C['gpuHeat_W'],C['gpuFlow_m3_s'])]+([] if aio else ['cpu_in { type zeroGradient; }',mappedT('cpu_out','cpu_in',C['cpuHeat_W'],C['cpuFlow_m3_s'])])
 for v in ('vent_front','vent_top','vent_slots'): E.append(v+' { '+scalarOpen(T0)+' }')
 for n in allfans:
     if n in intake: bc=f'type fixedValue; value uniform {T0};'
@@ -91,7 +104,7 @@ if dust:
             E.append(patch+' { '+scalarOpen(inlet)+' }')
         (out/f'0/{obj}').write_text(field(obj,'[0 0 0 0 0 0 0]',0,'\n'.join(E)))
 # turbulence fields
-opens=['gpu_in','gpu_out','cpu_in','cpu_out','vent_front','vent_top','vent_slots']+['fan_'+x for x in allfans]
+opens=['gpu_in','gpu_out']+([] if aio else ['cpu_in','cpu_out'])+['vent_front','vent_top','vent_slots']+['fan_'+x for x in allfans]
 def turbField(name,dims,internal,wallbc,openbc):
     es=[f'walls {{ {wallbc} }}']+[f'{p} {{ {openbc} }}' for p in opens]
     (out/f'0/{name}').write_text(field(name,dims,internal,'\n'.join(es)))
@@ -150,10 +163,21 @@ fos=['''temperatureTransport { type scalarTransport; libs (solverFunctionObjects
 if dust:
     for obj in ('dustF','dustU'): fos.append(f'''{obj}Transport {{ type scalarTransport; libs (solverFunctionObjects); field {obj}; alphaD 1e-6; alphaDt 1.1764705882352942; bounded01 false; nCorr 0; resetOnStartUp false; write false; executeControl timeStep; executeInterval 1; writeControl none; }}''')
 scalars='T dustF dustU' if dust else 'T'
-for name,patch in [('gpuIntake','gpu_in'),('cpuIntake','cpu_in')]: fos.append(f'''{name} {{ {common} name {patch}; operation weightedAverage; weightField phi; fields ({scalars}); }}''')
+for name,patch in [('gpuIntake','gpu_in')]+([] if aio else [('cpuIntake','cpu_in')]): fos.append(f'''{name} {{ {common} name {patch}; operation weightedAverage; weightField phi; fields ({scalars}); }}''')
+if aio:
+    # The air entering the radiator: the flow-weighted temperature over its fans' faces, the
+    # case air before the radiator heats it (the radiator is outside the air volume).
+    radNames=' '.join('fan_'+n for n in active['radiator']['fans'])
+    fos.append(f'''radiatorBoundaryTemperature {{ {common} names ({radNames}); operation weightedAverage; weightField phi; fields (T); }}''')
 for patch in ('vent_front','vent_top','vent_slots'):
     fos.append(f'''{patch}_net {{ {common} name {patch}; operation sum; fields (phi); }}''')
     fos.append(f'''{patch}_absolute {{ {common} name {patch}; operation sumMag; fields (phi); }}''')
+if aio:
+    # At every opening, the volume flow and sum(phi*T); rho*cp*[sum(phi*T)-Troom*sum(phi)] is
+    # the heat carried out through it (outward positive), for the case's heat budget.
+    for patch in ['fan_'+x for x in allfans]+['vent_front','vent_top','vent_slots','gpu_in','gpu_out']:
+        fos.append(f'''heatFlow_{patch} {{ {common} name {patch}; operation sum; fields (phi); }}''')
+        fos.append(f'''heatPhiT_{patch} {{ {common} name {patch}; operation weightedSum; weightField phi; fields (T); }}''')
 # The case's mean dust every 0.02 s, with --dust.
 if dust:
     fos.append('''dustVolumeMean { type volFieldValue; libs (fieldFunctionObjects); writeControl adjustableRunTime; writeInterval 0.02; log false; writeFields false; operation volAverage; fields (dustF dustU); }''')

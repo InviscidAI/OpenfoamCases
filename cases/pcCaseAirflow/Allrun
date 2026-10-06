@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 layout=${1:-}
-usage="usage: ./Allrun positive|negative|even|viewer|twoInTwoOut [dust]"
+usage="usage: ./Allrun positive|negative|even|viewer|twoInTwoOut|aioFrontIn|aioFrontBottomIn [dust]"
 # ./Allrun <layout> dust: the same layout with two passive dust fields, in runs/<layout>_dust
 case "${2:-}" in
   "") run=$layout; dust= ;;
@@ -12,6 +12,7 @@ esac
 case "$layout" in
   positive|negative|even|twoInTwoOut) [ -d mesh/constant/polyMesh ] || ./Allmesh ;;
   viewer) [ -d mesh/viewer/constant/polyMesh ] || ./Allmesh viewer ;;
+  aioFrontIn|aioFrontBottomIn) [ -d mesh/aio/constant/polyMesh ] || ./Allmesh aio ;;
   *) echo "$usage" >&2; exit 2;;
 esac
 python3 scripts/make_case.py "$layout" $dust

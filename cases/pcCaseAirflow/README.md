@@ -15,6 +15,9 @@ fan layouts and measures the air each part breathes:
                          # rear top fan out
     ./Allrun positive dust  # either layout again, with the room's dust carried on its flow
     ./Allrun negative dust
+    ./Allrun aioFrontIn  # a third viewer's build, the CPU on an all-in-one liquid cooler:
+                         # 3 front fans in, rear and 3 top fans out, a 360 mm radiator on top
+    ./Allrun aioFrontBottomIn  # the same with two bottom fans in as well
 
 The published clip shows `positive` against `negative`. `even` is here because equal fan
 counts are not equal flows: two 140 mm top fans and a 120 mm rear fan move more air than
@@ -25,7 +28,10 @@ fans added; it has [its own section](#a-viewers-layout-bottom-intakes-and-the-co
 has; it has [its own section too](#a-second-viewers-layout-two-in-two-out). The clip's
 comments also said the choice is about dust, not temperature, so `positive` and `negative`
 were run again with the room's dust carried on the flow; that has
-[a section of its own as well](#dust-where-the-rooms-dust-goes).
+[a section of its own as well](#dust-where-the-rooms-dust-goes). `aioFrontIn` and
+`aioFrontBottomIn` are a third viewer's build, asked for under the `viewer` layout's clip,
+with the tower cooler replaced by an all-in-one liquid cooler and three top fans; they are in
+[the last section](#a-third-viewers-layouts-a-liquid-cooled-cpu-with-and-without-bottom-intakes).
 
 ## The PC
 
@@ -447,6 +453,117 @@ of flow: 59% and 66% at the end, against 59.0 and 65.0% over 6-8 s.
 - **The room's dust is fixed and uniform,** and the case starts clean. Nothing here says how
   fast a real case gets dusty over weeks.
 
+## A third viewer's layouts: a liquid-cooled CPU, with and without bottom intakes
+
+A viewer asked, under the `viewer` layout's clip: "Can you do three top fans as exhaust, one
+back fan as exhaust and three front/lateral fans as intake? And comoare it to the same setup
+but with two bottom intakes below the GPU. In this case the CPU is being cooled via liquid
+cooling so there's no heatsink producing air in the middle". These two layouts are that
+build, in this PC:
+
+| the comment | here |
+|---|---|
+| "three front/lateral fans as intake" | the three front 120 mm fans, as in `positive`. |
+| "three top fans as exhaust" | three 120 mm top fans (below). |
+| "one back fan as exhaust" | the rear 120 mm fan, as in every layout here. |
+| "two bottom intakes below the GPU" | `viewer`'s two 120 mm bottom fans, in the top of the PSU shroud, centred 75 and 205 mm from the front, under the card's front half. Only `aioFrontBottomIn` has them; in `aioFrontIn` they are closed shroud. |
+| "the CPU is being cooled via liquid cooling" | the tower cooler is gone; an all-in-one cooler's pump block sits on the socket and its radiator on the top fans (below). |
+
+**The PC, changed.** `scripts/build_geometry.py --aio` writes the parts that differ into
+`geometry/aio/`; every other part is the shared `geometry/`.
+
+- **The top holds three fans.** This PC's top has two 140 mm positions. A 360 mm radiator
+  takes three 120 mm fans, so the top becomes a 360 mm mount: three 120 mm fans at 120 mm
+  pitch, centred 100, 220 and 340 mm from the front, the middle one where the front top fan
+  was. The top filter mesh is widened to cover the new mount (40-400 mm from the front, the
+  span of the three fan frames), as it covered the two 140 mm frames.
+- **The pump block.** In place of the tower cooler, a closed 70 x 70 mm box on the socket,
+  standing 42.4 mm off the board, with no flow and no heat of its own (the pump's few watts
+  are left out). The cooler's black box, with its 20 L/s and 150 W, is gone. The RAM stays
+  where it was.
+- **The radiator is not in the air volume.** Where the radiator goes is not in the comment.
+  It is put on the three top exhaust fans, which is our reading. It is not meshed: the air
+  leaving through the top fans is the air reaching the radiator, and the CPU's 150 W goes
+  into that air after it has left. So the case air carries only the card's 300 W, and "the
+  air entering the radiator" is the flow-weighted temperature over the three top fans' faces.
+- **Every fan is 120 mm,** at the same 16.5 L/s. `aioFrontIn` takes in 49.5 L/s and blows out
+  66, so 16.5 L/s has to come in through the openings; `aioFrontBottomIn` takes in 82.5, so
+  16.5 L/s has to leave through them. The bottom fans bring in room air at 22 C, as through
+  a filtered floor; the shroud's inside is not modelled.
+
+**Its own mesh.** `./Allmesh aio` builds `mesh/aio/` the same way as the others, with the same
+settings and the top fans' rings cut to 120 mm: 400,745 cells, and `checkMesh` reports
+"Mesh OK" (non-orthogonality up to 41.2 degrees, skewness up to 2.90). The stricter
+`-allGeometry -allTopology` flags 101 concave faces, 4,461 low-determinant cells and 2,337
+concave cells, snappyHexMesh's cut cells as in the shared mesh. Both layouts run on this one mesh; in `aioFrontIn` the
+run's `createPatch` merges the two bottom fan positions into the walls. A clean copy rebuilt
+the solved mesh exactly, and `scripts/make_case.py` writes the solved runs' dictionaries and
+initial fields, apart from the order in which the radiator monitor lists its three fans.
+The other layouts' geometry, meshes and generated cases are unchanged.
+
+**Result.** Both solved together on 8 ranks each, in 4,359 s (`aioFrontIn`) and 3,599 s
+(`aioFrontBottomIn`) of wall clock, 8 s from still air. Means over 6-8 s, in
+`results/aio_summary.csv` (`scripts/summarize_aio.py`):
+
+| layout | air into the card | air into the radiator | case pressure |
+|---|---:|---:|---:|
+| aioFrontIn, 3 in / 4 out | 27.3 C (+5.26) | 23.9 C (+1.91) | -0.67 Pa |
+| aioFrontBottomIn, 5 in / 4 out | 24.2 C (+2.15) | 24.2 C (+2.23) | +0.05 Pa |
+
+Each half of the window agrees with the whole within 0.05 K. The card's air moves about from
+moment to moment by one standard deviation of 0.17 and 0.10 K, the radiator's by 0.12 and
+0.10 K.
+
+**The bottom intakes cool the card's air by 3.1 K,** about thirty times either run's standard
+deviation. **The radiator's air barely moves:** it is 0.3 K warmer with them, both within
+about 2 K of the room.
+
+**The heat budget closes.** The heat carried out through every fan and opening,
+rho cp sum(phi (T - T_room)) over 6-8 s, comes to 300.04 W in `aioFrontIn` and 300.22 W in
+`aioFrontBottomIn`, against the card's 300 W.
+
+**The front panel turns from a way in to the way out.** Vent flows, L/s in / out, 6-8 s:
+
+| layout | front mesh | top mesh | slot covers |
+|---|---:|---:|---:|
+| aioFrontIn | 10.55 / 2.87 | 9.97 / 3.78 | 5.07 / 2.44 |
+| aioFrontBottomIn | 3.02 / 14.21 | 4.94 / 8.61 | 1.92 / 3.57 |
+
+Without the bottom intakes the four exhausts draw room air in through the front mesh, about
+10.6 L/s. With them the front mesh lets out about 14.2 L/s, which is where most of the extra
+air leaves.
+
+**Most of that air leaves beside the fans, off the clip's section.** At the 8 s write
+(`results/aio_vent_depth.csv`), the front mesh of `aioFrontBottomIn` lets out 15.3 L/s, and
+12.3 L/s of it leaves through the two strips of mesh either side of the fan column: 6.35 L/s
+within 30 mm of the motherboard tray and 5.99 L/s within 30 mm of the glass (the fans span
+45-165 mm across the width). In the 30 mm band that holds the card-middle section
+(z = 0.082 m), 0.31 L/s goes out and 0.28 L/s comes in. On that section the front wall is
+almost all fan.
+
+**What the clip shows, and what it does not.** It shows the card-middle section of both
+layouts from switch-on, `aioFrontIn` above `aioFrontBottomIn`, front on the right, on one
+temperature scale from 22 to 36 C, at 2.5x slow motion, with the air entering the card and
+the radiator as the solve computed them. On the section the air is seen leaving only through
+the rear and top fans, in both. It does not show the front mesh letting air out in
+`aioFrontBottomIn`, because that happens beside the fans, off the section; the numbers above
+are where that is.
+
+**What it cannot say,** on top of everything in the limits above:
+
+- **The radiator is a reading, not the comment's,** and it is not modelled: no radiator
+  pressure loss, so the top fans move their full 16.5 L/s; no coolant, fins or pump heat. The
+  radiator's number is the air reaching it, not a coolant or CPU temperature, and a radiator
+  in the front, as an intake, would change the card's air and is not run here.
+- **Fans are fixed flows.** `aioFrontBottomIn` pushes more air in than it pulls out, and a
+  real fan blowing against that, or a bottom fan behind a shroud floor and filter, would move
+  somewhat less than its fixed flow here.
+- **Air into the parts, not part temperatures.** The 2.15 and 5.26 K are the card's air, not
+  its core.
+- **One reading of one comment.** "Front/lateral" is read as the three front positions, and
+  the third top fan as a 360 mm mount on this PC's top. A side-panel intake, bottom fans
+  elsewhere, or a case with a real 360 mm top mount are different builds.
+
 ## Running it
 
 You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Python 3
@@ -456,11 +573,13 @@ with NumPy, pandas and PyVista.
     ./Allmesh                  # about 1-6 minutes
     ./Allrun positive          # negative, even, twoInTwoOut
     ./Allrun viewer            # builds mesh/viewer/ first if it is not there
+    ./Allrun aioFrontIn        # and aioFrontBottomIn; builds mesh/aio/ first
     python3 scripts/summarize.py
     python3 scripts/plot_results.py
     ./Allrun positive dust     # and negative: runs/<layout>_dust
     scripts/dust_scheme_check.sh positive    # optional, after the dust run
     python3 scripts/summarize_dust.py
+    python3 scripts/summarize_aio.py          # after the aio runs
 
 `Allmesh` builds the shared mesh from `geometry/` (`mesh/rebuild_mesh.py`) and checks it.
 `Allrun` writes the layout's case into `runs/<layout>/` from `config/model.json`
@@ -469,7 +588,9 @@ with NumPy, pandas and PyVista.
 the published ones already are, with `comparison.png` and `histories.png`. `./Allclean`
 removes the runs and the mesh. The two dust runs took 69-74 minutes here, run at the same time; `summarize_dust.py`
 writes `results/dust_summary.csv`, `dust_budget.csv`, `dust_card.png` and, with the check's
-runs, `dust_scheme_check.csv`, and needs NumPy 2 and matplotlib.
+runs, `dust_scheme_check.csv`, and needs NumPy 2 and matplotlib. The two aio runs took 60-73
+minutes here, run at the same time; `summarize_aio.py` writes `results/aio_summary.csv` and
+`aio_vent_depth.csv`.
 
 The case was set up by an agent and checked by us, in one build, from geometry we built and
 reviewed first.
