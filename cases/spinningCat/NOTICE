@@ -1,0 +1,6 @@
+geometry/cat_spin.stl is adapted from "Oiiaioooooiai Cat" by Zhuier,
+https://sketchfab.com/3d-models/oiiaioooooiai-cat-30d27bf7fb224849b76e208a6eccdb36,
+licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Changes: we posed it in its spinning pose and remeshed it as one closed surface (voxel
+remesh at 4 mm, decimated to 64k faces); see README.md, "The cat". The original model,
+its animation and its texture are not included here.

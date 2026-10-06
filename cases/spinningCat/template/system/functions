@@ -1,0 +1,73 @@
+clipPlanes
+{
+ type surfaces;
+ libs (sampling);
+ enabled true;
+ writeControl adjustableRunTime;
+ writeInterval 0.0208333333333333;
+ surfaceFormat vtk;
+ formatOptions
+ {
+  vtk { legacy false; binary true; precision 6; }
+ }
+ fields (U);
+ interpolationScheme cellPoint;
+ surfaces
+ {
+  side
+  {
+   type plane;
+   planeType pointAndNormal;
+   pointAndNormalDict { point (0 0 0); normal (1 0 0); }
+   interpolate true;
+  }
+  top
+  {
+   type plane;
+   planeType pointAndNormal;
+   pointAndNormalDict { point (0 0 0.20); normal (0 0 1); }
+   interpolate true;
+  }
+ }
+}
+catForces
+{
+ type forces;
+ libs (forces);
+ patches (cat);
+ rho rhoInf;
+ rhoInf 1.204;
+ CofR (0 0 0);
+ writeControl adjustableRunTime;
+ writeInterval 0.0208333333333333;
+ writeFields false;
+ log false;
+}
+kineticEnergyDensity
+{
+ type exprField;
+ libs (fieldFunctionObjects);
+ field kineticEnergyDensity;
+ action new;
+ autowrite false;
+ store true;
+ useNamePrefix false;
+ expression "0.5*1.204*magSqr(U)";
+ dimensions [1 -1 -2 0 0 0 0];
+ executeControl adjustableRunTime;
+ executeInterval 0.0208333333333333;
+ writeControl none;
+}
+kineticEnergy
+{
+ type volFieldValue;
+ libs (fieldFunctionObjects);
+ fields (kineticEnergyDensity);
+ operation volIntegrate;
+ regionType all;
+ writeFields false;
+ writeToFile true;
+ log false;
+ writeControl adjustableRunTime;
+ writeInterval 0.0208333333333333;
+}

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Remove every run; the committed inputs and results stay.
+cd "${0%/*}" || exit 1
+rm -rf runs scripts/__pycache__

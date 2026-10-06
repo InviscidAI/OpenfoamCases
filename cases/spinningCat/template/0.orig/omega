@@ -1,0 +1,12 @@
+FoamFile { format ascii; class volScalarField; object omega; }
+dimensions [0 0 -1 0 0 0 0];
+internalField uniform 10;
+boundaryField
+{
+ floor { type omegaWallFunction; value uniform 10; }
+ top { type inletOutlet; inletValue uniform 10; value uniform 10; }
+ farSide { type inletOutlet; inletValue uniform 10; value uniform 10; }
+ cat { type omegaWallFunction; value uniform 10; }
+ rotorAMI { type cyclicAMI; value uniform 10; }
+ statorAMI { type cyclicAMI; value uniform 10; }
+}

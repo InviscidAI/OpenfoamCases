@@ -1,0 +1,12 @@
+FoamFile { format ascii; class volScalarField; object k; }
+dimensions [0 2 -2 0 0 0 0];
+internalField uniform 1e-06;
+boundaryField
+{
+ floor { type kqRWallFunction; value uniform 1e-06; }
+ top { type inletOutlet; inletValue uniform 1e-06; value uniform 1e-06; }
+ farSide { type inletOutlet; inletValue uniform 1e-06; value uniform 1e-06; }
+ cat { type kqRWallFunction; value uniform 1e-06; }
+ rotorAMI { type cyclicAMI; value uniform 1e-06; }
+ statorAMI { type cyclicAMI; value uniform 1e-06; }
+}

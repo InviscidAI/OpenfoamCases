@@ -1,0 +1,12 @@
+FoamFile { format ascii; class volScalarField; object nut; }
+dimensions [0 2 -1 0 0 0 0];
+internalField uniform 0;
+boundaryField
+{
+ floor { type nutkWallFunction; value uniform 0; }
+ top { type calculated; value uniform 0; }
+ farSide { type calculated; value uniform 0; }
+ cat { type nutkWallFunction; value uniform 0; }
+ rotorAMI { type cyclicAMI; value uniform 0; }
+ statorAMI { type cyclicAMI; value uniform 0; }
+}

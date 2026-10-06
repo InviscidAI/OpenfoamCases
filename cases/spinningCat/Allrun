@@ -1,0 +1,51 @@
+#!/bin/bash
+# The OIIA cat spinning on a floor in still air: one case, solved twice.
+#
+#   ./Allrun long|clip [nProcs]
+#   ./Allrun --setup-only long|clip [nProcs]
+#
+# long  0-10 s from rest, the planes and monitors written every 1/48 s: the first solve.
+# clip  0-3.33 s from rest, the planes and monitors every 1/144 s: the same case solved
+#       again for the clip, which is made from this run alone.
+# nProcs MPI ranks, default 16 (both solves used 16).
+# --setup-only meshes and decomposes the case but does not solve it.
+#
+# The run is written to runs/<run>/ from template/ and geometry/cat_spin.stl.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-16}
+usage="usage: $0 [--setup-only] long|clip [nProcs]"
+case "$run" in long|clip) ;; *) echo "$usage" >&2; exit 2 ;; esac
+
+rm -rf "runs/$run"; mkdir -p "runs/$run"
+cp -r template/constant template/system "runs/$run"/
+if [ "$run" = clip ]; then
+    # The only differences from long: the end time, the field writes (1 s, so a restart is
+    # possible from 1, 2 and 3 s) and every function object's interval, 1/48 -> 1/144 s.
+    sed -i -e 's/^endTime 10;$/endTime 3.33333333333333;/' \
+           -e 's/^writeInterval 2;$/writeInterval 1;/' "runs/$run/system/controlDict"
+    sed -i 's/0\.0208333333333333;/0.00694444444444444;/' \
+        "runs/$run/system/functions" "runs/$run/system/clipPlanes"
+fi
+[ "$nproc" = 16 ] || sed -i "s/^numberOfSubdomains 16;$/numberOfSubdomains $nproc;/" \
+    "runs/$run/system/decomposeParDict"
+mkdir -p "runs/$run/constant/triSurface"
+cp geometry/cat_spin.stl "runs/$run/constant/triSurface/"
+python3 scripts/make_ami.py "runs/$run/constant/triSurface/AMI.stl"
+
+cd "runs/$run"
+blockMesh > log.blockMesh 2>&1
+surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+cp -r ../../template/0.orig 0
+createPatch -overwrite > log.createPatch 2>&1      # AMI, AMI_slave -> rotorAMI, statorAMI
+renumberMesh -overwrite > log.renumberMesh 2>&1
+checkMesh > log.checkMesh 2>&1
+decomposePar -fileHandler collated > log.decomposePar 2>&1
+$setupOnly && { echo "set up, not solved: runs/$run"; exit 0; }
+# Rank 0's output goes straight to the log file (see the README: through a terminal it
+# stalled the first attempt).
+mpirun -np "$nproc" pimpleFoam -parallel -fileHandler collated > log.pimpleFoam 2>&1

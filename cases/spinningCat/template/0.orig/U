@@ -1,0 +1,12 @@
+FoamFile { format ascii; class volVectorField; object U; }
+dimensions [0 1 -1 0 0 0 0];
+internalField uniform (0 0 0);
+boundaryField
+{
+ floor { type noSlip; }
+ top { type pressureInletOutletVelocity; value uniform (0 0 0); }
+ farSide { type pressureInletOutletVelocity; value uniform (0 0 0); }
+ cat { type movingWallVelocity; value uniform (0 0 0); }
+ rotorAMI { type cyclicAMI; value uniform (0 0 0); }
+ statorAMI { type cyclicAMI; value uniform (0 0 0); }
+}
