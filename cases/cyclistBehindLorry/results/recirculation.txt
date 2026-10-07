@@ -1,0 +1,2 @@
+planes averaged: 181 (2.5-4 s)
+mean near wake closes 2.40 m behind the doors at z = 2.6 m: X/H = 0.858 on the 2.8 m box

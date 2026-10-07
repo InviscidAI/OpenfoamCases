@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# A road cyclist alone, 1.5 m behind a lorry's rear doors, and 10 m behind them.
+#
+#   ./Allrun alone|close|far
+#   ./Allrun --setup-only alone|close|far
+#
+# Builds the rider and the lorry into geometry/ if they are not there yet (MakeHuman's CC0
+# files are downloaded on the first build), writes runs/<run>/ (scripts/makeCase.py),
+# meshes it, checks it, writes the t = 0 planes and forces, decomposes it and solves 0-4 s
+# on NPROCS ranks (config.sh, 5). --setup-only stops after decomposePar.
+set -euo pipefail
+cd "$(dirname "$0")"
+setupOnly=false
+if [[ "${1:-}" == --setup-only ]]; then setupOnly=true; shift; fi
+what=${1:-}
+[[ "$what" =~ ^(alone|close|far)$ ]] || { echo "usage: ./Allrun [--setup-only] alone|close|far"; exit 2; }
+source config.sh
+[[ -f geometry/truck.stl && -f geometry/truck_wheels.stl ]] || python3 scripts/build_truck.py
+[[ -f geometry/rider.stl && -f geometry/bike_wheels.stl ]] || python3 scripts/build_rider.py
+python3 scripts/makeCase.py "$what"
+c="runs/$what"
+(
+ cd "$c"
+ blockMesh > log.blockMesh 2>&1
+ snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+ checkMesh > log.checkMesh 2>&1
+ grep -q 'Mesh OK' log.checkMesh
+ # The t = 0 planes and forces, before the solve.
+ pimpleFoam -postProcess -time 0 > log.sample0 2>&1
+ test -n "$(find postProcessing/side/0 -type f -print -quit)"
+ decomposePar > log.decomposePar 2>&1
+ $setupOnly && { echo "set up, not solved: $c"; exit 0; }
+ start=$(date +%s)
+ mpirun -np "$NPROCS" pimpleFoam -parallel > log.pimpleFoam 2>&1
+ end=$(date +%s)
+ printf '%s seconds\n' "$((end-start))" > wallclock.txt
+ reconstructPar -latestTime > log.reconstructPar 2>&1
+ rm -rf processor* processors*
+ # The planes are sampled over the whole domain; crop them to the part around the rider.
+ if python3 -c 'import pyvista' >/dev/null 2>&1; then
+   python3 ../../scripts/crop_planes.py . > log.crop_planes 2>&1
+ else
+   echo "PyVista not found: planes left uncropped" > log.crop_planes
+ fi
+)

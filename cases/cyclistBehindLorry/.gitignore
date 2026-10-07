@@ -1,0 +1,9 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+# Built by scripts/build_rider.py and scripts/build_truck.py
+geometry/*.stl
+geometry/preview_*.png
+geometry/rider_build.json
+geometry/truck_build.json

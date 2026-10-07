@@ -1,0 +1,5 @@
+#!/bin/bash
+# Remove every run; the committed inputs and results stay. The built STLs and previews in
+# geometry/ stay too (delete them to rebuild).
+cd "${0%/*}" || exit 1
+rm -rf runs scripts/__pycache__
