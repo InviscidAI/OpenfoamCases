@@ -12,7 +12,7 @@ OpenFOAM case (snappyHexMesh) and for the side/top drawings.
 | `build_report.json` | every number below, machine readable |
 | `LICENSE.ASSETS.md` | CC0 1.0, copied from the MakeHuman repository |
 
-Build script: `cases/08-marathon-drafting/scripts/build_runners.py` (re-runnable;
+Build script: `cases/cyclistBehindLorry/scripts/build_runners.py` (re-runnable;
 downloads into `~/.cache/makehuman-cc0/<commit>/`).
 
 ## Frame and units
