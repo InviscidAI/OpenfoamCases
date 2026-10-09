@@ -1,19 +1,46 @@
 #!/usr/bin/env bash
-# A road cyclist alone, 1.5 m behind a lorry's rear doors, and 10 m behind them.
+# A road cyclist alone, 1.5 m behind a lorry's rear doors, and 10 m behind them; and the
+# same lorry alone in its own frame, for a rider it overtakes.
 #
-#   ./Allrun alone|close|far
-#   ./Allrun --setup-only alone|close|far
+#   ./Allrun alone|close|far|overtaking
+#   ./Allrun --setup-only alone|close|far|overtaking
 #
 # Builds the rider and the lorry into geometry/ if they are not there yet (MakeHuman's CC0
 # files are downloaded on the first build), writes runs/<run>/ (scripts/makeCase.py),
 # meshes it, checks it, writes the t = 0 planes and forces, decomposes it and solves 0-4 s
 # on NPROCS ranks (config.sh, 5). --setup-only stops after decomposePar.
+#
+# overtaking has a mesh and numbers of its own (config_overtaking.sh): it writes
+# runs/overtaking/ (scripts/makeOvertaking.py), meshes and checks it, decomposes it and
+# solves 0-8 s on nRanks ranks (14). The rider is not in that solve; scripts/
+# overtaking_force.py reads him off its lines afterwards, which needs his STLs.
 set -euo pipefail
 cd "$(dirname "$0")"
 setupOnly=false
 if [[ "${1:-}" == --setup-only ]]; then setupOnly=true; shift; fi
 what=${1:-}
-[[ "$what" =~ ^(alone|close|far)$ ]] || { echo "usage: ./Allrun [--setup-only] alone|close|far"; exit 2; }
+[[ "$what" =~ ^(alone|close|far|overtaking)$ ]] || { echo "usage: ./Allrun [--setup-only] alone|close|far|overtaking"; exit 2; }
+if [[ "$what" == overtaking ]]; then
+ source config_overtaking.sh
+ [[ -f geometry/truck.stl && -f geometry/truck_wheels.stl ]] || python3 scripts/build_truck.py
+ [[ -f geometry/rider.stl && -f geometry/bike_wheels.stl ]] || python3 scripts/build_rider.py
+ python3 scripts/makeOvertaking.py
+ cd runs/overtaking
+ blockMesh > log.blockMesh 2>&1
+ surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+ snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+ # Against meshQualityDict; it reports 9 faces above the skewness warning of 4 (see README).
+ checkMesh -meshQuality > log.checkMesh 2>&1 || true
+ grep -q 'cells: *[0-9]' log.checkMesh
+ decomposePar > log.decomposePar 2>&1
+ $setupOnly && { echo "set up, not solved: runs/overtaking"; exit 0; }
+ start=$(date +%s)
+ mpirun -np "$nRanks" pimpleFoam -parallel > log.pimpleFoam 2>&1
+ end=$(date +%s)
+ printf '%s seconds\n' "$((end-start))" > wallclock.txt
+ rm -rf processor* processors*
+ exit 0
+fi
 source config.sh
 [[ -f geometry/truck.stl && -f geometry/truck_wheels.stl ]] || python3 scripts/build_truck.py
 [[ -f geometry/rider.stl && -f geometry/bike_wheels.stl ]] || python3 scripts/build_rider.py

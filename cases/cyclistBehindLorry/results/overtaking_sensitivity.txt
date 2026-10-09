@@ -1,0 +1,49 @@
+Force on the rider, N: + x forwards, + y towards the lorry, + z up.
+The model: CA = {'x': 0.34, 'y': 0.79, 'z': 0.36} m^2, rho 1.225, rider at 20 km/h (closing 60 km/h), body-weighted over three heights on y = -3.0 m.
+Silhouettes of the rider and bike: side 0.723 m^2, front 0.461, top 0.360; side share by band (knee, hip, shoulder lines) [0.596, 0.228, 0.176], frontal share [0.37, 0.366, 0.263]
+Riding in still air (first write): [-6.2, -0.08, 0.01] N
+
+the model
+    away  17.3 (x  15.67) | towards  5.3 (x  -0.72) | in-plane  21.0 [-12.7, -16.8] | vertical +0.0..+1.7 || shown: away  16.8, towards  5.3, in-plane  20.9
+frontal CA_x 0.31 m^2 (16 deg torso)
+    away  17.3 (x  15.67) | towards  5.3 (x  -0.72) | in-plane  20.4 [-11.3, -17.0] | vertical +0.0..+1.7 || shown: away  16.8, towards  5.3, in-plane  20.3
+frontal CA_x 0.40 m^2 (more upright)
+    away  17.3 (x  15.67) | towards  5.3 (x  -0.72) | in-plane  22.5 [-15.3, -16.5] | vertical +0.0..+1.7 || shown: away  16.8, towards  5.3, in-plane  22.3
+side CA_y 0.68 m^2 (RANS 90 deg, pedals level)
+    away  14.9 (x  15.67) | towards  4.6 (x  -0.72) | in-plane  19.3 [-13.0, -14.2] | vertical +0.0..+1.7 || shown: away  14.5, towards  4.6, in-plane  19.1
+side CA_y 0.93 m^2 (CA_y + RANS's 18% under-prediction)
+    away  20.3 (x  15.67) | towards  6.3 (x  -0.72) | in-plane  23.5 [-12.4, -20.0] | vertical +0.0..+1.7 || shown: away  19.8, towards  6.3, in-plane  23.4
+both areas x 0.82 (his 0.45 m^2 frontal vs the mannequin's 0.55)
+    away  14.1 (x  15.67) | towards  4.4 (x  -0.72) | in-plane  17.1 [-10.4, -13.7] | vertical +0.0..+1.7 || shown: away  13.7, towards  4.3, in-plane  17.1
+vertical CA_z x 0.5
+    away  17.3 (x  15.67) | towards  5.3 (x  -0.72) | in-plane  21.0 [-12.7, -16.8] | vertical +0.0..+0.8 || shown: away  16.8, towards  5.3, in-plane  20.9
+vertical CA_z x 1.2
+    away  17.3 (x  15.67) | towards  5.3 (x  -0.72) | in-plane  21.0 [-12.7, -16.8] | vertical +0.0..+2.0 || shown: away  16.8, towards  5.3, in-plane  20.9
+rider at 15 km/h (closing 65 km/h)
+    away  14.9 (x  15.67) | towards  4.4 (x  -0.72) | in-plane  17.0 [ -8.6, -14.6] | vertical +0.0..+1.3 || shown: away  14.5, towards  4.4, in-plane  16.9
+rider at 25 km/h (closing 55 km/h)
+    away  19.8 (x  15.67) | towards  6.3 (x  -0.86) | in-plane  25.9 [-17.7, -18.9] | vertical +0.0..+2.1 || shown: away  19.3, towards  6.3, in-plane  25.7
+one point: his shoulders on the shoulder line
+    away  17.8 (x  15.53) | towards  6.2 (x  -1.00) | in-plane  21.5 [-12.7, -17.4] | vertical -0.0..+1.6 || shown: away  17.4, towards  6.1, in-plane  21.4
+three heights weighted equally
+    away  17.4 (x  15.67) | towards  5.8 (x  -0.86) | in-plane  21.2 [-12.7, -17.0] | vertical +0.0..+1.5 || shown: away  17.0, towards  5.7, in-plane  21.1
+averaged across his width, y -3.0 +- 0.2 m (quadratic in y)
+    away  17.4 (x  15.67) | towards  5.3 (x  -0.86) | in-plane  21.1 [-12.7, -16.8] | vertical +0.0..+1.6 || shown: away  16.9, towards  5.2, in-plane  21.0
+gap 0.75 m (line y = -2.25 m)
+    away  29.3 (x  15.81) | towards  3.1 (x  -2.53) | in-plane  32.5 [-14.5, -29.1] | vertical -1.8..+3.4 || shown: away  28.6, towards  3.1, in-plane  31.1
+gap 2.5 m (line y = -4.0 m)
+    away  10.0 (x  15.53) | towards  3.5 (x  -1.00) | in-plane  14.4 [-11.1,  -9.2] | vertical -0.0..+0.6 || shown: away   9.8, towards  3.5, in-plane  14.4
+
+If his body takes time to feel a change (running mean of the force):
+  0.05 s, the readout's own mean
+    away  17.1 (x  15.25) | towards  5.3 (x  -1.14) | in-plane  20.9 [-12.8, -16.5] | vertical +0.0..+1.7 || shown: away  17.0, towards  5.3, in-plane  20.7
+  0.15 s
+    away  16.2 (x  14.28) | towards  5.2 (x  -1.97) | in-plane  20.3 [-12.8, -15.7] | vertical +0.0..+1.6 || shown: away  16.1, towards  5.1, in-plane  20.2
+  0.30 s, about the time the air takes to cross his 1.75 m
+    away  13.8 (x  12.89) | towards  4.8 (x  -3.22) | in-plane  18.3 [-12.7, -13.1] | vertical +0.0..+1.6 || shown: away  13.7, towards  4.8, in-plane  18.1
+
+The lorry's part (force minus the first write's riding drag): sideways -17.2 to +5.4 N, fore-aft -9.0 to +2.5 N
+In-plane peak at t = 4.983 s, his shoulders at x = 15.11 m (the cab's front is at 16.5 m), force [-12.7, -16.8, 0.7] N
+Shown sideways at or above 17 N: 0 of 481 writes
+Sideways push above 10 N: t 4.842-5.100 s (0.267 s of flow, his shoulders x 17.47 to 13.17 m)
+Sideways push above 14 N: t 4.883-5.033 s (0.158 s of flow, his shoulders x 16.78 to 14.28 m)
