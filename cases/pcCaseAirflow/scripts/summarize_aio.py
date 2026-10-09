@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
 """The aio layouts' settled statistics and heat budget -> results/aio_summary.csv, and where
-across the case's depth each filter mesh passes air at 8 s -> results/aio_vent_depth.csv.
+across the case's depth each filter mesh passes air at 8 s -> results/aio_vent_depth.csv; the
+radiator layouts' settled statistics and heat budget -> results/aio_radiator_summary.csv.
 
-For each of runs/aioFrontIn and runs/aioFrontBottomIn that has been solved, over the settled
-window (6-8 s), from the monitors make_case.py writes for these layouts:
+For each of runs/aioFrontIn, runs/aioFrontBottomIn, runs/aioRadiatorFront and
+runs/aioRadiatorTop that has been solved, over the settled window (6-8 s), from the monitors
+make_case.py writes for these layouts:
 
-- the air entering the card (gpuIntake) and the radiator (radiatorBoundaryTemperature, the
-  three top fans' flow-weighted air), as rises above the room, over the window, over each
-  half of it, and its standard deviation;
+- the air entering the card (gpuIntake) and the radiator (radiatorBoundaryTemperature, its
+  fans' flow-weighted air), as rises above the room, over the window, over each half of it,
+  and its standard deviation. A radiator on the front intakes breathes room air: their faces
+  carry the air after the radiator, so its rise, 150 W over their flow, is taken off again;
 - the case's mean gauge pressure;
 - each panel opening's one-way flows, in and out separately, from sum(phi) and sumMag(phi);
 - the heat carried out through every fan and opening, rho cp sum(phi (T - T_room)), outward
   positive, and their sum, which should be the card's 300 W: the radiator is outside the air
-  volume, so the CPU's 150 W never enters the case air.
+  volume, so the CPU's 150 W either never enters the case air (on exhausts) or enters through
+  the front fans and leaves again (on intakes).
 
 Means over the window are taken on a 2 ms grid, the 0.02 s records interpolated linearly.
 
-Then, from the 8 s fields (the only full fields written after the start), each filter mesh's
-flow split into 30 mm bands across the case's depth (z), out and in separately. The card-middle
-section is at z = 0.082 m and the fan column (120 mm fans centred at z = 0.105 m) spans
-z 0.045-0.165 m, so this shows how much of each mesh's flow passes beside the fans, off the
-section. Needs PyVista with its OpenFOAM reader.
+Then, for the aio layouts, from the 8 s fields (the only full fields written after the start),
+each filter mesh's flow split into 30 mm bands across the case's depth (z), out and in
+separately. The card-middle section is at z = 0.082 m and the fan column (120 mm fans centred
+at z = 0.105 m) spans z 0.045-0.165 m, so this shows how much of each mesh's flow passes beside
+the fans, off the section. Needs PyVista with its OpenFOAM reader.
 
     python3 scripts/summarize_aio.py [--runs runs]
 """
@@ -35,7 +39,9 @@ import pandas as pd
 
 R = Path(__file__).resolve().parents[1]
 C = json.loads((R / "config/model.json").read_text())
-LAYOUTS = [x for x in C["layouts"] if C["layouts"][x].get("geometry") == "aio"]
+# The aio layouts (their own mesh) and the radiator layouts (the pump mesh), each to its own file.
+GROUPS = {"aio": "aio_summary.csv", "pump": "aio_radiator_summary.csv"}
+LAYOUTS = [x for x in C["layouts"] if C["layouts"][x].get("geometry") in GROUPS]
 T_ROOM, RHO, CP = C["roomTemperature_K"], C["rhoReference_kg_m3"], C["cp_J_kgK"]
 LO, HI = C["settledWindow_s"]
 OPENINGS = ("vent_front", "vent_top", "vent_slots")
@@ -55,12 +61,22 @@ def window(t, v, lo, hi):
     return float(np.interp(tg, t, v).mean())
 
 
-def settled(run):
+def front_radiator_rise(layout):
+    """K the radiator adds to the room air its fans bring in, if it is on intakes, else 0."""
+    rad = C["layouts"][layout].get("radiator", {})
+    if rad.get("position") != "front":
+        return 0.0
+    return C["cpuHeat_W"] / (RHO * CP * sum(C["fan120Flow_m3_s"] for _ in rad["fans"]))
+
+
+def settled(run, layout):
     row = {}
     for part, rec in (("card", "gpuIntake"), ("radiator", "radiatorBoundaryTemperature")):
         g = record(run, rec)
         t, rise = g[:, 0], g[:, 1] - T_ROOM
-        row[f"{part}_intake_rise_K"] = round(window(t, rise, LO, HI), 3)
+        if part == "radiator":
+            rise = rise - front_radiator_rise(layout)
+        row[f"{part}_intake_rise_K"] = round(window(t, rise, LO, HI), 3) + 0.0   # no -0.0
         row[f"{part}_intake_rise_first_half_K"] = round(window(t, rise, LO, (LO + HI) / 2), 3)
         row[f"{part}_intake_rise_second_half_K"] = round(window(t, rise, (LO + HI) / 2, HI), 3)
         row[f"{part}_intake_rise_std_K"] = round(float(rise[(t >= LO) & (t <= HI)].std()), 3)
@@ -127,18 +143,21 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--runs", default=str(R / "runs"))
     a = p.parse_args()
-    rows, depth = [], []
+    rows, depth = {g: [] for g in GROUPS}, []
     for L in LAYOUTS:
         run = Path(a.runs) / L
         if not (run / "postProcessing").is_dir():
             continue
-        rows.append(dict(layout=L, window_s=f"{LO:g}-{HI:g}", **settled(run)))
-        if (run / "8").is_dir():
+        g = C["layouts"][L]["geometry"]
+        rows[g].append(dict(layout=L, window_s=f"{LO:g}-{HI:g}", **settled(run, L)))
+        if g == "aio" and (run / "8").is_dir():
             depth += [dict(layout=L, **r) for r in vent_depth(run)]
     (R / "results").mkdir(exist_ok=True)
-    s = pd.DataFrame(rows)
-    s.to_csv(R / "results/aio_summary.csv", index=False)
-    print(s.T.to_string())
+    for g, name in GROUPS.items():
+        if rows[g]:
+            s = pd.DataFrame(rows[g]).dropna(axis=1, how="all")   # fans a mesh lacks
+            s.to_csv(R / "results" / name, index=False)
+            print(s.T.to_string())
     if depth:
         pd.DataFrame(depth).to_csv(R / "results/aio_vent_depth.csv", index=False)
         print(pd.DataFrame(depth).to_string(index=False))

@@ -18,6 +18,9 @@ fan layouts and measures the air each part breathes:
     ./Allrun aioFrontIn  # a third viewer's build, the CPU on an all-in-one liquid cooler:
                          # 3 front fans in, rear and 3 top fans out, a 360 mm radiator on top
     ./Allrun aioFrontBottomIn  # the same with two bottom fans in as well
+    ./Allrun aioRadiatorFront  # a liquid cooler in this PC with even's fans: its radiator
+                               # on the 3 front intakes
+    ./Allrun aioRadiatorTop    # the same with the radiator on the 2 top exhausts
 
 The published clip shows `positive` against `negative`. `even` is here because equal fan
 counts are not equal flows: two 140 mm top fans and a 120 mm rear fan move more air than
@@ -31,7 +34,10 @@ were run again with the room's dust carried on the flow; that has
 [a section of its own as well](#dust-where-the-rooms-dust-goes). `aioFrontIn` and
 `aioFrontBottomIn` are a third viewer's build, asked for under the `viewer` layout's clip,
 with the tower cooler replaced by an all-in-one liquid cooler and three top fans; they are in
-[the last section](#a-third-viewers-layouts-a-liquid-cooled-cpu-with-and-without-bottom-intakes).
+[their own section](#a-third-viewers-layouts-a-liquid-cooled-cpu-with-and-without-bottom-intakes).
+`aioRadiatorFront` and `aioRadiatorTop` answer a comment under the published clip, the same
+all-in-one cooler in this PC with `even`'s fans and its radiator in the front or on top; they
+are in [the last section](#a-liquid-coolers-radiator-in-the-front-or-on-top).
 
 ## The PC
 
@@ -553,8 +559,9 @@ are where that is.
 
 - **The radiator is a reading, not the comment's,** and it is not modelled: no radiator
   pressure loss, so the top fans move their full 16.5 L/s; no coolant, fins or pump heat. The
-  radiator's number is the air reaching it, not a coolant or CPU temperature, and a radiator
-  in the front, as an intake, would change the card's air and is not run here.
+  radiator's number is the air reaching it, not a coolant or CPU temperature. A radiator in
+  the front, as an intake, changes the card's air; with `even`'s fans it is
+  [the next section](#a-liquid-coolers-radiator-in-the-front-or-on-top).
 - **Fans are fixed flows.** `aioFrontBottomIn` pushes more air in than it pulls out, and a
   real fan blowing against that, or a bottom fan behind a shroud floor and filter, would move
   somewhat less than its fixed flow here.
@@ -563,6 +570,115 @@ are where that is.
 - **One reading of one comment.** "Front/lateral" is read as the three front positions, and
   the third top fan as a 360 mm mount on this PC's top. A side-panel intake, bottom fans
   elsewhere, or a case with a real 360 mm top mount are different builds.
+
+## A liquid cooler's radiator: in the front or on top
+
+A viewer asked, under the published clip: "Okay but I have a liquid cooler. There's no fan on
+my CPU anymore. Can you rerun the test?" With an all-in-one cooler the question builders
+argue over is where its radiator goes: in the front, its fans blowing room air in through
+it, or on top, its fans blowing the case's air out through it. These two layouts put the
+same cooler in this PC both ways, with `even`'s fans (three front in; the rear and both top
+fans out) and nothing else changed:
+
+    ./Allrun aioRadiatorFront    # a 360 mm radiator on the three front intakes
+    ./Allrun aioRadiatorTop      # a 280 mm radiator on the two top exhausts
+
+**The PC, changed.** `scripts/build_geometry.py --pump` writes the one part that differs into
+`geometry/pump/`: the tower cooler, with `cpu_in` and `cpu_out`, is gone, and the pump block
+of the layouts above sits on the socket (a closed 70 x 70 mm box standing 42.4 mm off the
+board, no flow, no heat of its own). The fans, the filter mesh and the RAM are where they are
+in `even`; the top keeps its two 140 mm fans, which is where a 280 mm radiator goes in this
+PC, and the front's three 120 mm fans take a 360 mm one.
+
+**The radiator, as the heat it puts into the air.** With the fans at fixed flows, a radiator
+changes the case's air only through the CPU's 150 W it adds to the air its fans move, so it
+is not meshed:
+
+- **In front,** the room air reaching the three front fans has passed through the radiator,
+  so they bring it in 150 W / (1.196 kg/m3 x 1007 J/kg K x 0.0495 m3/s) = 2.52 K above the
+  room (in `0/T`, the fans' fixed temperature). The radiator breathes room air.
+- **On top,** the front fans bring in room air as in `even`, and the air leaving through the
+  two top fans reaches the radiator after it has left the case, so the CPU's heat never
+  enters the case air. The radiator's air is the flow-weighted temperature over the two top
+  fans' faces.
+
+Either way the case's net heat is the card's 300 W. The radiator's number, in both, is the air
+entering it, which sets how warm the coolant and the CPU run; `scripts/summarize_aio.py`
+takes the 2.52 K back off the front fans' faces to report room air for the front radiator.
+
+**Its own mesh.** `./Allmesh pump` builds `mesh/pump/` the same way as the others, from the
+shared geometry less the tower cooler, with the pump block: 400,745 cells, and `checkMesh`
+reports "Mesh OK" (non-orthogonality up to 41.2 degrees, skewness up to 2.90). The stricter
+flags find the same kinds of cut cells as in the other meshes (101 concave faces, 4,461
+low-determinant cells, 2,337 concave cells). Every patch keeps the shared mesh's face count
+except `walls`, which goes from 39,471 to 38,133 faces, and the cooler's two, which are
+gone. A clean copy rebuilt the solved mesh byte for byte, and `scripts/make_case.py` writes
+the solved runs' dictionaries and initial fields byte for byte; `config/model.json` lists
+each radiator's fans in the order the solved runs' monitor names them, which does not change
+the mean. The other layouts' geometry, mesh dictionaries and generated cases, with and
+without dust, are unchanged.
+
+**Result.** Both solved together on 8 ranks each, in 4,899 s (`aioRadiatorFront`) and
+4,878 s (`aioRadiatorTop`) of wall clock, 8 s from still air. Means over 6-8 s, in
+`results/aio_radiator_summary.csv` (`scripts/summarize_aio.py`):
+
+| layout | air into the card | air into the radiator |
+|---|---:|---:|
+| aioRadiatorFront | 28.9 C (+6.94) | 22.0 C (room air) |
+| aioRadiatorTop | 27.1 C (+5.14) | 24.4 C (+2.36) |
+
+Each half of the window agrees with the whole within 0.03 K. The card's air moves about from
+moment to moment by one standard deviation of 0.17 and 0.19 K, the top radiator's by 0.09 K.
+Both intakes level off by about 2 s.
+
+**Each position wins on one part.** In front, the radiator breathes room air and the card's
+air is 1.8 K warmer; on top, the card's air is 1.8 K cooler and the radiator breathes air
+2.4 K above the room. The card's 1.80 K is 0.72 of the 2.52 K the front radiator adds, so
+about seven tenths of the card's air comes in through the front fans. With the radiator on
+top the card's air is close to `even`'s 5.44 K, as it should be once the tower cooler's heat
+and bulk are gone.
+
+**The top radiator's air is mostly the card's plume.** Its 2.36 K is the mean over both top
+fans, which hides an uneven split: over 6-8 s the rear top fan carries 112.9 W out and the
+front top fan 6.4 W, because the card's plume rises along the rear.
+
+**The heat budget closes.** The heat carried out through every fan and opening,
+rho cp sum(phi (T - T_room)) over 6-8 s, comes to 300.7 W in `aioRadiatorFront` and 300.2 W
+in `aioRadiatorTop`, against the card's 300 W. In `aioRadiatorFront` the front fans carry
+150.0 W in, 50.0 W each, and the exhausts and openings 450.7 W out.
+
+**The two runs are not the same air moving.** Temperature is a passive scalar here, so the
+two layouts have the same flow in principle and differ only in where the radiator's 150 W
+goes. In practice each run is decomposed for its 8 ranks on its own, and the two
+decompositions came out different; on the card-middle section the velocity differs between
+the runs by 1.08 m/s RMS on average, as much as the flow's own fluctuation. So the two are
+two realizations of the same statistically settled flow. The means compare fairly (the
+card's 1.8 K is about ten times either run's standard deviation); their streamlines and
+instantaneous fields do not, and a pixel-by-pixel difference of the two is meaningless.
+
+**What the clip shows, and what it does not.** It shows the card-middle section of both
+layouts from switch-on, the radiator in front above the radiator on top, front on the right,
+on one temperature scale from 22 to 36 C, at 2.5x slow motion. The radiator is drawn on the
+fans it sits on, just outside the case wall, since it takes no air volume here, and the pump
+block on the board. The numbers are the air entering the card and the radiator, as the solve
+computed them. It does not show the radiator's own temperature, the coolant or the CPU, and
+the two halves' streamlines differ for the reason above, not because of the radiator.
+
+**What it cannot say,** on top of everything in the limits above:
+
+- **No radiator resistance.** A radiator cuts the airflow of the fans pushing through it. With
+  fixed flows, the front fans move the same 49.5 L/s with or without one, so the case gets no
+  less air from a front radiator here, as it would in a real PC.
+- **The radiator heats its air uniformly,** by 150 W over its fans' flow. A real radiator
+  gives up heat in proportion to how much warmer the coolant is than the air, and the
+  coolant's temperature depends on the air entering. The radiator's number is that air, not a
+  coolant or CPU temperature.
+- **Two sizes, one heat.** The front radiator is 360 mm and the top one 280 mm, the sizes
+  those mounts take in this PC; here the size only decides which fans carry the 150 W. A
+  bigger radiator runs its coolant cooler for the same air, which this model cannot show.
+- **The hoses and the pump's few watts are left out.**
+- **Air into the parts, not part temperatures.** The 6.94 and 5.14 K are the card's air, not
+  its core.
 
 ## Running it
 
@@ -574,12 +690,13 @@ with NumPy, pandas and PyVista.
     ./Allrun positive          # negative, even, twoInTwoOut
     ./Allrun viewer            # builds mesh/viewer/ first if it is not there
     ./Allrun aioFrontIn        # and aioFrontBottomIn; builds mesh/aio/ first
+    ./Allrun aioRadiatorFront  # and aioRadiatorTop; builds mesh/pump/ first
     python3 scripts/summarize.py
     python3 scripts/plot_results.py
     ./Allrun positive dust     # and negative: runs/<layout>_dust
     scripts/dust_scheme_check.sh positive    # optional, after the dust run
     python3 scripts/summarize_dust.py
-    python3 scripts/summarize_aio.py          # after the aio runs
+    python3 scripts/summarize_aio.py          # after the aio or radiator runs
 
 `Allmesh` builds the shared mesh from `geometry/` (`mesh/rebuild_mesh.py`) and checks it.
 `Allrun` writes the layout's case into `runs/<layout>/` from `config/model.json`
@@ -590,7 +707,8 @@ removes the runs and the mesh. The two dust runs took 69-74 minutes here, run at
 writes `results/dust_summary.csv`, `dust_budget.csv`, `dust_card.png` and, with the check's
 runs, `dust_scheme_check.csv`, and needs NumPy 2 and matplotlib. The two aio runs took 60-73
 minutes here, run at the same time; `summarize_aio.py` writes `results/aio_summary.csv` and
-`aio_vent_depth.csv`.
+`aio_vent_depth.csv`. The two radiator runs took about 82 minutes here, run at the same time;
+`summarize_aio.py` writes their means to `results/aio_radiator_summary.csv`.
 
 The case was set up by an agent and checked by us, in one build, from geometry we built and
 reviewed first.

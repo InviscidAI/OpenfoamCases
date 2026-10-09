@@ -13,14 +13,17 @@ C=json.loads((ROOT/'config/model.json').read_text())
 layout=sys.argv[1] if len(sys.argv)>1 else 'positive'
 dust=sys.argv[2:]==['--dust']
 if sys.argv[2:] and not dust: raise SystemExit('usage: make_case.py <layout> [--dust]')
-if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, viewer, twoInTwoOut, aioFrontIn or aioFrontBottomIn')
-# A layout with its own geometry (the viewer's turned cooler and bottom fans, or the aio PC's
-# pump block, three top fans and bottom fans) has its own mesh.
+if layout not in C['layouts']: raise SystemExit('layout must be positive, negative, even, viewer, twoInTwoOut, aioFrontIn, aioFrontBottomIn, aioRadiatorFront or aioRadiatorTop')
+# A layout with its own geometry (the viewer's turned cooler and bottom fans, the aio PC's
+# pump block, three top fans and bottom fans, or the pump PC's pump block alone) has its own
+# mesh.
 variant=C['layouts'][layout].get('geometry','')
 # The aio PC has no tower cooler (no cpu_in, cpu_out or CPU heat in the case air), a radiator
-# on the three top fans, outside the air volume, and every case fan 120 mm.
-aio=variant=='aio'
-if aio and dust: raise SystemExit('the aio layouts have no dust run')
+# on the three top fans, outside the air volume, and every case fan 120 mm. The pump PC is the
+# shared PC with the same pump block and no tower cooler, its fans unchanged, and a radiator
+# outside the air volume on the front or the top fans.
+aio=variant in ('aio','pump')
+if aio and dust: raise SystemExit('the aio and radiator layouts have no dust run')
 MESH=ROOT/'mesh'/variant if variant else ROOT/'mesh'
 out=ROOT/'runs'/(layout+('_dust' if dust else ''))
 if out.exists(): shutil.rmtree(out)
@@ -33,7 +36,7 @@ for z in ('pointZones','faceZones','cellZones'):
 hdr=lambda cls,obj: f'''FoamFile\n{{\n version 2.0; format ascii; class {cls}; object {obj};\n}}\n'''
 # Merge black-box openings so mapped heat BC sees all source/sink faces together.
 cp=hdr('dictionary','createPatchDict')+'''pointSync false;\npatches\n(\n { name gpu_in; patchInfo { type patch; } constructFrom patches; patches (gpu_in_1 gpu_in_2 gpu_in_3); }\n { name gpu_out; patchInfo { type patch; } constructFrom patches; patches (gpu_out_board_side gpu_out_flow_through gpu_out_front_end gpu_out_glass_side); }\n);\n'''
-if aio:
+if variant=='aio':
     # The aio mesh has the two bottom fan positions; where a layout does not use them they are
     # closed shroud, merged into the walls, and appear in no field or monitor.
     active=C['layouts'][layout]
@@ -43,11 +46,11 @@ if aio:
 
 bottom=['bottom_front','bottom_rear'] if variant=='viewer' else []
 allfans=['front_low','front_mid','front_high']+bottom+['rear','top_front','top_rear']
-if aio:
+if variant=='aio':
     allfans=['front_low','front_mid','front_high','rear','top_front','top_mid','top_rear']+([] if bottomUnused else ['bottom_front','bottom_rear'])
 active=C['layouts'][layout]; intake=set(active['intake']); exhaust=set(active['exhaust'])
 Q120=C['fan120Flow_m3_s']; Q140=C['fan140Flow_m3_s']
-def qfan(n): return Q140 if n.startswith('top_') and not aio else Q120
+def qfan(n): return Q140 if n.startswith('top_') and variant!='aio' else Q120
 
 def openU(): return '''type pressureInletOutletVelocity; value uniform (0 0 0);'''
 def flowU(q): return f'''type flowRateInletVelocity; volumetricFlowRate constant {q:.8g}; extrapolateProfile no; value uniform (0 0 0);'''
@@ -76,8 +79,15 @@ def mappedT(patch,source,heat,flow):
     return f'''{patch} {{ type codedFixedValue; name mappedHeat{patch.title().replace('_','')}; value uniform {T0}; code #{{ const volScalarField& Tf=db().lookupObject<volScalarField>("T"); const label id=patch().boundaryMesh().findPatchID("{source}"); const scalarField& Ts=Tf.boundaryField()[id]; const scalarField& a=patch().boundaryMesh()[id].magSf(); operator==(gSum(a*Ts)/gSum(a) + {rise}); #}}; }}'''
 E=['walls { type zeroGradient; }','gpu_in { type zeroGradient; }',mappedT('gpu_out','gpu_in',C['gpuHeat_W'],C['gpuFlow_m3_s'])]+([] if aio else ['cpu_in { type zeroGradient; }',mappedT('cpu_out','cpu_in',C['cpuHeat_W'],C['cpuFlow_m3_s'])])
 for v in ('vent_front','vent_top','vent_slots'): E.append(v+' { '+scalarOpen(T0)+' }')
+# A radiator on intake fans (the pump PC's front radiator) heats the room air they bring in by
+# the CPU's 150 W, spread evenly over their flow; on exhaust fans it heats the air after it has
+# left the case, so the case air does not see it.
+rad=active.get('radiator',{})
+frontRad=set(rad['fans']) if rad.get('position')=='front' else set()
+radRise=C['cpuHeat_W']/(C['rhoReference_kg_m3']*C['cp_J_kgK']*sum(qfan(n) for n in rad['fans'])) if frontRad else 0
 for n in allfans:
-    if n in intake: bc=f'type fixedValue; value uniform {T0};'
+    if n in intake and n in frontRad: bc=f'type fixedValue; value uniform {T0+radRise:.10g};'
+    elif n in intake: bc=f'type fixedValue; value uniform {T0};'
     elif n in exhaust: bc='type zeroGradient;'
     else: bc=scalarOpen(T0)
     E.append('fan_'+n+' { '+bc+' }')
@@ -166,7 +176,9 @@ scalars='T dustF dustU' if dust else 'T'
 for name,patch in [('gpuIntake','gpu_in')]+([] if aio else [('cpuIntake','cpu_in')]): fos.append(f'''{name} {{ {common} name {patch}; operation weightedAverage; weightField phi; fields ({scalars}); }}''')
 if aio:
     # The air entering the radiator: the flow-weighted temperature over its fans' faces, the
-    # case air before the radiator heats it (the radiator is outside the air volume).
+    # case air before the radiator heats it (the radiator is outside the air volume). On front
+    # intakes the faces carry the air after the radiator, and scripts/summarize_aio.py takes
+    # the radiator's rise off again.
     radNames=' '.join('fan_'+n for n in active['radiator']['fans'])
     fos.append(f'''radiatorBoundaryTemperature {{ {common} names ({radNames}); operation weightedAverage; weightField phi; fields (T); }}''')
 for patch in ('vent_front','vent_top','vent_slots'):

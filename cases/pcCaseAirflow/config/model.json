@@ -118,6 +118,47 @@
           "top_rear"
         ]
       }
+    },
+    "aioRadiatorFront": {
+      "intake": [
+        "front_low",
+        "front_mid",
+        "front_high"
+      ],
+      "exhaust": [
+        "rear",
+        "top_front",
+        "top_rear"
+      ],
+      "geometry": "pump",
+      "radiator": {
+        "position": "front",
+        "fans": [
+          "front_low",
+          "front_high",
+          "front_mid"
+        ]
+      }
+    },
+    "aioRadiatorTop": {
+      "intake": [
+        "front_low",
+        "front_mid",
+        "front_high"
+      ],
+      "exhaust": [
+        "rear",
+        "top_front",
+        "top_rear"
+      ],
+      "geometry": "pump",
+      "radiator": {
+        "position": "top",
+        "fans": [
+          "top_rear",
+          "top_front"
+        ]
+      }
     }
   }
 }

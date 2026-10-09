@@ -5,15 +5,19 @@
     python3 rebuild_mesh.py viewer    # geometry/ with geometry/viewer/ over it -> mesh/viewer/
     python3 rebuild_mesh.py aio       # geometry/ less the tower cooler, with geometry/aio/
                                       # over it -> mesh/aio/
+    python3 rebuild_mesh.py pump      # geometry/ less the tower cooler, with geometry/pump/
+                                      # over it -> mesh/pump/
 """
 from pathlib import Path
 import os, sys, shutil, subprocess, json, tempfile
 import numpy as np
 import pyvista as pv
 variant=sys.argv[1] if len(sys.argv)>1 else ''
-if variant not in ('','viewer','aio'): raise SystemExit('usage: rebuild_mesh.py [viewer|aio]')
-# The aio PC has no tower cooler: its solid and its two faces are left out of the shared set.
-DROP={'aio':('solids/cpu_cooler.stl','faces/cpu_in.stl','faces/cpu_out.stl')}.get(variant,())
+if variant not in ('','viewer','aio','pump'): raise SystemExit('usage: rebuild_mesh.py [viewer|aio|pump]')
+# The aio and pump PCs have no tower cooler: its solid and its two faces are left out of the
+# shared set.
+NO_COOLER=('solids/cpu_cooler.stl','faces/cpu_in.stl','faces/cpu_out.stl')
+DROP={'aio':NO_COOLER,'pump':NO_COOLER}.get(variant,())
 HERE=Path(__file__).resolve().parent
 GEOM=HERE.parent/'geometry'
 if not (GEOM/'solids').is_dir() or not (GEOM/'faces').is_dir(): raise SystemExit('Missing ../geometry/solids or ../geometry/faces')
@@ -51,8 +55,8 @@ def disk_mesh(c,axis,r,N=128):
     return pv.PolyData(np.array(pts),np.array(faces))
 
 # OpenFOAM dictionaries (metres). The closed body on the CPU socket: the tower cooler, or the
-# aio PC's pump block.
-CPU_BODY='pump' if variant=='aio' else 'cpu_cooler'
+# aio and pump PCs' pump block.
+CPU_BODY='pump' if variant in ('aio','pump') else 'cpu_cooler'
 Path("system").mkdir(exist_ok=True); Path("0").mkdir(exist_ok=True)
 Path("system/controlDict").write_text('FoamFile\n{ version 2.0; format ascii; class dictionary; object controlDict; }\napplication simpleFoam; startFrom startTime; startTime 0; stopAt endTime; endTime 1; deltaT 1; writeControl timeStep; writeInterval 1; runTimeModifiable true;\n')
 Path("system/fvSchemes").write_text('FoamFile\n{ version 2.0; format ascii; class dictionary; object fvSchemes; }\nddtSchemes { default Euler; } gradSchemes { default Gauss linear; } divSchemes { default none; } laplacianSchemes { default Gauss linear corrected; } interpolationSchemes { default linear; } snGradSchemes { default corrected; }\n')
@@ -78,7 +82,8 @@ write_obj('named_vents.obj',[(n,pv.read(fd/f'{n}.stl')) for n in vents])
 write_obj('named_fans.obj',[(n,pv.read(fd/f'{n}.stl')) for n in fans])
 d=json.loads((GEOM/'dimensions_mm.json').read_text()); disks=[]
 for _,y in d['FRONT_FANS']: disks.append(('walls',disk_mesh((0,y/1000,d['FAN_Z']/1000),0,0.057)))
-# Top fans are 140 mm (reset radius 67 mm), 120 mm in the aio PC (57 mm, as front and rear).
+# Top fans are 140 mm (reset radius 67 mm), 120 mm in the aio PC (57 mm, as front and rear);
+# the pump PC keeps the 140 mm top fans.
 rtop=0.057 if variant=='aio' else 0.067
 for _,x in d['TOP_FANS']: disks.append(('walls',disk_mesh((x/1000,d['HEIGHT']/1000,d['FAN_Z']/1000),1,rtop)))
 _,y,z=d['REAR_FAN']; disks.append(('walls',disk_mesh((d['DEPTH']/1000,y/1000,z/1000),0,0.057)))

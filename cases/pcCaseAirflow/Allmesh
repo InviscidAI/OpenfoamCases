@@ -2,6 +2,7 @@
 # ./Allmesh          the mesh for positive, negative and even, in mesh/
 # ./Allmesh viewer   the viewer layout's mesh (turned cooler, bottom fans), in mesh/viewer/
 # ./Allmesh aio      the aio layouts' mesh (pump block, three top fans, bottom fans), in mesh/aio/
+# ./Allmesh pump     the radiator layouts' mesh (pump block, the shared fans), in mesh/pump/
 set -euo pipefail
 cd "$(dirname "$0")/mesh"
 exec python3 rebuild_mesh.py "$@"
