@@ -1,0 +1,14 @@
+tailgate  gap  12.5 m: hits the lorry at t = 3.02 s, closing at 10 km/h (car 43, lorry 33 km/h)
+safe      gap  50.0 m: comes within 35.5 m of the lorry's doors at t = 4.38 s and stops 35.6 m short
+  reaction 0.70 s, car 6.5 m/s2, lorry 4.64: crash below   4.0 m; 12.5 m closest 8.5 m; 50 m closest 46.0 m
+  reaction 0.70 s, car 7.4 m/s2, lorry 5.29: crash below   4.5 m; 12.5 m closest 8.0 m; 50 m closest 45.5 m
+  reaction 0.70 s, car 8.4 m/s2, lorry 6.00: crash below   5.1 m; 12.5 m closest 7.4 m; 50 m closest 44.9 m
+  reaction 1.00 s, car 6.5 m/s2, lorry 4.64: crash below   8.1 m; 12.5 m closest 4.4 m; 50 m closest 41.9 m
+  reaction 1.00 s, car 7.4 m/s2, lorry 5.29: crash below   9.3 m; 12.5 m closest 3.2 m; 50 m closest 40.7 m
+  reaction 1.00 s, car 8.4 m/s2, lorry 6.00: crash below  10.5 m; 12.5 m closest 2.0 m; 50 m closest 39.5 m
+  reaction 1.25 s, car 6.5 m/s2, lorry 4.64: crash below  12.7 m; 12.5 m hit at 3 km/h; 50 m closest 37.3 m
+  reaction 1.25 s, car 7.4 m/s2, lorry 5.29: crash below  14.5 m; 12.5 m hit at 10 km/h; 50 m closest 35.5 m
+  reaction 1.25 s, car 8.4 m/s2, lorry 6.00: crash below  16.4 m; 12.5 m hit at 16 km/h; 50 m closest 33.6 m
+  reaction 1.50 s, car 6.5 m/s2, lorry 4.64: crash below  18.3 m; 12.5 m hit at 17 km/h; 50 m closest 31.7 m
+  reaction 1.50 s, car 7.4 m/s2, lorry 5.29: crash below  20.6 m; 12.5 m hit at 21 km/h; 50 m closest 29.4 m
+  reaction 1.50 s, car 8.4 m/s2, lorry 6.00: crash below  22.6 m; 12.5 m hit at 26 km/h; 50 m closest 27.4 m

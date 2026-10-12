@@ -2,8 +2,8 @@
 # A road cyclist alone, 1.5 m behind a lorry's rear doors, and 10 m behind them; and the
 # same lorry alone in its own frame, for a rider it overtakes.
 #
-#   ./Allrun alone|close|far|overtaking
-#   ./Allrun --setup-only alone|close|far|overtaking
+#   ./Allrun alone|close|far|overtaking|carAlone|tailgate|safe
+#   ./Allrun --setup-only alone|close|far|overtaking|carAlone|tailgate|safe
 #
 # Builds the rider and the lorry into geometry/ if they are not there yet (MakeHuman's CC0
 # files are downloaded on the first build), writes runs/<run>/ (scripts/makeCase.py),
@@ -14,12 +14,44 @@
 # runs/overtaking/ (scripts/makeOvertaking.py), meshes and checks it, decomposes it and
 # solves 0-8 s on nRanks ranks (14). The rider is not in that solve; scripts/
 # overtaking_force.py reads him off its lines afterwards, which needs his STLs.
+#
+# carAlone, tailgate and safe put a car where the rider was, in the lorry's frame
+# (config_car.sh): the car alone, 12.5 m and 50 m behind the lorry's doors. Each builds the
+# car (scripts/build_car.py) and the lorry if they are not there, writes runs/<run>/
+# (scripts/makeCarCase.py), meshes and checks it, writes the t = 0 planes and forces,
+# decomposes it (collated, as solved) and solves 0-8 s on 3 ranks alone and 6 with the
+# lorry. --setup-only stops after decomposePar.
 set -euo pipefail
 cd "$(dirname "$0")"
 setupOnly=false
 if [[ "${1:-}" == --setup-only ]]; then setupOnly=true; shift; fi
 what=${1:-}
-[[ "$what" =~ ^(alone|close|far|overtaking)$ ]] || { echo "usage: ./Allrun [--setup-only] alone|close|far|overtaking"; exit 2; }
+[[ "$what" =~ ^(alone|close|far|overtaking|carAlone|tailgate|safe)$ ]] || { echo "usage: ./Allrun [--setup-only] alone|close|far|overtaking|carAlone|tailgate|safe"; exit 2; }
+if [[ "$what" =~ ^(carAlone|tailgate|safe)$ ]]; then
+ source config_car.sh
+ [[ -f geometry/car.stl && -f geometry/car_wheels.stl ]] || python3 scripts/build_car.py
+ if [[ "$what" != carAlone ]]; then
+   [[ -f geometry/truck.stl && -f geometry/truck_wheels.stl ]] || python3 scripts/build_truck.py
+ fi
+ python3 scripts/makeCarCase.py "$what"
+ cd "runs/$what"
+ np=$(sed -n 's/.*numberOfSubdomains \([0-9]*\);.*/\1/p' system/decomposeParDict)
+ blockMesh > log.blockMesh 2>&1
+ snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+ checkMesh > log.checkMesh 2>&1
+ grep -q 'Mesh OK' log.checkMesh
+ # The t = 0 planes and forces, before the solve.
+ pimpleFoam -postProcess -time 0 > log.sample0 2>&1
+ decomposePar -fileHandler collated > log.decomposePar 2>&1
+ $setupOnly && { echo "set up, not solved: runs/$what"; exit 0; }
+ start=$(date +%s)
+ mpirun -np "$np" pimpleFoam -parallel -fileHandler collated > log.pimpleFoam 2>&1
+ end=$(date +%s)
+ printf '%s seconds\n' "$((end-start))" > wallclock.txt
+ reconstructPar -latestTime -fileHandler collated > log.reconstructPar 2>&1
+ rm -rf processor* processors*
+ exit 0
+fi
 if [[ "$what" == overtaking ]]; then
  source config_overtaking.sh
  [[ -f geometry/truck.stl && -f geometry/truck_wheels.stl ]] || python3 scripts/build_truck.py

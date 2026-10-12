@@ -1,4 +1,4 @@
-# A cyclist alone, behind a lorry, and overtaken by it
+# A cyclist alone, behind a lorry, and overtaken by it; and a car tailgating it
 
 Clips of road cyclists sitting a metre behind a lorry at motorway speed get millions of
 views, and the argument under them is whether the lorry pulls the rider along or only
@@ -18,6 +18,17 @@ and the rider is read off the solve along his path rather than put in it:
     ./Allrun overtaking # the lorry alone in its own frame at 80 km/h
 
 It has its own section, [Overtaken](#overtaken), with its own limits.
+
+Three more runs answer a viewer who asked for a car at a safe distance. A car takes the
+rider's place behind the same lorry at 90 km/h, tailgating it and at the two-second gap,
+and the case asks how much fuel each saves and what happens when the lorry brakes hard:
+
+    ./Allrun carAlone   # the car on its own
+    ./Allrun tailgate   # the car's front 12.5 m behind the lorry's doors (0.5 s)
+    ./Allrun safe       # 50 m behind them (two seconds)
+
+They have their own section, [Tailgating](#tailgating), with their own limits. The stop
+is kinematics, not CFD.
 
 **A word on safety.** The case shows what the air does. Riding in a lorry's slipstream is
 dangerous, and illegal in many places. Nothing here is advice to try it.
@@ -388,6 +399,185 @@ section, the other gaps, or the 17 N comparison.
 - **The 17 N comparison** is with a limit from an abstract, whose definition is not given
   there.
 
+## Tailgating
+
+**On safety.** The clip shows why the gap matters: the fuel saving is real, and the gap
+given up for it is what stops the car in time.
+
+A car follows the lorry on a motorway at 90 km/h. One tailgates it, one keeps the
+two-second gap. How much less fuel does each use than driving alone, and what happens to
+each when the lorry brakes hard?
+
+- **The speed** is 90 km/h (25 m/s), as in the rider's runs: the EU speed limiter for
+  lorries.
+- **The tailgating gap** is 0.5 s, 12.5 m from the lorry's doors to the car's front
+  bumper. Al-Obaedi, *Int. J. Eng.* 32(5) (2019) 661-666, doi:10.5829/ije.2019.32.05b.06,
+  from loop detectors on the M42 and M25: "about 15 percent of drivers maintain gap headway
+  of 0.5 s or less" at 60-80 km/h. TRL's motorway data for the Highways Agency, as reported
+  by Direct Line (Highways Magazine, 24 Jul 2014), put 49% of vehicles under two seconds and
+  17% under one.
+- **The safe gap** is two seconds, 50 m: the Highway Code, Rule 126, "allow at least a
+  two-second gap between you and the vehicle in front on roads carrying faster-moving
+  traffic".
+
+### The car
+
+A generic five-door liftback with no brand, built by `scripts/build_car.py` to the
+published dimensions of a 2020 Skoda Octavia (autotijd.be, read 9 Oct 2026): 4.689 m long,
+1.829 m wide without mirrors, 1.470 m tall, wheelbase 2.686 m, overhangs 0.910 and
+1.094 m, tracks 1.543 and 1.535 m. Only the dimensions are borrowed; the shape is our own,
+so the car stands for a mid-size family car, not that model. Our own choices: 0.14 m
+ground clearance, 205/55 R16 tyres (0.632 m), the bonnet, windscreen, roof and liftback
+lines in the script, and no mirrors, as the lorry has none.
+
+The body is two convex hulls of spheres (the lower body and the glasshouse) joined, with
+the wheel arches cut out: one closed surface of 3,440 triangles. The four wheels are
+separate closed solids in the arches, 44 mm from the body and 10 mm into the ground.
+Frontal area 2.265 m2. It is our own geometry, made by the script from the numbers
+above; no third-party model or asset goes into it. Like the rider's and the lorry's, the
+STLs are not committed: `Allrun` builds them. From a clean copy the script rebuilt `car.stl` and
+`car_wheels.stl` byte for byte the same as the ones the runs were meshed from.
+
+### The model
+
+- **The lorry's frame.** The lorry of the other runs, unmoved, its doors at x = 0 and its
+  cab's front at x = 16.5 m. The air comes in from +x at 25 m/s and the ground is a wall
+  moving with it; the wheels, the car's and the lorry's, are stationary no-slip walls.
+  The car is moved back by its gap with `surfaceTransformPoints`. The car alone stands where
+  the safe car stands, 50 m back, so the mesh around it is the same.
+- **The domain** runs from x = -85 to 30 m, 16 m wide and 10 m tall, with symmetry sides
+  and top: the inlet 13.5 m ahead of the cab, the outlet 30 m behind the far car's rear. The
+  lorry blocks 6% of the cross-section, the car 1.4%. Uniform inflow with 1% turbulence
+  intensity and a 0.5 m length scale, nu = 1.5e-5 m2/s, fixed pressure at the outlet.
+- **Mesh.** snappyHexMesh from a 1 m background: 1/16 m on the car's body and the lorry,
+  1/32 m on both vehicles' wheels, 0.25 m in a box from 8 m ahead of the car's front to
+  25 m behind it in every run, and, with the lorry, 0.25 m from its doors to 20 m past the
+  car's rear. No prism layers, wall functions. 104,060 cells alone, 426,938 tailgating and
+  502,482 at two seconds. `checkMesh` passes all three; `checkMesh -allGeometry
+  -allTopology` flags concave cells (4,615, 24,163 and 27,287) and cells with a small
+  determinant (40, 342 and 342), no negative volumes.
+- **Turbulence and time.** k-omega SST-SAS, `pimpleFoam`, the schemes of the rider's runs:
+  backward in time, bounded linearUpwindV for momentum, limitedLinear for k and omega,
+  Courant number 0.9 and at most 1 ms a step. From rest to 8 s. The window for the means,
+  4-8 s, was fixed in `config_car.sh` before the results were read.
+- **What it writes.** The forces on the car (body and wheels, and the body alone) and on
+  the lorry every step; the vertical centreline plane every 1/120 s and a horizontal plane
+  at 0.75 m every 1/30 s in the two lorry runs, both every 0.25 s with the car alone.
+
+### Drag, and fuel
+
+A car's fuel at motorway speed goes partly on air resistance and partly on the tyres and
+the drivetrain. The National Research Council, *Cost, Effectiveness, and Deployment of Fuel
+Economy Technologies for Light-Duty Vehicles* (2015), ch. 6, p. 207: "for high-speed
+driving, one-half of the energy goes to overcoming drag". So
+
+    fuel saved = 0.5 x (1 - drag behind the lorry / drag alone)
+
+which assumes the engine's efficiency does not change at the lower load.
+
+The car's drag, body and wheels, over 4-8 s (`results/car_fuel.txt`, written by
+`scripts/car_fuel.py`):
+
+| | drag | against driving alone | less fuel |
+|---|---:|---:|---:|
+| alone | 366.7 N | | |
+| tailgating, 12.5 m | 233.4 N | **64%** | **18%** |
+| two seconds, 50 m | 301.5 N | **82%** | **9%** |
+
+- **Both cars save fuel**, the tailgater twice as much. The lorry's wake pumps, so neither
+  is steady: the 0.5 s means over 4.5-8 s run from 59% to 67% of driving alone tailgating
+  and from 77% to 90% at two seconds.
+- **The wake arrives** from rest at the close car first. Its drag stays at least 3% below
+  the lone car's from 0.66 s of flow, the far car's from 2.42 s.
+- **The lone car's drag is flat** from 1 s on (365-369 N in every 1 s block). The lorry's
+  own drag coefficient is 0.68 in both lorry runs (on 9.78 m2), as in the close rider run.
+
+**Against MythBusters.** Episode 80 (6 Jun 2007) measured a car's fuel economy behind a
+lorry at 55 mph: 17% less fuel at 50 ft (15 m) and 10% at 100 ft (30 m). Here it is 18% at
+12.5 m and 9% at 50 m. The size agrees; the speeds, the gaps, the car and the lorry all
+differ, and theirs is one test on a road. Their scale model gave 21% less drag at seven car
+lengths and 60% at 10 ft; against their road figures at about those gaps, 100 ft and
+10 ft (10% and 28% less fuel), the fuel saved is about 0.47 of the drag removed, close to
+the one-half used here.
+
+### The stop
+
+The braking and the bump are kinematics, not CFD (`scripts/car_braking.py`, written to
+`results/car_braking.json`, with a summary in `results/car_braking.txt`). The inputs:
+
+- **The speed**, both vehicles at 25 m/s, and the gaps above, bumper to doors.
+- **Reaction**: 1.25 s from the lorry's brake lights to the car's brakes, for an
+  unexpected braking ahead (Green, *Transportation Human Factors* 2 (2000) 195-216, as
+  summarised on visualexpert.com).
+- **The car's braking**: 7.4 m/s2, ordinary drivers' emergency stops on dry roads in cars
+  with ABS (Greibe, *Braking distance, friction and behaviour*, Trafitec 2007, Table 4.6;
+  professional drivers 8.4 m/s2, Table 4.5).
+- **The lorry's braking**: 7.4 / 1.4 = 5.3 m/s2. HGV stopping distances are typically 40%
+  longer than cars' (Dunn & Hoover 2004, as cited by Henderson & Cebon, HVTT13).
+
+The lorry brakes at t = 0; each car holds 90 km/h for its reaction time, then brakes, both
+at constant deceleration.
+
+- **Tailgating.** The car reaches the lorry's doors **3.02 s** after the lorry starts to
+  brake, at 43 km/h against the lorry's 33 km/h: it hits them closing at **10 km/h**. The
+  clip draws that as a cartoon bump: the car takes the lorry's speed and the two stop
+  together (the lorry is about 25 times heavier).
+- **Two seconds.** The car comes no closer than 35.5 m and stops **35.6 m** behind the
+  lorry at 4.63 s; the lorry stops at 4.73 s, 59 m on.
+
+**The outcome depends on the reaction time.** The sensitivity table in
+`results/car_braking.txt` varies it from 0.7 to 1.5 s and the car's braking from 6.5 m/s2
+(what the Highway Code's typical braking distances imply) to 8.4 m/s2, the lorry's 40%
+longer each time. At 12.5 m the car stops 3.2 m short with a 1.0 s reaction and the same
+braking, and hits at 21 km/h with 1.5 s; with a 1.25 s reaction it hits at 3-16 km/h
+across the three brakings. At two seconds it stops at least 27 m short in every
+combination. The clip uses 1.25 s because the braking is unexpected, which is the case the
+two-second rule is there for.
+
+### What the clip shows, and what it does not
+
+**It shows** two panels, tailgating above and two seconds below, each the vertical
+centreline section in the lorry's frame on one scale, coloured by the air's speed over the
+road (the solve's velocity plus the lorry's 25 m/s), with parcels of air carried by the
+solved flow. From the moment the air starts to move, the lorry's wake grows back from its
+doors to the close car and then the far one, 8 s of flow at 1.25x slow motion, and each
+panel reads the car's fuel saving against driving alone, rounded to the whole percent
+(`results/car_fuel_readout.csv`, from `scripts/car_fuel.py --readout`). Each reading is the
+mean drag over the 0.5 s of flow before it, against the lone car's over the same seconds,
+updated four times a second of video; every car's drag is low just after the impulsive
+start, and matching the seconds keeps that out of the reading. At the moment the lorry
+brakes the readings are 18% and 11%. Then the lorry's brake lights come on, the air and the
+numbers fade, and the stop plays out as `results/car_braking.json` has it.
+
+**Why the air fades.** The solve is the steady drafting with fixed gaps at 90 km/h. Once
+the lorry brakes, the gaps close and both vehicles slow, so the solved air no longer
+describes them.
+
+**It does not show** the air during the stop, any crash beyond the cartoon bump, the car's
+absolute drag, or the other reaction times.
+
+### Limits of the car runs
+
+- **The stop is not CFD.** It is kinematics from the sourced figures above, at constant
+  decelerations, and the bump is a drawing; its outcome turns on the reaction time.
+- **The fuel split is a single figure.** Half of the fuel going on drag at motorway speed,
+  and an engine whose efficiency does not change at the lower load. Argonne's simulation
+  on the same report's p. 208 gives 2.15% less fuel for 10% less drag on the highway
+  cycle, a slower cycle than 90 km/h; with that figure the savings would be under half
+  those above, which makes it the low bound.
+- **The car's absolute drag is too high.** Cd 0.42 on 2.265 m2, where a real liftback of
+  this size is nearer 0.3: a simple generic shape meshed at 1/16 m with no boundary-layer
+  cells. Only the ratio to the same car alone, on the same mesh, is used, which is where
+  such errors largely cancel; the newtons are rough.
+- **A coarse mesh, one realization.** No mesh study; 4 s of averaged flow behind a wake
+  that pumps, so the shares carry a couple of points of scatter (the 0.5 s means above).
+- **The wheels do not turn,** on the car or the lorry, over a moving ground.
+- **One speed and two gaps.** The comment's "various speeds" is not answered here. No
+  crosswind, which moves the shelter sideways, a flat straight road, no other traffic, no
+  mirrors on either vehicle.
+- **A generic car and a box lorry.** A car built from published dimensions, not a scanned
+  car, and the one lorry of the other runs.
+
 ## Running it
 
 You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Python 3
@@ -423,6 +613,30 @@ and Pillow. From a clean copy, `--setup-only overtaking` wrote the solved run's
 dictionaries, initial fields and surfaces byte for byte and meshed it to the same mesh,
 byte for byte; the two scripts, run on the solved run's lines, reproduced the clip's force
 and wind histories to the last digit written, and every number in the sensitivity table.
+
+The car runs:
+
+    ./Allrun tailgate               # or carAlone, safe; ./Allrun --setup-only tailgate meshes and stops
+    python3 scripts/car_fuel.py runs > results/car_fuel.txt              # after all three
+    python3 scripts/car_fuel.py runs --readout results/car_fuel_readout.csv
+    python3 scripts/car_braking.py results/car_braking.json > results/car_braking.txt
+
+`Allrun` builds the car (`scripts/build_car.py`, which needs the same Python packages as
+the lorry) and the lorry if they are not there, writes `runs/<run>/`
+(`scripts/makeCarCase.py`, with `config_car.sh`), meshes and checks it, writes the t = 0
+planes and forces, and solves to 8 s on 3 MPI ranks alone and 6 with the lorry, with
+OpenFOAM's collated file handler as solved. The solves took 2.1 hours alone, 5.9 hours
+tailgating and 7.4 hours at two seconds, all three at once. The solved runs were restarted
+from t = 0 after a first attempt was interrupted with no field written to continue from;
+the restarted copies differ from the first only in writing a field every 1 s, and
+`makeCarCase.py` writes them as solved. `car_braking.py` needs only NumPy.
+From a clean copy, `--setup-only` wrote all three solved runs' dictionaries, initial fields,
+surfaces and `config.sh` byte for byte and meshed them to the same meshes, byte for byte;
+`car_fuel.py` on the solved runs' force histories reproduced every number in
+`results/car_fuel.txt` and the clip's readout frame for frame, and `car_braking.py` wrote
+the clip's `car_braking.json` byte for byte. The car runs were set up and solved by an
+agent whose run ended before its own report; every figure above was computed from the
+force histories afterwards.
 
 `./Allclean` removes the runs.
 
