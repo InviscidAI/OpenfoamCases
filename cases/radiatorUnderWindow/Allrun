@@ -3,11 +3,14 @@
 #
 #   ./Allrun window|opposite [hour|start300] [nProcs]
 #   ./Allrun --setup-only window|opposite [hour|start300] [nProcs]
+#   ./Allrun [--setup-only] hanging|tucked [nProcs]
 #
 # hour     (default) 0-3600 s, a section written every 7.5 s: the third solve.
 # start300 0-300 s, a section written every 0.625 s: the same case re-solved for the clip.
 # nProcs   MPI ranks, default 6 (both solves used 6).
 # --setup-only meshes, sets and decomposes the case but does not solve it.
+# hanging, tucked: the window run's start300 with a floor-length curtain in front of the
+#          radiator, or tucked in at the sill (curtains/ is laid over template/).
 #
 # The run is written to runs/<variant>/<run>/, beside runs/<variant>/config/caseSettings,
 # which every dictionary #includes as ../../config/caseSettings.
@@ -17,10 +20,54 @@ cd "${0%/*}" || exit 1
 setupOnly=false
 if [ "$1" = "--setup-only" ]; then setupOnly=true; shift; fi
 run=$1; variant=${2:-hour}; nproc=${3:-6}
+
+# ---- the curtain runs: start300 only, the radiator under the window ----------------------
+start300Settings() {
+    sed -e 's|^tEnd .*|tEnd            300;        // start300: the first 300 s of the hour|' \
+        -e 's|^writeInt .*|writeInt        0.625;      // = tEnd/480 -> 481 writes (hour: 7.5)|' \
+        config/caseSettings
+}
+case "$run" in
+  hanging|tucked)
+    nproc=${2:-6}
+    base=runs/start300
+    mkdir -p "$base/config"
+    start300Settings > "$base/config/caseSettings"
+    rm -rf "$base/$run"; mkdir -p "$base/$run"
+    cp -r template/constant template/system "$base/$run"/
+    cp curtains/system/* "$base/$run/system"/
+    cat > "$base/$run/system/runConfig" <<CFG
+// written by Allrun - the ONLY difference between the two curtain runs
+runName  $run;
+nProcs   $nproc;
+radXmin  0.040;
+radXmax  0.123;
+radYmin  0.15;
+radYmax  0.75;
+CFG
+    cd "$base/$run" || exit 1
+    # the mesh is written in ASCII so that make_curtain_faces.py can read it
+    sed -i 's/^writeFormat     binary;/writeFormat     ascii;/' system/controlDict
+    runApplication blockMesh
+    python3 ../../../make_curtain_faces.py . "$run" > log.make_curtain_faces 2>&1 || exit 1
+    runApplication -s curtain topoSet -dict system/faceZoneDict
+    runApplication createBaffles -overwrite
+    # the fields go in after createBaffles, which would otherwise rewrite them
+    cp -r ../../../curtains/0.orig 0
+    runApplication topoSet
+    runApplication checkMesh -constant
+    sed -i 's/^writeFormat     ascii;/writeFormat     binary;/' system/controlDict
+    runApplication decomposePar -fileHandler collated
+    $setupOnly && { echo "set up, not solved: $base/$run"; exit 0; }
+    runParallel -n "$nproc" buoyantPimpleFoam -fileHandler collated
+    runApplication reconstructPar -latestTime -fileHandler collated
+    exit 0 ;;
+esac
+
 case "$run" in
   window)   radXmin=0.040; radXmax=0.123 ;;
   opposite) radXmin=3.877; radXmax=3.960 ;;
-  *) echo "usage: $0 [--setup-only] window|opposite [hour|start300] [nProcs]" >&2; exit 2 ;;
+  *) echo "usage: $0 [--setup-only] window|opposite [hour|start300] [nProcs] | hanging|tucked [nProcs]" >&2; exit 2 ;;
 esac
 radYmin=0.15; radYmax=0.75
 

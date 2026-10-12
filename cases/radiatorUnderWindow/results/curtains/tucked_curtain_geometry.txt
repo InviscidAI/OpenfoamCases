@@ -1,0 +1,5 @@
+run tucked
+faces 144
+vertices_min [0.  0.9 0. ]
+vertices_max [0.15      2.2056204 1.       ]
+area_m2_per_m 1.455620405

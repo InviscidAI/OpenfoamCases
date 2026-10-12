@@ -1,0 +1,5 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+actions
+(
+ { name curtainZone; type faceZoneSet; action new; source setToFaceZone; faceSet curtainFaces; }
+);

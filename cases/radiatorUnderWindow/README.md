@@ -1,4 +1,4 @@
-# A radiator under a cold window, or on the opposite wall
+# A radiator under a cold window, or on the opposite wall; and a curtain over it
 
 Radiators go under windows because cold air falls off the glass, and the radiator's warm
 air is meant to stop it. This case asks what that does to the room: in a 2-D vertical
@@ -13,6 +13,15 @@ One OpenFOAM case, two runs that differ only in where the radiator box is:
     ./Allrun opposite            # radiator on the inner wall, 0-3600 s
     ./Allrun window start300     # the first 300 s again, written every 0.625 s (the clip)
     ./Allrun opposite start300
+
+Two more runs put a floor-length curtain over the radiator under the window, hanging in
+front of it and tucked in at the sill, and ask how much of the radiator's heat reaches the
+room in the first five minutes:
+
+    ./Allrun hanging             # the curtain hangs from the rail to the floor, 0.15 m out
+    ./Allrun tucked              # the same curtain tucked in at the sill
+
+They have their own section, [Curtains](#curtains), with their own limits.
 
 ## The room
 
@@ -294,6 +303,178 @@ still colder than it will settle.
 - **An hour from a uniform start.** The window room's floor layer is still rising slowly at
   3600 s (an exponential fitted from 600 s settles at 20.64 C, 0.06 K above its 3600 s
   value).
+
+## Curtains
+
+Interior designers like curtains that reach the floor; energy advice in Britain and Germany says a
+curtain should not hang over the radiator. The UK's (the Centre for Sustainable Energy, Age
+UK) is to tuck long curtains behind it, Germany's (the Verbraucherzentrale, co2online) to end
+them above it. These two runs take the window run's room and radiator from switch-on and add
+one curtain, in two shapes. Where does the radiator's plume go, and how much of its heat has
+crossed into the room after five minutes?
+
+- **hanging.** The curtain hangs straight down in front of the radiator and the window, from
+  the rail to just above the floor.
+- **tucked.** The same curtain from the same rail, its hem tucked in at the bottom of the
+  glass, so it drapes as one straight sheet from the rail to the sill and the radiator below
+  it faces the room.
+
+Everything else is the window run's `start300`: the room, the glass at U = 2.8 W/m2K to 0 C,
+the radiator box at 60 W/m, the mesh, the numerics, Courant 1, the pressure-iteration cap, the
+start from rest at 20 C and 0-300 s with a write every 0.625 s. Both runs read the same
+`runs/start300/config/caseSettings` as the window and opposite runs.
+
+### The curtain
+
+In the case's coordinates (x from the outside wall into the room, y up from the floor; the
+glass is x = 0 from y = 0.90 to 2.10, the radiator box x = 0.040-0.123, y = 0.15-0.75):
+
+| | value | from |
+|---|---|---|
+| rail | y = 2.20 m, 0.10 m above the top of the glass | Dunelm's fitting guide: "We recommend that your curtain pole sits 10cm above the window" |
+| distance from the wall | 0.15 m, about 27 mm in front of the radiator | a standard 99 mm bracket would not clear the radiator, so an extendable one of the kind sold to hang curtains past radiators (Hallis Hudson Neo, 124 to 165 mm from the wall); Orłowska et al. (below) hung theirs 2 cm from the radiator |
+| hem, hanging | 0.01 m above the floor | B&Q's measuring guide: "subtract 1cm for clearance" |
+| tucked | a straight sheet from (0.15, 2.20) to (0, 0.90), the bottom of the glass | ours; the room has no window board |
+| fabric | impermeable, a conducting layer of 0.03 m2K/W with no thermal mass | ours, a lined curtain; it is small next to the air films on its two faces, which the solver resolves |
+| above the curtain | open: nothing closes the gap to the ceiling or to the wall | as over a curtain heading with no pelmet |
+
+The curtain is a baffle in the unchanged blockMesh mesh, 66,700 cells. `make_curtain_faces.py`
+picks the internal cell faces along the sheet into a face set, `topoSet` (`system/faceZoneDict`)
+makes it a face zone, and `createBaffles` (`system/createBafflesDict`) splits it into two
+coincident `mappedWall` patches, `curtainA` and `curtainB`. No air crosses them (no-slip on
+both faces). Heat crosses through `compressible::turbulentTemperatureRadCoupledMixed` with
+one layer 0.9 mm thick at 0.03 W/m K, which is 0.03 m2K/W, and `qr none`: no radiation.
+The ends are snapped to whole cell faces rather than remeshed (`results/curtains/*_curtain_geometry.txt`):
+
+- **hanging**: 212 vertical faces at x = 0.15, from y = 0.0076 to 2.196 m (asked for: 0.01
+  and 2.20).
+- **tucked**: 144 faces in a staircase of vertical and horizontal faces that separates the
+  cells either side of the straight line, from (0, 0.90) exactly to y = 2.206 m. It is a
+  staircase, not a diagonal wall; its faces add up to 1.456 m of sheet per metre.
+
+The first 0.20 m of the mesh has 5 mm columns, so 30 cells span the wall to the curtain and
+5-6 the 27 mm between the radiator's front and the curtain; the glass's cold film and the
+plume each have cells of their own in the gap. `checkMesh` passes both runs.
+
+The curtain runs' files are in `curtains/`, laid over `template/` by `Allrun`: the fields
+with the curtain's two patches (`curtains/0.orig`), `controlDict` with the curtain's heat
+flux monitored, and the two dictionaries above. In `controlDict` the probes are at x = 1, 2
+and 3 m, at 0.1 and 1.1 m up (12's were at 0.5, 1 and 2 m), and 12's sill and floor lines
+are not written. The window and opposite runs are unchanged.
+
+### The heat that reaches the room
+
+The heat reaching the room is what crosses the line x = 0.15 from the floor to the ceiling,
+the curtain's line in `hanging`: the advected enthalpy, net, rho Ux cp (T - 293.15 K) as the
+solver's sensible enthalpy is referenced, plus in `hanging` the heat conducted through the
+curtain (the wall heat flux on `curtainB`, its room face). On the curtain's own rows no air
+crosses, so only the rows above and below it carry air. In `tucked` the sheet lies behind
+that line and only air crosses it. The density is 1e5/(R T), since the section has T and U
+but not p. The cumulative heat from t = 0 (trapezoidal, from a still room) over the
+radiator's 60 t J/m is the share. `postprocess_curtains.py` writes it, the 7.5 s heat
+budgets as `postprocess.py` does them, the probes, and the gross flows over the curtain's
+top (y = 2.20, x = 0-0.15) and, in `hanging`, under its hem (x = 0.15, y < 0.01), to
+`results/curtains/`.
+
+**The heat budget closes.** Over every 7.5 s interval the radiator, the wall heat flux and
+the rise in internal energy agree to within -0.28 to +0.20 W/m (`hanging`) and -0.04 to
++0.21 W/m (`tucked`) (`results/curtains/*_heat_budget.csv`).
+
+### Results
+
+At 300 s (`results/curtains/summary.md`, `*_history.csv`):
+
+| | hanging | tucked |
+|---|---:|---:|
+| share of the radiator's heat that has reached the room, 0-300 s | **14%** (13.9%) | **56%** (55.7%) |
+| heat into the room, cumulative | 2.51 kJ/m | 10.03 kJ/m |
+| heat crossing into the room at 300 s | 7.7 W/m | 34.3 W/m |
+| glass loss at 300 s | 48.0 W/m | 24.6 W/m |
+| room side (x > 0.15), mean | 20.24 C | 21.01 C |
+| behind the curtain, mean | 21.66 C | 12.89 C |
+
+For comparison, the window run's `start300` with no curtain loses 49.5 W/m through the glass
+over 285-300 s (`results/start300/window_heat_budget.csv`).
+
+**Hanging in front,** the plume rises in the 0.15 m gap between the curtain and the glass,
+washes the glass, and leaves over the curtain's top: 0.0031 m3/s per metre into the room
+over the top and 0.0004 back, means over 150-300 s, while 0.0024 m3/s per metre is drawn in
+under the hem from the room. The glass loses about what it does with no curtain, the gap
+fills with warm air, and by 300 s 14% of the radiator's heat has crossed into the room.
+
+**Tucked in at the sill,** the plume runs up the curtain's room face, along the ceiling and
+round the room. The curtain shields the room from the glass, whose loss halves, and the
+pocket between the glass and the drape cools to 12.9 C. 63% of the heat has reached the
+room by 30 s and 56% by 300 s; over the top of the drape, a ledge here, about 0.002 m3/s
+per metre moves each way.
+
+### Against Orłowska
+
+The one measurement of a curtain over a radiator we found is J. Orłowska, M. Szałański and
+W. Cepiński, "Testing the Temperature Fields and Power of a Flat Radiator Covered With and
+Without a Curtain", *Rocznik Ochrona Środowiska* 27 (2025) 705-721,
+doi:10.54740/ros.2025.057. A cotton curtain hung 2 cm in front of the radiator cut its
+output by 13.4% (319.8 W to 277.0 W; open-weave guipure, 0.1%). Their rig had **no window**:
+the curtain could only hold the heat back from the radiator. Here the radiator's output is
+fixed, and the curtain sends the heat it holds back to the cold glass instead of the room.
+The two numbers measure different things and should not be set side by side: the 14% here
+is the share of a fixed output that reached the room in five minutes, not a loss of output.
+
+### What the clip shows
+
+The section twice, the hanging curtain above and the tucked one below, from switch-on to
+300 s: air temperature on 12's scale (17-24 C) with moving air parcels, and each panel's
+share of the heat that has reached the room as a whole percent. The air behind the tucked
+curtain (12.9 C) and the hottest air in the hanging gap (up to 28 C) are off that scale and
+are drawn at its ends.
+
+### What it cannot
+
+- **A 2-D section, so no air goes round the curtain's ends.** The curtain, the radiator and
+  the window are infinitely long. A real curtain has sides, and a gap between two curtains,
+  and the plume can leave round them; the section cannot show it.
+- **No radiation.** The radiator, the glass and the curtain exchange heat by convection
+  only. A real radiator gives part of its heat as radiation, which a curtain in front of it
+  would intercept; the case leaves that out, as it leaves out radiation at the glass (see
+  [What it cannot](#what-it-cannot) above).
+- **An impermeable sheet.** No air passes through the fabric. Real curtains let some through,
+  open weaves a lot (Orłowska's guipure cost 0.1%). The sheet is also rigid and smooth, with
+  no folds, no thermal mass, and its ends snapped to whole cell faces; the tucked drape is a
+  staircase of faces.
+- **A 60 W/m plume.** The radiator's output is the section's own heat loss, a tenth of a real
+  panel radiator's at normal water temperatures (see [Why 60 W per metre](#why-60-w-per-metre)).
+  A real radiator would run hotter and its plume would be stronger; how that would change
+  the two shares is not tested.
+- **Five minutes from switch-on.** The shares are of the heat over 0-300 s, not a steady
+  state, and they are still moving at 300 s (`hanging` 12.2% at 180 s and 13.9% at 300 s,
+  `tucked` 56.8% and 55.7%). Neither run was continued.
+- **Orłowska's 13.4% was measured on a rig with no window**, so it cannot check the shares
+  here, and nothing here checks it.
+- **One mesh, one run per shape.** URANS with no mesh or time-step study and no repeat; the
+  window run's eddies by the glass are sensitive to small changes (see
+  [The 0-300 s re-solve](#the-0-300-s-re-solve)).
+- **No window board.** The tucked hem meets the wall at the bottom of the glass; a real sill
+  overhangs by a few centimetres.
+
+### Running the curtains
+
+    ./Allrun hanging             # [nProcs], default 6
+    ./Allrun tucked
+    python3 postprocess_curtains.py   # runs/start300 -> results/curtains
+
+`./Allrun --setup-only hanging|tucked` stops before the solve. The mesh is written in ASCII
+for `make_curtain_faces.py` to read, and the controlDict is set back to binary before the
+solve. `postprocess_curtains.py` also writes the t = 0 plane, a still room at 20 C, into
+each run's `postProcessing/clip/0/`, which the solver does not write. Like the others the
+runs keep full fields for the last four writes only; the 481 sections take about 2 GB a run.
+
+The two runs were solved side by side on our own machine, 6 ranks each on separate cores, in
+3,192 s (`hanging`) and 1,622 s (`tucked`) of wall time. The case was set up by an agent and
+checked by us. From a clean copy, `./Allrun --setup-only` gave both runs the solved runs'
+meshes (undecomposed and decomposed), initial fields and curtain faces byte for byte, and
+dictionaries whose values are identical (`runConfig` and the `start300` comments differ only
+in layout). `postprocess_curtains.py` on the solved runs' planes and monitors reproduces
+every file in `results/curtains/` byte for byte, `final_fields.png` included.
 
 ## Running it
 

@@ -1,0 +1,33 @@
+FoamFile { version 2.0; format ascii; class dictionary; object createBafflesDict; }
+internalFacesOnly true;
+baffles
+{
+ curtain
+ {
+  type faceZone;
+  zoneName curtainZone;
+  patches
+  {
+   master
+   {
+    name curtainA;
+    type mappedWall;
+    sampleRegion region0;
+    sampleMode nearestPatchFace;
+    samplePatch curtainB;
+    offsetMode uniform;
+    offset (0 0 0);
+   }
+   slave
+   {
+    name curtainB;
+    type mappedWall;
+    sampleRegion region0;
+    sampleMode nearestPatchFace;
+    samplePatch curtainA;
+    offsetMode uniform;
+    offset (0 0 0);
+   }
+  }
+ }
+}
