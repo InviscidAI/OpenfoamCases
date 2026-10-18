@@ -1,0 +1,3 @@
+FoamFile
+{ version 2.0; format ascii; class dictionary; object decomposeParDict; }
+numberOfSubdomains 14; method scotch; distributed no; roots ();

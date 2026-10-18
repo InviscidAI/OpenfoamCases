@@ -17,7 +17,10 @@ and the rider is read off the solve along his path rather than put in it:
 
     ./Allrun overtaking # the lorry alone in its own frame at 80 km/h
 
-It has its own section, [Overtaken](#overtaken), with its own limits.
+It has its own section, [Overtaken](#overtaken), with its own limits. The same pass at
+1.5 m and at 30 cm, with the rider in the flow as a moving drag term but in a 2-D section
+at his shoulders, is a case of its own, [`lorryClosePass2D`](../lorryClosePass2D); it
+checks its 1.5 m pass against this run and gives only ratios, so the newtons are this run's.
 
 Three more runs answer a viewer who asked for a car at a safe distance. A car takes the
 rider's place behind the same lorry at 90 km/h, tailgating it and at the two-second gap,
@@ -375,6 +378,10 @@ triangle shows when the vertical part is at least 1 N.
 
 **It does not show** the force's estimate as anything other than an estimate, the knee
 section, the other gaps, or the 17 N comparison.
+
+For a rider 30 cm from the lorry's side, where he changes the flow and cannot be a probe,
+see [`lorryClosePass2D`](../lorryClosePass2D): a 2-D section with the rider in it, which
+puts the 30 cm pass's push at about 3-4 times the 1.5 m pass's and its pull at about 6 times.
 
 ### Limits of the overtaking run
 

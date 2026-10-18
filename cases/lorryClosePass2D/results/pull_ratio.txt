@@ -1,0 +1,36 @@
+pull = +Fy, N per metre; peak inside 4.4167-6.0417 s; 'behind' = metres his shoulders are behind the cab's front
+
+centred 0.02 s mean: 30 cm 103.7 at +18.32 m behind, 1.5 m  19.3 at +16.47 m; ratio 5.38
+trailing 0.02 s mean: 30 cm 103.7 at +18.49 m behind, 1.5 m  19.3 at +16.63 m; ratio 5.38
+centred 0.05 s mean: 30 cm 102.4 at +18.30 m behind, 1.5 m  18.5 at +16.55 m; ratio 5.55
+trailing 0.05 s mean: 30 cm 102.4 at +18.72 m behind, 1.5 m  18.5 at +16.97 m; ratio 5.55
+centred 0.10 s mean: 30 cm  98.9 at +18.35 m behind, 1.5 m  16.5 at +16.55 m; ratio 6.01
+trailing 0.10 s mean: 30 cm  98.6 at +19.03 m behind, 1.5 m  16.5 at +17.38 m; ratio 5.99
+2 m bins, phase 0.0: 30 cm 100.6 (bin from +18.0 m), 1.5 m  14.4 (bin from +16.0 m); ratio 6.98
+2 m bins, phase 0.5: 30 cm  91.3 (bin from +16.5 m), 1.5 m  11.0 (bin from +16.5 m); ratio 8.28
+2 m bins, phase 1.0: 30 cm  95.8 (bin from +17.0 m), 1.5 m  14.0 (bin from +15.0 m); ratio 6.83
+2 m bins, phase 1.5: 30 cm  99.4 (bin from +17.5 m), 1.5 m  15.5 (bin from +15.5 m); ratio 6.39
+1 m bins, phase 0.0: 30 cm 100.9 (bin from +18.0 m), 1.5 m  18.1 (bin from +16.0 m); ratio 5.58
+1 m bins, phase 0.5: 30 cm 100.0 (bin from +17.5 m), 1.5 m  15.7 (bin from +16.5 m); ratio 6.36
+
+pull ratio over all 12 smoothings: 5.38-8.28, median 6.00
+
+push = -Fy, N per metre; peak inside 4.4167-6.0417 s; 'behind' = metres his shoulders are behind the cab's front
+
+centred 0.02 s mean: 30 cm  86.4 at  +0.95 m behind, 1.5 m  21.3 at  +1.71 m; ratio 4.05
+trailing 0.02 s mean: 30 cm  86.4 at  +1.12 m behind, 1.5 m  21.3 at  +1.88 m; ratio 4.05
+centred 0.05 s mean: 30 cm  81.8 at  +1.08 m behind, 1.5 m  20.8 at  +1.92 m; ratio 3.93
+trailing 0.05 s mean: 30 cm  81.8 at  +1.50 m behind, 1.5 m  20.8 at  +2.33 m; ratio 3.93
+centred 0.10 s mean: 30 cm  70.6 at  +1.19 m behind, 1.5 m  19.9 at  +1.71 m; ratio 3.54
+trailing 0.10 s mean: 30 cm  70.6 at  +2.02 m behind, 1.5 m  19.9 at  +2.54 m; ratio 3.54
+2 m bins, phase 0.0: 30 cm  63.5 (bin from +0.0 m), 1.5 m  17.6 (bin from +0.0 m); ratio 3.61
+2 m bins, phase 0.5: 30 cm  65.6 (bin from +0.5 m), 1.5 m  19.1 (bin from +0.5 m); ratio 3.43
+2 m bins, phase 1.0: 30 cm  55.9 (bin from -1.0 m), 1.5 m  19.2 (bin from +1.0 m); ratio 2.91
+2 m bins, phase 1.5: 30 cm  61.6 (bin from -0.5 m), 1.5 m  17.1 (bin from +1.5 m); ratio 3.60
+1 m bins, phase 0.0: 30 cm  70.7 (bin from +1.0 m), 1.5 m  20.3 (bin from +1.0 m); ratio 3.49
+1 m bins, phase 0.5: 30 cm  79.2 (bin from +0.5 m), 1.5 m  20.5 (bin from +1.5 m); ratio 3.87
+
+push ratio over all 12 smoothings: 2.91-4.05, median 3.61
+
+the arrows (0.05 s trailing mean, held 6 frames): gap150 pull 18.4 at 5.920 s, push 20.5 at 5.026 s, largest in-plane 29.8; gap030 pull 102.3 at 6.021 s, push 81.2 at 4.985 s, largest in-plane 103.2
+arrow pull ratio 5.56, push ratio 3.96

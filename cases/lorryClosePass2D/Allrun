@@ -1,0 +1,125 @@
+#!/bin/bash
+# A lorry passing a cyclist at 1.5 m and at 30 cm, in a 2-D section at his shoulder height.
+#
+#   ./Allrun mesh                               # the background mesh only, in runs/mesh/
+#   ./Allrun [--setup-only] precursor           # the lorry alone, 0-3.4 s
+#   ./Allrun [--setup-only] gap150|gap030       # the rider added at 3.4 s, 1.5 m or 30 cm away
+#
+# mesh       scripts/make_mesh.py meshes the lorry's section (geometry/lorry_z1p3_r_outline.csv,
+#            from scripts/sections.py) with gmsh; gmshToFoam imports it, its z faces are made
+#            empty and the lorry a wall, and the .msh is deleted. 787,842 cells.
+# precursor  the lorry alone in its own frame, the air at 22.2 m/s, from rest to 3.4 s.
+# gap150     from the precursor's last write (3.399976553327491 s), the rider at 1.5 m to 8.0 s;
+# gap030     the rider at 30 cm, to 6.4 s. The two differ only in yShoulder (constant/fvOptions)
+#            and endTime. The rider is the drag term riderPenalty in constant/fvOptions, his
+#            outline constant/riderOutline (scripts/rider_outline.py), and the force on him
+#            the coded function object system/riderForceIB.
+# Each solve runs on 14 MPI ranks with the collated file handler, as solved. Running a gap
+# again once runs/<gap>/processors14 exists continues it from its latest write, into
+# log.pimpleFoam.restart1, 2, ... (gap150 was solved that way from 6.2 s).
+# --setup-only writes the run, checks and decomposes it, and stops before the solve.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v gmshToFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in mesh|precursor|gap150|gap030) ;;
+    *) echo "usage: $0 mesh | [--setup-only] precursor|gap150|gap030" >&2; exit 2 ;; esac
+nproc=14
+
+# ---- the background mesh ----------------------------------------------------------------------
+buildMesh() {
+    rm -rf runs/mesh; mkdir -p runs/mesh/system
+    # gmshToFoam and checkMesh need a controlDict; this one leaves the mesh in ascii, as solved
+    echo 'FoamFile { version 2.0; format ascii; class dictionary; object controlDict; } application checkMesh; startFrom startTime; startTime 0; stopAt endTime; endTime 1; deltaT 1; writeControl timeStep; writeInterval 1;' \
+        > runs/mesh/system/controlDict
+    cp template/system/fvSchemes template/system/fvSolution runs/mesh/system/
+    python3 scripts/make_mesh.py geometry/lorry_z1p3_r_outline.csv runs/mesh/background.msh \
+        > runs/mesh/log.make_mesh 2>&1
+    (
+        cd runs/mesh
+        gmshToFoam background.msh > log.gmshToFoam 2>&1
+        rm background.msh
+        # gmshToFoam makes every physical surface a patch: the z faces are the empty pair and
+        # the lorry a wall
+        python3 - constant/polyMesh/boundary <<'PY'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+for name, new in (("frontAndBack", "empty"), ("lorryWall", "wall")):
+    pat = r"(\n\s*" + re.escape(name) + r"\s*\n\s*\{.*?\n\s*type\s+)\w+(\s*;)"
+    s, n = re.subn(pat, r"\g<1>" + new + r"\g<2>", s, count=1, flags=re.S)
+    if n != 1:
+        raise SystemExit("patch not found: " + name)
+open(p, "w").write(s)
+PY
+        checkMesh -allGeometry -allTopology > log.checkMesh 2>&1 || true
+    )
+    grep -E '^ +cells:|Mesh OK|Failed' runs/mesh/log.checkMesh
+}
+if [ "$run" = mesh ]; then buildMesh; exit 0; fi
+[ -f runs/mesh/constant/polyMesh/faces ] || buildMesh
+
+solve() {
+    local log=log.pimpleFoam i=1
+    while [ -e "$log" ]; do log=log.pimpleFoam.restart$i; i=$((i+1)); done
+    local start; start=$(date +%s)
+    mpirun -np "$nproc" pimpleFoam -parallel -fileHandler collated > "$log" 2>&1
+    printf '%s %s seconds\n' "$log" "$(( $(date +%s) - start ))" >> wallclock.txt
+}
+
+# ---- the precursor ----------------------------------------------------------------------------
+if [ "$run" = precursor ]; then
+    r=runs/precursor
+    rm -rf "$r"; mkdir -p "$r/constant" "$r/system"
+    cp -r runs/mesh/constant/polyMesh "$r/constant/"
+    cp template/constant/transportProperties template/constant/turbulenceProperties "$r/constant/"
+    cp template/system/fvSchemes template/system/fvSolution template/system/decomposeParDict "$r/system/"
+    cp template/system/controlDict.precursor "$r/system/controlDict"
+    cp -r template/0.orig "$r/0"
+    cd "$r"
+    decomposePar -force -fileHandler collated > log.decomposePar 2>&1
+    $setupOnly && { echo "set up, not solved: $r"; exit 0; }
+    solve
+    reconstructPar -latestTime -fileHandler collated > log.reconstructPar 2>&1
+    echo "solved: $r"
+    exit 0
+fi
+
+# ---- a pass -----------------------------------------------------------------------------------
+r=runs/$run
+if [ -d "$r/processors$nproc" ] && ! $setupOnly; then
+    # continue from the latest write
+    cd "$r"; solve; echo "solved: $r"; exit 0
+fi
+# the precursor's last write
+T=$(cd runs/precursor 2>/dev/null && ls -d [0-9]* 2>/dev/null | sort -g | tail -1 || true)
+if [ -z "$T" ] || ! awk -v t="$T" 'BEGIN { exit !(t > 3.39) }'; then
+    echo "runs/precursor has no write at 3.4 s: ./Allrun precursor first" >&2; exit 1
+fi
+case "$run" in
+    gap150) y=-2.985; end=8.0 ;;
+    gap030) y=-1.785; end=6.4 ;;
+esac
+rm -rf "$r"; mkdir -p "$r/constant" "$r/system"
+cp -r runs/precursor/constant/polyMesh "$r/constant/"
+rm -f "$r"/constant/polyMesh/{cellZones,faceZones,pointZones}
+cp template/constant/transportProperties template/constant/turbulenceProperties \
+   template/constant/fvOptions "$r/constant/"
+python3 scripts/rider_outline.py geometry/rider_z1p3_r_outline.csv "$r/constant/riderOutline"
+cp template/system/fvSchemes template/system/fvSolution template/system/decomposeParDict \
+   template/system/controlDict template/system/riderForceIB "$r/system/"
+# the whole write, with its old-time fields and uniform/time, so the backward scheme carries on
+cp -r "runs/precursor/$T" "$r/"
+sed -i "s|^\(        yShoulder       \)-2.985;         // m, gap150|\1$y;         // m, $run|" \
+    "$r/constant/fvOptions"
+sed -i -e "s/^startTime .*;/startTime $T;/" -e "s/^endTime .*;/endTime $end;/" "$r/system/controlDict"
+grep -q "yShoulder       $y;" "$r/constant/fvOptions"
+cd "$r"
+checkMesh -allGeometry -allTopology > log.checkMesh 2>&1 || true
+grep -E '^ +cells:|Mesh OK|Failed' log.checkMesh
+decomposePar -latestTime -fileHandler collated > log.decomposePar 2>&1
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+solve
+echo "solved: $r"

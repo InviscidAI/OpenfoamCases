@@ -1,0 +1,70 @@
+// The force of the air on the rider, per metre of height, every time step:
+//     F = rho sum over cells of K m (U - U_r) V,
+// the reaction to the drag that holds the air in his cells at his velocity (the
+// riderPenalty source in constant/fvOptions, whose K m it reads as riderKmask).
+// Written as "t (Fx Fy Fz)" to postProcessing/riderForceIB/<start time>/force.dat.
+
+riderForceIB
+{
+    type            coded;
+    libs            (utilityFunctionObjects);
+    name            riderForceIB;
+    writeControl    timeStep;
+    writeInterval   1;
+
+    // Read by the code through codeContext(), which holds only this sub-dictionary.
+    codeContext
+    {
+        rhoInf          1.225;          // kg/m3
+        riderVelocity   (-16.667 0 0);  // m/s, as in constant/fvOptions
+    }
+
+    codeInclude
+    #{
+        #include "OFstream.H"
+    #};
+
+    codeExecute
+    #{
+        const fvMesh& m = mesh();
+        const volScalarField* Km = m.findObject<volScalarField>("riderKmask");
+        if (!Km)
+        {
+            return true;
+        }
+        const volVectorField& U = m.lookupObject<volVectorField>("U");
+        const scalar rho = codeContext().get<scalar>("rhoInf");
+        const vector Ur = codeContext().get<vector>("riderVelocity");
+        const scalarField& km = Km->primitiveField();
+        const scalarField& V = m.V();
+
+        vector F(Zero);
+        scalar cells = 0;
+        forAll(km, i)
+        {
+            if (km[i] > 0)
+            {
+                F += rho*km[i]*(U[i] - Ur)*V[i];
+                cells += 1;
+            }
+        }
+        reduce(F, sumOp<vector>());
+        reduce(cells, sumOp<scalar>());
+
+        static autoPtr<OFstream> os;
+        if (Pstream::master())
+        {
+            if (!os)
+            {
+                const fileName dir =
+                    m.time().globalPath()/"postProcessing"/"riderForceIB"/m.time().timeName();
+                mkDir(dir);
+                os.reset(new OFstream(dir/"force.dat"));
+                os() << "# Time (Fx Fy Fz) N per metre, on the rider; cells" << nl;
+            }
+            os() << m.time().timeName() << tab
+                 << "(" << F.x() << " " << F.y() << " " << F.z() << ")" << tab
+                 << cells << endl;
+        }
+    #};
+}

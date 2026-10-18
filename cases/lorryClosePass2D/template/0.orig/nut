@@ -1,0 +1,3 @@
+FoamFile
+{ version 2.0; format ascii; class volScalarField; object nut; }
+dimensions [0 2 -1 0 0 0 0]; internalField uniform 0; boundaryField { frontAndBack { type empty; } inlet { type calculated; value uniform 0; } outlet { type calculated; value uniform 0; } farSides { type calculated; value uniform 0; } lorryWall { type nutkWallFunction; value uniform 0; } }

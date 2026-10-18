@@ -1,0 +1,150 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+
+// The rider as a body moving through a fixed mesh (Brinkman penalisation).
+//
+// In the cells he covers at time t, the momentum equation gains the drag
+//     S = -K m (U - U_r),
+// which holds the air there at his velocity U_r. m is the share of the cell inside his
+// outline, taken from the signed distance d of the cell centre to the outline as
+// m = clamp(0.5 - d/h, 0, 1), with h the cell's size (its area, the mesh being 1 m
+// thick). His shoulder centre is at x_s(t) = xStart + U_r.x (t - tStart), y = yShoulder,
+// a function of absolute time, so a restart from any write puts him in the right place.
+//
+// Signs, as fvMatrix stores them (an expression A x - source): this matrix is on the
+// right-hand side of UEqn == fvOptions(U), so -K m U enters as diag -= K m V (implicit,
+// unconditionally stable) and +K m U_r as source -= K m U_r V. K m is stored in the field
+// riderKmask, which is written with the fields and read by the riderForceIB function
+// object, and which flags the cells inside him for the panel.
+
+riderPenalty
+{
+    type            vectorCodedSource;
+    selectionMode   all;
+    fields          (U);
+    name            riderPenalty;
+
+    // Read by the code as fv::option::dict_.subDict("codeContext"). In v2512 a coded fvOption's own
+    // codeContext() is always empty: its template never fills it.
+    codeContext
+    {
+        K               1e6;            // 1/s
+        tStart          3.4;            // s, the rider appears at this time
+        xStart          41.5;           // m, his shoulder centre's x at tStart (25 m ahead of the cab's front)
+        yShoulder       -2.985;         // m, gap150
+        riderVelocity   (-16.667 0 0);  // m/s, in the lorry's frame
+        thickness       1;              // m, the mesh's one cell in z
+    }
+
+    codeInclude
+    #{
+        #include "IFstream.H"
+    #};
+
+    codeAddSup
+    #{
+        const fvMesh& m = mesh_;
+        const dictionary& d = fv::option::dict_.subDict("codeContext");
+        const scalar t = m.time().value();
+        const scalar K = d.get<scalar>("K");
+        const scalar tStart = d.get<scalar>("tStart");
+        const scalar xStart = d.get<scalar>("xStart");
+        const scalar yS = d.get<scalar>("yShoulder");
+        const vector Ur = d.get<vector>("riderVelocity");
+        const scalar thick = d.get<scalar>("thickness");
+
+        static List<vector> outline;
+        static scalar bx0 = 0, bx1 = 0, by0 = 0, by1 = 0;
+        if (outline.empty())
+        {
+            IFstream is(m.time().globalPath()/"constant"/"riderOutline");
+            is >> outline;
+            bx0 = by0 = GREAT; bx1 = by1 = -GREAT;
+            forAll(outline, j)
+            {
+                bx0 = min(bx0, outline[j].x()); bx1 = max(bx1, outline[j].x());
+                by0 = min(by0, outline[j].y()); by1 = max(by1, outline[j].y());
+            }
+            Info<< "riderPenalty: " << outline.size() << " outline points, x "
+                << bx0 << " to " << bx1 << ", y " << by0 << " to " << by1 << endl;
+        }
+
+        volScalarField* KmPtr = m.getObjectPtr<volScalarField>("riderKmask");
+        if (!KmPtr)
+        {
+            KmPtr = new volScalarField
+            (
+                IOobject
+                (
+                    "riderKmask",
+                    m.time().timeName(),
+                    m,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE,
+                    IOobject::REGISTER
+                ),
+                m,
+                dimensionedScalar(dimless/dimTime, Zero)
+            );
+            KmPtr->store();
+        }
+        scalarField& km = KmPtr->primitiveFieldRef();
+        km = 0;
+
+        if (t < tStart - SMALL)
+        {
+            return;
+        }
+
+        const scalar xs = xStart + Ur.x()*(t - tStart);
+        const vectorField& C = m.C();
+        const scalarField& V = m.V();
+        scalarField& diag = eqn.diag();
+        vectorField& src = eqn.source();
+        const label n = outline.size();
+
+        forAll(C, i)
+        {
+            const scalar h = Foam::sqrt(V[i]/thick);
+            const scalar px = C[i].x() - xs;
+            const scalar py = C[i].y() - yS;
+            if (px < bx0 - h || px > bx1 + h || py < by0 - h || py > by1 + h)
+            {
+                continue;
+            }
+
+            bool inside = false;
+            scalar d2 = GREAT;
+            for (label j = 0, k = n - 1; j < n; k = j++)
+            {
+                const scalar ax = outline[k].x(), ay = outline[k].y();
+                const scalar ex = outline[j].x() - ax, ey = outline[j].y() - ay;
+                if (((ay > py) != (ay + ey > py)) && (px < ax + ex*(py - ay)/ey))
+                {
+                    inside = !inside;
+                }
+                const scalar l2 = ex*ex + ey*ey;
+                const scalar s =
+                    l2 > 0 ? min(max(((px - ax)*ex + (py - ay)*ey)/l2, 0.0), 1.0) : 0.0;
+                const scalar dx = px - ax - s*ex, dy = py - ay - s*ey;
+                d2 = min(d2, dx*dx + dy*dy);
+            }
+            const scalar sd = (inside ? -1.0 : 1.0)*Foam::sqrt(d2);
+            const scalar frac = min(max(0.5 - sd/h, 0.0), 1.0);
+
+            if (frac > 0)
+            {
+                km[i] = K*frac;
+                diag[i] -= K*frac*V[i];
+                src[i] -= K*frac*V[i]*Ur;
+            }
+        }
+    #};
+
+    codeCorrect
+    #{
+    #};
+
+    codeConstrain
+    #{
+    #};
+}

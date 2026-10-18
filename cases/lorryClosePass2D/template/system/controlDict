@@ -1,0 +1,50 @@
+FoamFile
+{ version 2.0; format ascii; class dictionary; object controlDict; }
+application pimpleFoam;
+libs (utilityFunctionObjects forces sampling);
+startFrom latestTime;
+startTime 3.399976553327491;
+stopAt endTime;
+endTime 8.0;
+deltaT 0.0003;
+adjustTimeStep yes;
+maxCo 0.8;
+maxDeltaT 0.001;
+writeControl adjustableRunTime;
+writeInterval 0.2;
+purgeWrite 0;
+writeFormat binary;
+writePrecision 8;
+writeCompression off;
+timeFormat general;
+timePrecision 15;
+runTimeModifiable true;
+profiling { active true; cpuInfo false; memInfo false; sysInfo false; }
+functions
+{
+
+    #include "riderForceIB"
+    lorryForces
+    {
+        type forces; libs (forces); patches (lorryWall); p p; U U;
+        rho rhoInf; rhoInf 1.225; CofR (0 0 1.3);
+        writeControl timeStep; writeInterval 1; timeStart 3.4; log true;
+    }
+    panelGrid
+    {
+        type sets; libs (sampling); writeControl adjustableRunTime;
+        writeInterval 0.00833333333333333; timeStart 4.0;
+        setFormat vtk; interpolationScheme cell; fields (U riderKmask);
+        formatOptions { vtk { format binary; } }
+        sets
+        {
+            panel
+            {
+                type array; axis xyz; origin (-42.05 -6.05 1.25);
+                rotation { type axes; e1 (1 0 0); e2 (0 1 0); }
+                pointsDensity (1581 201 1); spanBox (79.1 10.1 0.1);
+            }
+        }
+    }
+
+}
