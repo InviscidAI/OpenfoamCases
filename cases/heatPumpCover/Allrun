@@ -1,0 +1,95 @@
+#!/bin/bash
+# A heat pump's outdoor unit in the open and inside a slatted cover with a lid: one mesh, two runs.
+#
+#   ./Allrun mesh                               # the shared mesh only, in runs/mesh/
+#   ./Allrun open|covered [nProcs]
+#   ./Allrun --setup-only open|covered [nProcs]
+#
+# open     the unit alone. The cover is in the mesh as the cell zone coverCells, which is air here.
+# covered  the same mesh less coverCells (subsetMesh); the faces it leaves become the wall coverWalls.
+#          Every cell of covered is a cell of open, with identical points.
+# nProcs   MPI ranks for the solve, default 7 (both runs used 7). The mesh is always made on 8
+#          ranks, as the solved runs' was.
+# --setup-only builds the mesh if runs/mesh/ has none, writes the run, sets its zones, checks
+#          and decomposes it, and stops before the solve.
+#
+# The mesh is built once, in runs/mesh/, from the surfaces scripts/make_stl.py writes and the
+# dictionaries in mesh/system/; each run is then written to runs/<run>/ from it and template/.
+# To run both side by side, run ./Allrun mesh first. The solve needs the fan's momentum source,
+# src/rampedMeanVelocityForce, which is compiled into $FOAM_USER_LIBBIN if it is not there.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-7}
+usage="usage: $0 mesh | [--setup-only] open|covered [nProcs]"
+case "$run" in mesh|open|covered) ;; *) echo "$usage" >&2; exit 2 ;; esac
+
+# ---- the shared mesh --------------------------------------------------------------------------
+buildMesh() {
+    rm -rf runs/mesh; mkdir -p runs/mesh/constant/triSurface
+    cp -r mesh/system runs/mesh/
+    python3 scripts/make_stl.py runs/mesh/constant/triSurface > runs/mesh/log.make_stl 2>&1
+    (
+        cd runs/mesh
+        blockMesh > log.blockMesh 2>&1
+        surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+        decomposePar -force > log.decomposePar 2>&1
+        mpirun -np 8 snappyHexMesh -parallel -overwrite > log.snappyHexMesh 2>&1
+        reconstructParMesh -constant > log.reconstructParMesh 2>&1
+        rm -rf processor*
+        # the coil and fan cell zones, by cell centre
+        topoSet -dict system/topoSetDict.zones -constant > log.topoSet.zones 2>&1
+        checkMesh -constant > log.checkMesh 2>&1 || true
+    )
+    grep -E '^ +cells:' runs/mesh/log.checkMesh
+}
+if [ "$run" = mesh ]; then buildMesh; exit 0; fi
+[ -f runs/mesh/constant/polyMesh/faces ] || buildMesh
+
+# ---- the run ----------------------------------------------------------------------------------
+r=runs/$run
+rm -rf "$r"; mkdir -p "$r/constant" "$r/system"
+cp -r runs/mesh/constant/polyMesh "$r/constant/"
+rm -rf "$r/constant/polyMesh/sets"
+if [ "$run" = covered ]; then
+    # the only difference between the runs: the cover's cells are taken out of the mesh
+    cp mesh/system/controlDict mesh/system/fvSchemes mesh/system/fvSolution \
+       mesh/system/topoSetDict.coverRemoval "$r/system/"
+    (
+        cd "$r"
+        topoSet -dict system/topoSetDict.coverRemoval -constant > log.topoSet.coverRemoval 2>&1
+        subsetMesh fluidCells -patch coverWalls -overwrite > log.subsetMesh 2>&1
+        # subsetMesh makes the new patch an empty one; the cover's faces are walls
+        sed -i '/^ *coverWalls$/,/}/{s/type *empty;/type            wall;/;s/inGroups *1(empty);/inGroups        1(wall);/}' \
+            constant/polyMesh/boundary
+        rm -rf constant/polyMesh/sets system/*
+    )
+fi
+cp -r template/constant/. "$r/constant/"
+cp -r template/system/. "$r/system/"
+[ "$nproc" = 7 ] || sed -i "s/^numberOfSubdomains 7;$/numberOfSubdomains $nproc;/" "$r/system/decomposeParDict"
+
+cd "$r"
+# face zones for the face-flux monitors: the fan's downstream face, the coil's two faces, and
+# the top, bottom and end of the space behind the unit
+topoSet -dict system/topoSetDict.fluxFaces -constant > log.topoSet.fluxFaces 2>&1
+topoSet -dict system/topoSetDict.openFaces -constant > log.topoSet.openFaces 2>&1
+checkMesh -constant > log.checkMesh 2>&1 || true
+grep -E '^ +cells:|Mesh OK|Failed' log.checkMesh
+cp -r ../../template/0.orig 0
+decomposePar -force > log.decomposePar 2>&1
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+if [ ! -f "$FOAM_USER_LIBBIN/librampedMeanVelocityForce.so" ]; then
+    wmake libso ../../src/rampedMeanVelocityForce > log.wmake 2>&1
+fi
+# the t = 0 planes, from the initial fields (the solver writes none at t = 0)
+postProcess -dict system/planesT0 -fields '(T U)' -time 0 > log.postProcess.t0 2>&1
+mpirun -np "$nproc" buoyantBoussinesqPimpleFoam -parallel > log.buoyantBoussinesqPimpleFoam 2>&1
+# the cells just upstream of the coil, for the correction to coilInT (scripts/inlet_upwind.py)
+mpirun -np "$nproc" postProcess -parallel -dict system/inletUpwindDict -fields '(T U)' \
+    -time 50,55,60 > log.postProcess.inletUpwind 2>&1
+echo "solved: $r"

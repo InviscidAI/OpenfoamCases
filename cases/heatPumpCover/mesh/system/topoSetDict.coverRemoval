@@ -1,0 +1,7 @@
+FoamFile { format ascii; class dictionary; object topoSetDict; }
+// covered only: every cell but the cover's, for subsetMesh (Allrun)
+actions
+(
+ { name fluidCells; type cellSet; action new; source zoneToCell; zones (coverCells); }
+ { name fluidCells; type cellSet; action invert; }
+);

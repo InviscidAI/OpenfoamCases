@@ -1,0 +1,21 @@
+FoamFile { format ascii; class dictionary; object blockMeshDict; }
+// Background for snappyHexMesh. Cells of about 0.15 m, laid out so that the refined faces
+// (level 3 = 1/8, level 4 = 1/16 of a background cell) fall on the coil's and the fan's faces:
+// x: 0.16 m to 4.8 m (level 4 = 10 mm, so x = 0.25, 0.29, 0.45, 0.50, 0.60, 0.70 are faces),
+//    one 0.20 m cell to 5 m;
+// y: two cells of 0.15625 m to the coil's bottom (0.3125), five of 0.143 m to its top (1.0275),
+//    sixteen of 0.1545 m to 3.5 m;
+// z: twenty cells of 0.15 m.
+convertToMeters 1;
+vertices ( (0 0 0) (5 0 0) (5 3.5 0) (0 3.5 0) (0 0 3) (5 0 3) (5 3.5 3) (0 3.5 3) );
+blocks ( hex (0 1 2 3 4 5 6 7) (31 23 20)
+  simpleGrading ( ((4.8 30 1) (0.2 1 1)) ((0.3125 2 1) (0.715 5 1) (2.4725 16 1)) 1 ) );
+boundary
+(
+  houseWall { type wall; faces ((0 4 7 3)); }
+  ground    { type wall; faces ((0 1 5 4)); }
+  symmetry  { type symmetryPlane; faces ((0 3 2 1)); }
+  openFarX  { type patch; faces ((1 2 6 5)); }
+  openTop   { type patch; faces ((3 7 6 2)); }
+  openFarZ  { type patch; faces ((4 5 6 7)); }
+);

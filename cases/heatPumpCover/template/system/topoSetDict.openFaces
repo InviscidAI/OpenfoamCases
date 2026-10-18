@@ -1,0 +1,27 @@
+FoamFile { format ascii; class dictionary; object topoSetDict; }
+// Written by scripts/make_open_faces.py
+actions
+(
+  { name behind; type cellSet; action new; source boxToCell; box (0 0.300 -1) (0.250 1.040 0.442); }
+  { name behindTopA; type faceSet; action new; source cellToFace; set behind; option outside; }
+  { name behindTopB; type faceSet; action new; source faceToFace; set behindTopA; }
+  { name behindTopA; type faceSet; action subset; source normalToFace; normal (0 1 0); cos 0.05; }
+  { name behindTopB; type faceSet; action subset; source normalToFace; normal (0 -1 0); cos 0.05; }
+  { name behindTopA; type faceSet; action add; source faceToFace; set behindTopB; }
+  { name behindTopA; type faceSet; action subset; source boxToFace; box (-1 0.67 -1) (0.255 1.2 0.5); }
+  { name behindTop; type faceZoneSet; action new; source setsToFaceZone; faceSet behindTopA; cellSet behind; }
+  { name behindBottomA; type faceSet; action new; source cellToFace; set behind; option outside; }
+  { name behindBottomB; type faceSet; action new; source faceToFace; set behindBottomA; }
+  { name behindBottomA; type faceSet; action subset; source normalToFace; normal (0 -1 0); cos 0.05; }
+  { name behindBottomB; type faceSet; action subset; source normalToFace; normal (0 1 0); cos 0.05; }
+  { name behindBottomA; type faceSet; action add; source faceToFace; set behindBottomB; }
+  { name behindBottomA; type faceSet; action subset; source boxToFace; box (-1 0.2 -1) (0.255 0.67 0.5); }
+  { name behindBottom; type faceZoneSet; action new; source setsToFaceZone; faceSet behindBottomA; cellSet behind; }
+  { name behindEndA; type faceSet; action new; source cellToFace; set behind; option outside; }
+  { name behindEndB; type faceSet; action new; source faceToFace; set behindEndA; }
+  { name behindEndA; type faceSet; action subset; source normalToFace; normal (0 0 1); cos 0.05; }
+  { name behindEndB; type faceSet; action subset; source normalToFace; normal (0 0 -1); cos 0.05; }
+  { name behindEndA; type faceSet; action add; source faceToFace; set behindEndB; }
+  { name behindEndA; type faceSet; action subset; source boxToFace; box (-1 0.2 0.3) (0.255 1.2 0.5); }
+  { name behindEnd; type faceZoneSet; action new; source setsToFaceZone; faceSet behindEndA; cellSet behind; }
+);

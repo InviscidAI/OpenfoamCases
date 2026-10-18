@@ -1,0 +1,1 @@
+FoamFile { format ascii; class dictionary; object fvSolution; }

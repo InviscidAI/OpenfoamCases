@@ -1,0 +1,2 @@
+open: 240 writes; 50-60 s mean 0.004 K below outside (monitor 0.246 K); shown at 5/10/30/60 s: [0.0, 0.1, 0.0, 0.0]
+covered: 240 writes; 50-60 s mean 0.717 K below outside (monitor 0.937 K); shown at 5/10/30/60 s: [0.6, 0.7, 0.7, 0.7]

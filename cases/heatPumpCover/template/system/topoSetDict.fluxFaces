@@ -1,0 +1,26 @@
+FoamFile { format ascii; class dictionary; object topoSetDict; }
+// Face zones for flux monitors (face flux phi, not cell-centred velocity): the fan zone.s downstream face
+// (x = 0.600; a box at x = 0.56 caught only 0.123 of 0.208 m2), the coil's inflow face (x = 0.250) and outflow face (x = 0.290). All oriented +x.
+actions
+(
+  { name fanA; type faceSet; action new; source boxToFace; box (0.5970 0.31 -1) (0.6010 0.97 0.33); }
+  { name fanB; type faceSet; action new; source faceToFace; set fanA; }
+  { name fanA; type faceSet; action subset; source normalToFace; normal (1 0 0); cos 0.05; }
+  { name fanB; type faceSet; action subset; source normalToFace; normal (-1 0 0); cos 0.05; }
+  { name fanA; type faceSet; action add; source faceToFace; set fanB; }
+  { name fanFaces; type faceZoneSet; action new; source setAndNormalToFaceZone; faceSet fanA; normal (1 0 0); }
+
+  { name cinA; type faceSet; action new; source boxToFace; box (0.240 0.3125 -1) (0.2535 1.0275 0.430); }
+  { name cinB; type faceSet; action new; source faceToFace; set cinA; }
+  { name cinA; type faceSet; action subset; source normalToFace; normal (1 0 0); cos 0.3; }
+  { name cinB; type faceSet; action subset; source normalToFace; normal (-1 0 0); cos 0.3; }
+  { name cinA; type faceSet; action add; source faceToFace; set cinB; }
+  { name coilInFaces; type faceZoneSet; action new; source setAndNormalToFaceZone; faceSet cinA; normal (1 0 0); }
+
+  { name coutA; type faceSet; action new; source boxToFace; box (0.2850 0.3125 -1) (0.2950 1.0275 0.430); }
+  { name coutB; type faceSet; action new; source faceToFace; set coutA; }
+  { name coutA; type faceSet; action subset; source normalToFace; normal (1 0 0); cos 0.3; }
+  { name coutB; type faceSet; action subset; source normalToFace; normal (-1 0 0); cos 0.3; }
+  { name coutA; type faceSet; action add; source faceToFace; set coutB; }
+  { name coilOutFaces; type faceZoneSet; action new; source setAndNormalToFaceZone; faceSet coutA; normal (1 0 0); }
+);

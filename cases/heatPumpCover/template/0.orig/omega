@@ -1,0 +1,2 @@
+FoamFile { format ascii; class volScalarField; object omega; }
+dimensions [0 0 -1 0 0 0 0]; internalField uniform 1; boundaryField { "(houseWall|ground|unitWalls|coverWalls)" { type omegaWallFunction; value uniform 1; } symmetry { type symmetryPlane; } "(openFarX|openTop|openFarZ)" { type inletOutlet; inletValue uniform 1; value uniform 1; } }

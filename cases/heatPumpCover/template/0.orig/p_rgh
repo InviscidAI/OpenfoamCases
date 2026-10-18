@@ -1,0 +1,2 @@
+FoamFile { format ascii; class volScalarField; object p_rgh; }
+dimensions [0 2 -2 0 0 0 0]; internalField uniform 0; boundaryField { "(houseWall|ground|unitWalls|coverWalls)" { type fixedFluxPressure; value uniform 0; } symmetry { type symmetryPlane; } "(openFarX|openTop|openFarZ)" { type fixedValue; value uniform 0; } }

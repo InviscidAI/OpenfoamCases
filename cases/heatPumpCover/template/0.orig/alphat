@@ -1,0 +1,2 @@
+FoamFile { format ascii; class volScalarField; object alphat; }
+dimensions [0 2 -1 0 0 0 0]; internalField uniform 0; boundaryField { "(houseWall|ground|unitWalls|coverWalls)" { type alphatJayatillekeWallFunction; Prt 0.85; value uniform 0; } symmetry { type symmetryPlane; } "(openFarX|openTop|openFarZ)" { type calculated; value uniform 0; } }

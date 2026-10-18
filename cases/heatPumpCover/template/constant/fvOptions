@@ -1,0 +1,82 @@
+FoamFile
+{
+ version 2.0; format ascii; class dictionary; object fvOptions;
+}
+
+// The heat pump's outdoor unit, 3-D half model: the fan, the coil's drag and the coil's capped cooling.
+// Both runs, open and covered, read this file unchanged.
+// Fan: half the rated 2,520 m3/h, 0.350 m3/s, through the fan duct of the grille's cross-section,
+// 0.645 m x 0.3225 m = 0.2080 m2, so Ubar = 1.6826 m/s. If the meshed duct's cross-section differs,
+// set Ubar = 0.350 x (zone length) / (zone volume) and change nothing else.
+// Signs and the cap were tested from rest at fixed 4 ms steps, on an earlier 2-D mesh and again on this
+// one (README, "Checks before the runs"): every coil cell had Ux > 0, and on the 2-D mesh, with the
+// cooling 20 times stronger, no coil cell fell below Ts.
+//
+// Sign convention (OpenFOAM v2512): eqn.source() holds minus the source; `eqn += S` is
+// `source() -= V*S` (fvMatrix.C, line 1682). In codeAddSup, `eqn` is the right-hand side
+// matrix, so adding V*X to eqn.source() is a physical source of -X, and adding V*a to
+// eqn.diag() is a physical source of +a*T. The drag is the built-in implicit Darcy term:
+// nu d = 1.38e-5 x 4.42e7 = 610 1/s. An explicit drag of 610 1/s is unstable once the step
+// exceeds 2/610 = 3.3 ms.
+//
+// The coil's cooling relaxes the air towards the coil surface temperature Ts as it crosses
+// the coil: dT/dx = -(NTU/L) (T - Ts) along x, so a pass at any speed leaves at
+// T_out = Ts + (T_in - Ts) exp(-NTU) = T_in - eps (T_in - Ts), and no air can be cooled
+// below Ts. The physical source is S_T = -a (T - Ts) with a = (NTU/L) max(Ux, 0), written
+// implicitly in T (diag -= V a, source -= V a Ts), so it is stable at any step.
+//   Ts  = -6 C = 267.15 K. Evaporating temperature taken as 2 C outdoor air minus 7.8 K, the
+//         approach of US 10,815,409 B2, Example 5 (residential air-to-water heat pump,
+//         evaporating at about 0.5 C with outdoor air at about 8.3 C), rounded to -6 C.
+//   eps = 3.3 / (2 - (-6)) = 0.4125, so a 2 C inlet gives the data book's 3.3 K
+//         (ERGA06 at EN 14825 condition B: 3.9 kW at COPd 4.25 through 2,520 m3/h).
+//   NTU = -ln(1 - eps) = 0.5319; L = 0.040 m coil depth; NTU/L = 13.297 1/m.
+// T is in kelvin, as in the reused case (0/T internalField 275.15).
+
+fanMeanVelocityForce
+{
+ type rampedMeanVelocityForce;
+ selectionMode cellZone; cellZone fan;
+ // 17 Oct 2026: 1.6826 x 0.350 / 0.32338. The zone as meshed is 0.0999 m x 0.20801 m2, which gives 1.6826, but a 3 s pilot passed 0.32338 m3/s of face flux at full flow with that cell-mean target; see the README, "The fan"
+ fields (U); Ubar (1.82113 0 0); rampTime 2.0; relaxation 1;
+}
+
+coilResistance
+{
+ type explicitPorositySource;
+ explicitPorositySourceCoeffs
+ {
+  selectionMode cellZone; cellZone coil;
+  type DarcyForchheimer;
+  d (4.42e7 4.42e7 4.42e7);  // nu d = 1.38e-5 x 4.42e7 = 610 1/s
+  f (0 0 0);
+  coordinateSystem { origin (0 0 0); e1 (1 0 0); e2 (0 1 0); }
+ }
+}
+
+coilCooling
+{
+ type scalarCodedSource;
+ name coilCappedCooling;
+ scalarCodedSourceCoeffs
+ {
+ selectionMode cellZone; cellZone coil; fields (T); name coilCappedCooling;
+ codeAddSup
+ #{
+   const scalar Ts = 267.15;      // coil surface (evaporating) temperature, K
+   const scalar NTUperL = 15.482;  // 1/m. 17 Oct 2026: 13.297 x 1.1643, so the flow-weighted drop on the hexahedral mesh matches eps (T_in - Ts); a 3 s pilot gave 0.889 of it at full flow (README, "The coil")
+   const volVectorField& U = mesh().lookupObject<volVectorField>("U");
+   const scalarField& V = mesh().V();
+   scalarField& Su = eqn.source();
+   scalarField& D = eqn.diag();
+   forAll(cells_, i)
+   {
+     const label celli = cells_[i];
+     const scalar a = NTUperL*max(U[celli].x(), scalar(0));
+     D[celli] -= V[celli]*a;
+     Su[celli] -= V[celli]*a*Ts;
+   }
+ #};
+ codeCorrect #{ #};
+ codeConstrain #{ #};
+ }
+}

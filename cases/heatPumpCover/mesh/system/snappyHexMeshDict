@@ -1,0 +1,51 @@
+FoamFile { format ascii; class dictionary; object snappyHexMeshDict; }
+castellatedMesh true; snap true; addLayers false;
+geometry
+{
+  casing.stl { type triSurfaceMesh; name unitWalls; }
+  cover.stl  { type triSurfaceMesh; name cover; }
+  inner { type searchableBox; min (-1 -1 -1); max (0.85 1.20 0.70); }
+  jet   { type searchableBox; min (-1 -1 -1); max (2.50 1.60 1.20); }
+  coilBox { type searchableBox; min (0.235 0.29 -1); max (0.305 1.05 0.45); }
+}
+castellatedMeshControls
+{
+  maxLocalCells 4000000; maxGlobalCells 8000000; minRefinementCells 0; maxLoadUnbalance 0.10;
+  nCellsBetweenLevels 3;
+  features ( { file "casing.eMesh"; level 4; } { file "cover.eMesh"; level 4; } );
+  refinementSurfaces
+  {
+    // 12.5 mm casing plates and 15.5 mm (vertical) boards need level 4 (about 9-10 mm) to stay whole.
+    unitWalls { level (4 4); patchInfo { type wall; } }
+    cover
+    {
+      level (4 4);
+      faceZone coverFaces; cellZone coverCells; cellZoneInside inside; faceType internal;
+    }
+  }
+  resolveFeatureAngle 30;
+  refinementRegions
+  {
+    coilBox { mode inside; levels ((1e15 4)); }
+    inner   { mode inside; levels ((1e15 3)); }
+    jet     { mode inside; levels ((1e15 2)); }
+  }
+  locationInMesh (3.03 2.03 2.03);
+  allowFreeStandingZoneFaces false;
+}
+snapControls
+{
+  nSmoothPatch 3; tolerance 2.0; nSolveIter 100; nRelaxIter 5;
+  nFeatureSnapIter 15; implicitFeatureSnap false; explicitFeatureSnap true; multiRegionFeatureSnap true;
+}
+addLayersControls { relativeSizes true; layers {} expansionRatio 1; finalLayerThickness 0.3; minThickness 0.1; nGrow 0;
+  featureAngle 60; nRelaxIter 3; nSmoothSurfaceNormals 1; nSmoothNormals 3; nSmoothThickness 10; maxFaceThicknessRatio 0.5;
+  maxThicknessToMedialRatio 0.3; minMedialAxisAngle 90; nBufferCellsNoExtrude 0; nLayerIter 50; }
+meshQualityControls
+{
+  maxNonOrtho 65; maxBoundarySkewness 20; maxInternalSkewness 4; maxConcave 80; minVol 1e-13;
+  minTetQuality 1e-9; minArea -1; minTwist 0.02; minDeterminant 0.001; minFaceWeight 0.05;
+  minVolRatio 0.01; minTriangleTwist -1; nSmoothScale 4; errorReduction 0.75;
+  relaxed { maxNonOrtho 75; }
+}
+mergeTolerance 1e-6;

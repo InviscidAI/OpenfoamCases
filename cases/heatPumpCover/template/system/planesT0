@@ -1,0 +1,9 @@
+FoamFile { format ascii; class dictionary; object planesT0; }
+// The t = 0 planes, written by postProcess from the initial fields:
+//   postProcess -dict system/planesT0 -fields '(T U)' -time 0
+// The face-flux monitors need phi, which does not exist at t = 0, so they are removed here.
+functions
+{
+    #include "functions.inc"
+    #remove (fanFlux coilInFlux coilInT coilOutT behindTop_sum behindTop_sumMag behindBottom_sum behindBottom_sumMag behindEnd_sum behindEnd_sumMag)
+}

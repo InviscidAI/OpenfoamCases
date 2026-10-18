@@ -1,0 +1,6 @@
+open     t=50  coilInT: 0.246 K below 2 C  up1: 0.006 K (flow 0.4428 m3/s, area 0.3073)  up3: 0.002 K (flow 0.2405 m3/s, area 0.3085)  F: 0.0301
+open     t=55  coilInT: 0.246 K below 2 C  up1: 0.005 K (flow 0.4429 m3/s, area 0.3073)  up3: 0.002 K (flow 0.2405 m3/s, area 0.3085)  F: 0.0301
+open     t=60  coilInT: 0.246 K below 2 C  up1: 0.005 K (flow 0.4428 m3/s, area 0.3073)  up3: 0.001 K (flow 0.2406 m3/s, area 0.3085)  F: 0.0301
+covered  t=50  coilInT: 0.933 K below 2 C  up1: 0.712 K (flow 0.4374 m3/s, area 0.3073)  up3: 0.802 K (flow 0.2491 m3/s, area 0.3085)  F: 0.0304
+covered  t=55  coilInT: 0.937 K below 2 C  up1: 0.715 K (flow 0.4373 m3/s, area 0.3073)  up3: 0.805 K (flow 0.2490 m3/s, area 0.3085)  F: 0.0305
+covered  t=60  coilInT: 0.929 K below 2 C  up1: 0.707 K (flow 0.4373 m3/s, area 0.3073)  up3: 0.794 K (flow 0.2489 m3/s, area 0.3085)  F: 0.0305

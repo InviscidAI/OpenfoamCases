@@ -1,0 +1,15 @@
+FoamFile { version 2.0; format ascii; class dictionary; object inletUpwindDict; }
+functions
+{
+    inletUpwind
+    {
+        type surfaces; libs (sampling); surfaceFormat vtk; fields (T U);
+        interpolationScheme cell;
+        surfaces
+        {
+            // cell values (interpolate false) of the cells just upstream of the coil's inlet face (x = 0.2491)
+            up1 { type cuttingPlane; point (.2445 0 0); normal (1 0 0); bounds (.20 .3125 -.01) (.30 1.0275 .430); interpolate false; }
+            up3 { type cuttingPlane; point (.2200 0 0); normal (1 0 0); bounds (.15 .3125 -.01) (.30 1.0275 .430); interpolate false; }
+        }
+    }
+}

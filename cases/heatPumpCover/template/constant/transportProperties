@@ -1,0 +1,2 @@
+FoamFile { format ascii; class dictionary; object transportProperties; }
+transportModel Newtonian; nu 1.38e-5; beta 0.00366; TRef 275.15; Pr 0.71; Prt 0.85;

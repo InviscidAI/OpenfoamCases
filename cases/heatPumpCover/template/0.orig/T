@@ -1,0 +1,2 @@
+FoamFile { format ascii; class volScalarField; object T; }
+dimensions [0 0 0 1 0 0 0]; internalField uniform 275.15; boundaryField { "(houseWall|ground|unitWalls|coverWalls)" { type zeroGradient; } symmetry { type symmetryPlane; } "(openFarX|openTop|openFarZ)" { type inletOutlet; inletValue uniform 275.15; value uniform 275.15; } }
