@@ -1,0 +1,5 @@
+run sill
+faces 114
+vertices_min [0.15       0.88999999 0.        ]
+vertices_max [0.15       2.19643081 1.        ]
+area_m2_per_m 1.3064308245

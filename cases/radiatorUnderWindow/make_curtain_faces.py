@@ -25,6 +25,9 @@ for fi in range(len(neigh)):
  if np.ptp(xyz[:,2]) < 0.9: continue
  if run=='hanging':
   if np.max(np.abs(xyz[:,0]-0.15))<1e-8 and 0.01 <= fc[1] <= 2.20: sel.append(fi)
+ elif run=='sill':
+  # the hanging curtain cut at sill length: its hem 1 cm below the bottom of the glass
+  if np.max(np.abs(xyz[:,0]-0.15))<1e-8 and 0.89 <= fc[1] <= 2.20: sel.append(fi)
  elif run=='tucked':
   y=fc[1]
   hit=False

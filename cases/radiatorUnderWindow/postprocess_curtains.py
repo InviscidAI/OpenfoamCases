@@ -4,12 +4,17 @@ budgets, the probes, the flows over the curtain's top and under its hem, and the
 
     python3 postprocess_curtains.py [runs/start300] [results/curtains]
 
-Reads runs/start300/hanging and runs/start300/tucked. Writes <run>_history.csv,
+Reads whichever of runs/start300/hanging, tucked and sill are there. Writes <run>_history.csv,
 <run>_heat_budget.csv, <run>_probes.csv, summary.md and final_fields.png, and a t = 0 plane
 (T = 293.15 K, U = 0) into each run's postProcessing/clip/0/, which the solver does not write.
+The planes may be clip.vtp or gzipped, clip.vtp.gz.
+
+hanging and sill hang on the line x = 0.15 between a hem and the rail; across that line no
+air crosses the curtain's own rows, and the heat conducted through its room face (curtainB)
+is added. Under the hem, the gross flow each way is the hem_gap columns.
 """
 from pathlib import Path
-import csv, re, sys
+import csv, gzip, re, sys, tempfile
 from collections import defaultdict
 import numpy as np
 import pyvista as pv
@@ -28,8 +33,15 @@ def wall_data(rd):
  return d
 def interp_dict(d,t,initial=0):
  x=np.array(sorted(d)); y=np.array([d[a] for a in x]); return float(np.interp(t,x,y,left=initial,right=y[-1]))
-def section(path):
- m=pv.read(path); cc=m.cell_centers().points
+# the curtains on x = 0.15: (hem, top), the faces' vertex extents in <run>_curtain_geometry.txt
+ON_LINE={'hanging':(0.007608029076,2.196430812),'sill':(0.89,2.196430812)}
+RUNS=[r for r in ['hanging','tucked','sill'] if (BASE/r).is_dir()]
+def read_plane(d):
+ if (d/'clip.vtp').exists(): return pv.read(d/'clip.vtp')
+ with tempfile.NamedTemporaryFile(suffix='.vtp') as f:
+  f.write(gzip.decompress((d/'clip.vtp.gz').read_bytes())); f.flush(); return pv.read(f.name)
+def section(d):
+ m=read_plane(d); cc=m.cell_centers().points
  xs=np.unique(cc[:,0].round(7)); ys=np.unique(cc[:,1].round(7)); ix=np.searchsorted(xs,cc[:,0].round(7));iy=np.searchsorted(ys,cc[:,1].round(7))
  F={}
  for n,v in [('T',np.asarray(m.cell_data['T'])),('u',np.asarray(m.cell_data['U'])[:,0]),('v',np.asarray(m.cell_data['U'])[:,1])]:
@@ -62,27 +74,27 @@ def write_csv(path,recs):
  with open(path,'w',newline='') as f:
   w=csv.DictWriter(f,fieldnames=recs[0].keys(),lineterminator='\n');w.writeheader();w.writerows(recs)
 summary={}
-for run in ['hanging','tucked']:
+for run in RUNS:
  rd=BASE/run; walls=wall_data(rd); dirs=sorted((p for p in (rd/'postProcessing/clip').iterdir() if float(p.name)>0),key=lambda p:float(p.name)); rec=[]  # the t = 0 plane is written below
  # establish grid and create the requested t=0 VTK plane
- m0,xs,ys,F0=section(dirs[0]/'clip.vtp'); z=pv.read(dirs[0]/'clip.vtp');z.cell_data['T'][:]=T0;z.cell_data['U'][:]=0;(rd/'postProcessing/clip/0').mkdir(exist_ok=True);z.save(rd/'postProcessing/clip/0/clip.vtp',binary=True)
+ m0,xs,ys,F0=section(dirs[0]); z=read_plane(dirs[0]);z.cell_data['T'][:]=T0;z.cell_data['U'][:]=0;(rd/'postProcessing/clip/0').mkdir(exist_ok=True);z.save(rd/'postProcessing/clip/0/clip.vtp',binary=True)
  all_dirs=[rd/'postProcessing/clip/0']+dirs
  dx=overlap_weights(xs,0,4,0,4);dy=overlap_weights(ys,0,2.4,0,2.4);A=np.outer(dy,dx);X,Y=np.meshgrid(xs,ys)
  for n,d in enumerate(all_dirs):
   t=float(d.name)
   if t==0: F={'T':np.full_like(F0['T'],T0),'u':np.zeros_like(F0['u']),'v':np.zeros_like(F0['v'])}
-  else: _,_,_,F=section(d/'clip.vtp')
+  else: _,_,_,F=section(d)
   uc=across_col(xs,F['u'],.15);Tc=across_col(xs,F['T'],.15);rho=1e5/(R*Tc)
   wy=dy.copy()
-  if run=='hanging': wy[(ys>=0.007608029076)&(ys<=2.196430812)]=0
-  adv=float(np.sum(rho*uc*CP*(Tc-T0)*wy)); cond=interp_dict(walls['curtainB'],t,0) if run=='hanging' else 0.; q=adv+cond
+  if run in ON_LINE: hem,top=ON_LINE[run]; wy[(ys>=hem)&(ys<=top)]=0
+  adv=float(np.sum(rho*uc*CP*(Tc-T0)*wy)); cond=interp_dict(walls['curtainB'],t,0) if run in ON_LINE else 0.; q=adv+cond
   vt=across_row(ys,F['v'],2.20); wx=overlap_weights(xs,0,.15,0,4)
   top_up=float(np.sum(np.maximum(vt,0)*wx));top_down=float(np.sum(np.maximum(-vt,0)*wx))
-  if run=='hanging':
-   ug=across_col(xs,F['u'],.15);wg=overlap_weights(ys,0,.01,0,2.4);gap_room=float(np.sum(np.maximum(ug,0)*wg));gap_behind=float(np.sum(np.maximum(-ug,0)*wg))
+  if run in ON_LINE:
+   ug=across_col(xs,F['u'],.15);wg=overlap_weights(ys,0,.01 if run=='hanging' else hem,0,2.4);gap_room=float(np.sum(np.maximum(ug,0)*wg));gap_behind=float(np.sum(np.maximum(-ug,0)*wg))
   else: gap_room=gap_behind=np.nan
   room=X>.15
-  behind=(X<.15) if run=='hanging' else ((Y>=.9)&(Y<=2.2)&(X < .15*(Y-.9)/1.3))
+  behind=(X<.15) if run=='hanging' else ((X<.15)&(Y>=hem)&(Y<=top)) if run=='sill' else ((Y>=.9)&(Y<=2.2)&(X < .15*(Y-.9)/1.3))
   avg=lambda mask:float(np.sum(F['T'][mask]*A[mask])/np.sum(A[mask])-273.15)
   rec.append({'time_s':t,'advected_sensible_enthalpy_into_room_W_per_m':adv,'curtain_conduction_into_room_W_per_m':cond,'total_heat_into_room_W_per_m':q,'instantaneous_share_of_60W':q/60.,'cumulative_heat_into_room_J_per_m':0.,'cumulative_radiator_J_per_m':60*t,'cumulative_share':0. if t==0 else np.nan,'glass_heat_loss_W_per_m':-interp_dict(walls['glass'],t,0),'radiator_output_W_per_m':60.,'room_side_mean_C':avg(room),'behind_curtain_mean_C':avg(behind),'top_up_m3_s_per_m':top_up,'top_down_m3_s_per_m':top_down,'hem_gap_into_room_m3_s_per_m':gap_room,'hem_gap_into_behind_m3_s_per_m':gap_behind})
  tt=np.array([r['time_s'] for r in rec]);qq=np.array([r['total_heat_into_room_W_per_m'] for r in rec]);cum=np.r_[0,np.cumsum((qq[1:]+qq[:-1])/2*np.diff(tt))]
@@ -100,17 +112,17 @@ for run in ['hanging','tucked']:
 L=['# Curtain comparison, 0–300 s','', '| run | cumulative heat into room | share of 60 W radiator | final instantaneous crossing | final glass loss |','|---|---:|---:|---:|---:|']
 for run,s in summary.items():
  r=s['final'];L.append(f"| {run} | {r['cumulative_heat_into_room_J_per_m']/1000:.2f} kJ/m | {100*r['cumulative_share']:.1f}% | {r['total_heat_into_room_W_per_m']:.2f} W/m | {r['glass_heat_loss_W_per_m']:.2f} W/m |")
-L+=['','The crossing enthalpy is the solver’s sensible enthalpy reference, `rho*Ux*Cp*(T-293.15 K)`, net into x>0.15. For hanging, curtainB is the room-side mapped-wall patch and its wall heat flux is added.','']
+L+=['','The crossing enthalpy is the solver’s sensible enthalpy reference, `rho*Ux*Cp*(T-293.15 K)`, net into x>0.15. For hanging and sill, curtainB is the room-side mapped-wall patch and its wall heat flux is added.','']
 for run,s in summary.items():
  u=np.array([x['unaccounted_W_per_m'] for x in s['budget']]);r=s['final'];L += [f"## {run}",f"At 300 s: room-side mean {r['room_side_mean_C']:.2f} C; behind-curtain mean {r['behind_curtain_mean_C']:.2f} C; top gross up/down {r['top_up_m3_s_per_m']:.4f}/{r['top_down_m3_s_per_m']:.4f} m3/s/m.",f"7.5 s budget unaccounted: mean {u.mean():+.3f}, range {u.min():+.3f} to {u.max():+.3f} W/m.",'']
 (OUT/'summary.md').write_text('\n'.join(L))
 # final comparison image
-fig,ax=plt.subplots(2,2,figsize=(12,6),constrained_layout=True)
-for row,run in enumerate(['hanging','tucked']):
- m=pv.read(BASE/run/'postProcessing/clip/300/clip.vtp');cc=m.cell_centers().points;T=np.asarray(m.cell_data['T'])-273.15;S=np.linalg.norm(np.asarray(m.cell_data['U']),axis=1)
+fig,ax=plt.subplots(len(RUNS),2,figsize=(12,3*len(RUNS)),constrained_layout=True,squeeze=False)
+for row,run in enumerate(RUNS):
+ m=read_plane(BASE/run/'postProcessing/clip/300');cc=m.cell_centers().points;T=np.asarray(m.cell_data['T'])-273.15;S=np.linalg.norm(np.asarray(m.cell_data['U']),axis=1)
  for col,(v,title,cmap,lims) in enumerate([(T,'Temperature (C)','coolwarm',(17,24)),(S,'Speed (m/s)','viridis',(0,.25))]):
   a=ax[row,col];im=a.tripcolor(cc[:,0],cc[:,1],v,shading='flat',cmap=cmap,vmin=lims[0],vmax=lims[1]);a.set_aspect('equal');a.set_xlim(0,4);a.set_ylim(0,2.4);a.set_title(f'{run}: {title}, 300 s');fig.colorbar(im,ax=a)
-  if run=='hanging':a.plot([.15,.15],[.007608,2.196431],'k-',lw=2)
+  if run in ON_LINE:a.plot([.15,.15],[ON_LINE[run][0],2.196431],'k-',lw=2)
   else:a.plot([0,.15],[.9,2.2],'k-',lw=2)
 fig.savefig(OUT/'final_fields.png',dpi=160)
 print((OUT/'summary.md').read_text())
