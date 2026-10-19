@@ -1,0 +1,29 @@
+Outdoor air at 0 C: rho 1.2752 kg/m3. Room 33.6 m3 as drawn; room volumes an hour
+are volume flows of outdoor air over it.
+
+== open: 13800 steps to t = 300 s
+   room zone 372504 cells, 33.6000 m3; opening 1120 faces, 1.2000 m2 of air in x = 0
+   room mass 39.922 kg at the first step, 41.566 kg at 300 s
+   t  60 s: share replaced 41.14%, well-mixed decay 31.80/h; inflow 0.2736 kg/s =  773 m3/h = 22.99/h, mean over 0-t 25.60/h; room 13.41 C; budget error +0.44% of what left
+   t 120 s: share replaced 66.54%, well-mixed decay 32.84/h; inflow 0.2217 kg/s =  626 m3/h = 18.63/h, mean over 0-t 23.06/h; room 10.29 C; budget error +0.32% of what left
+   t 300 s: share replaced 91.29%, well-mixed decay 29.29/h; inflow 0.2066 kg/s =  583 m3/h = 17.36/h, mean over 0-t 19.75/h; room  8.36 C; budget error +0.28% of what left
+   inflow over 0-300 s: 1.646 room volumes
+
+== tilted: 11014 steps to t = 300 s
+   room zone 366904 cells, 33.4800 m3; opening 812 faces, 0.8700 m2 of air in x = 0
+   top gap: 112 faces, 0.0800 m2
+   left gap: 57 faces, 0.0342 m2
+   right gap: 57 faces, 0.0342 m2
+   room mass 39.779 kg at the first step, 39.968 kg at 300 s
+   t  60 s: share replaced  3.05%, well-mixed decay  1.86/h; inflow 0.0226 kg/s =   64 m3/h =  1.90/h, mean over 0-t  1.94/h; room 19.60 C; budget error +1.02% of what left
+   t 120 s: share replaced  6.14%, well-mixed decay  1.90/h; inflow 0.0230 kg/s =   65 m3/h =  1.93/h, mean over 0-t  1.92/h; room 19.28 C; budget error +0.69% of what left
+   t 300 s: share replaced 15.15%, well-mixed decay  1.97/h; inflow 0.0229 kg/s =   65 m3/h =  1.92/h, mean over 0-t  1.93/h; room 18.57 C; budget error +0.47% of what left
+   inflow over 0-300 s: 0.161 room volumes
+   top_in    0.0000 kg/s at 300 s
+   top_out   0.0170 kg/s at 300 s
+   left_in   0.0109 kg/s at 300 s
+   left_out  0.0022 kg/s at 300 s
+   right_in  0.0109 kg/s at 300 s
+   right_out 0.0021 kg/s at 300 s
+
+tilted / open, mean inflow over 0-300 s: 9.8%; inflow at 300 s: 11.1%; share replaced at 300 s: 16.6%

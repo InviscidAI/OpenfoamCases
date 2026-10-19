@@ -23,6 +23,9 @@ room in the first five minutes:
 
 They have their own section, [Curtains](#curtains), with their own limits.
 
+Opening the window above the radiator, wide open or on tilt, is a case of its own on this
+room made 3-D and 3.5 m wide: [`windowAiring`](../windowAiring).
+
 ## The room
 
 | | value | from |
