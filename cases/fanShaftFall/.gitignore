@@ -1,0 +1,7 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+# built by scripts/build_faller.py; faller_build.json is kept as the record of the build
+geometry/faller.stl
+geometry/preview_faller_*.png

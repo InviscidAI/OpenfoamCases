@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# A man falling belly-down from rest down a 3 m square shaft, held fixed in his own frame
+# with the air coming up at him; over a 10 m/s cooling fan's updraft and in the updraft that
+# holds his weight.
+#
+#   ./Allrun curve                # four steady runs at 8, 20, 40, 55 m/s -> the drag curve,
+#                                 # his terminal speed and the fall over the fan
+#   ./Allrun fan|float            # the clip runs (runs the curve first if runs/ has none)
+#   ./Allrun --setup-only curve|fan|float
+#
+# Builds the figure into geometry/ if it is not there (MakeHuman's CC0 files are downloaded
+# on the first build, scripts/build_faller.py), meshes the shaft once into runs/mesh/
+# (blockMesh, snappyHexMesh, 104,646 cells), writes runs/curve/U<speed>/ or runs/<clip>/
+# (scripts/make_case.py, scripts/make_clips.py), checks the mesh and decomposes, and solves
+# with pimpleFoam: the curve runs one after another on 4 ranks each, a clip on 8.
+# --setup-only stops before the solve; for a clip it takes the curve from the committed
+# force histories in results/curve/ if runs/ has none.
+set -euo pipefail
+cd "$(dirname "$0")"
+setupOnly=false
+if [[ "${1:-}" == --setup-only ]]; then setupOnly=true; shift; fi
+what=${1:-}
+[[ "$what" =~ ^(curve|fan|float)$ ]] || { echo "usage: ./Allrun [--setup-only] curve|fan|float"; exit 2; }
+
+[[ -f geometry/faller.stl ]] || python3 scripts/build_faller.py > /dev/null
+
+if [[ ! -e runs/mesh/constant/polyMesh/boundary ]]; then
+ mkdir -p runs/mesh/constant/triSurface runs/mesh/0
+ cp -r mesh/system runs/mesh/
+ cp geometry/faller.stl runs/mesh/constant/triSurface/
+ (
+  cd runs/mesh
+  blockMesh > log.blockMesh 2>&1
+  surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+  snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+  checkMesh -allGeometry -allTopology > log.checkMesh.all 2>&1 || true
+  checkMesh > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh
+ )
+fi
+
+solve() {  # <run dir> <ranks> [sample t = 0 first]
+ (
+  cd "$1"
+  rm -rf processor* postProcessing [1-9]* log.pimpleFoam wallclock.txt
+  checkMesh > log.checkMesh 2>&1
+  [[ "${3:-}" == sample0 ]] && pimpleFoam -postProcess -fields '(U p)' -time 0 > log.sample0 2>&1
+  decomposePar -force -fileHandler collated > log.decomposePar 2>&1
+  $setupOnly && { echo "set up, not solved: $1"; exit 0; }
+  start=$(date +%s)
+  mpirun -np "$2" pimpleFoam -parallel -fileHandler collated > log.pimpleFoam 2>&1
+  printf '%s seconds\n' "$(( $(date +%s)-start ))" > wallclock.txt
+  rm -rf processor*
+ )
+}
+
+curve() {
+ for s in 8 20 40 55; do
+  python3 scripts/make_case.py "curve/U$s" "$s" "$(python3 -c "print(8/$s)")" curve
+ done
+ for s in 8 20 40 55; do solve "runs/curve/U$s" 4; done
+ $setupOnly || python3 scripts/analyse_curve_motion.py
+}
+
+if [[ "$what" == curve ]]; then curve; exit 0; fi
+
+if [[ ! -s runs/motion_summary.json ]]; then
+ if $setupOnly; then python3 scripts/analyse_curve_motion.py results > /dev/null; else curve; fi
+fi
+python3 scripts/make_clips.py "$what"
+solve "runs/$what" 8 sample0
+$setupOnly && exit 0
+python3 scripts/postprocess_clip.py "$what"

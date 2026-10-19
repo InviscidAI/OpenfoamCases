@@ -16,7 +16,8 @@ Two figures built from [MakeHuman](https://github.com/makehumancommunity/makehum
 assets (base mesh, targets, skeleton and skin weights), which the project releases under
 CC0; `geometry/README.md` has the commit, every setting and every check, and
 `geometry/LICENSE.ASSETS.md` the licence. They were posed by our own script, not exported
-from the MakeHuman application.
+from the MakeHuman application. The pacer's build, posed belly-down as a skydiver, is the
+falling man of [`fanShaftFall`](../fanShaftFall).
 
 | | runner | pacer |
 |---|---:|---:|

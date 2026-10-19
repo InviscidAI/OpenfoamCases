@@ -1,0 +1,16 @@
+{
+  "time_weighted_mean_weight_share": 0.11138978194148834,
+  "start_weight_share": 0.0013528205662709546,
+  "end_weight_share": 0.18501801251511238,
+  "T_history_s": 1.3017733342224,
+  "force_history_T_hit_s": 1.3066218639293212,
+  "force_history_impact_speed_m_s": 11.382780189140444,
+  "delta_T_hit_s": 0.004848529707020877,
+  "delta_impact_speed_m_s": -0.010350573359493964,
+  "motion_check_support": "constant-final-force extrapolation beyond solved window",
+  "distance_at_table_T_m": 7.56490419389143,
+  "planes_cropped_z_m": [
+    -3,
+    6
+  ]
+}

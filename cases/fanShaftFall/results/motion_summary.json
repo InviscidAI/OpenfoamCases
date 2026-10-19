@@ -1,0 +1,14 @@
+{
+  "mass_kg": 62.14978595506412,
+  "g_m_s2": 9.80665,
+  "weight_N": 609.4811984362295,
+  "rho_kg_m3": 1.204,
+  "reference_area_m2": 0.5014062288640014,
+  "terminal_speed_m_s": 49.4302406067508,
+  "T_hit_s": 1.3017733342223003,
+  "impact_speed_m_s": 11.393130762499938,
+  "float_updraft_m_s": 49.4302406067508,
+  "fan_initial_quasisteady_weight_share": 0.041086697272403785,
+  "fan_final_quasisteady_weight_share": 0.1875746063167265,
+  "motion_integration_dt_s": 0.0001
+}

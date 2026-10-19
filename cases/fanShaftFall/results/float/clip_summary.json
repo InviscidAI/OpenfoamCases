@@ -1,0 +1,10 @@
+{
+  "time_weighted_mean_weight_share": 1.020048302331263,
+  "start_weight_share": 0.02747438320158789,
+  "end_weight_share": 1.0175966077235648,
+  "T_history_s": 1.3017733342224,
+  "planes_cropped_z_m": [
+    -3,
+    6
+  ]
+}
