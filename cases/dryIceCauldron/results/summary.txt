@@ -1,0 +1,49 @@
+dryIceCauldron: figures from the two runs (scripts/extract_results.py)
+
+CO2 as a multiple of normal air (425 ppm)
+  minute                         1      2      3      5     10   ten-minute mean
+  shut at the toddler's nose, 10 s    1.0    2.2   11.8   43.3  103.0      43.3
+  open at the toddler's nose, 10 s    9.1   16.8   19.0   22.8   38.2      25.9
+  shut toddler, one write            1.0    2.7   10.0   43.3  104.0      44.1
+  open toddler, one write           14.3   18.5   20.8   23.0   39.6      26.1
+  shut room average at 0.6 m         1.7    3.5   11.5   46.6  105.3      45.8
+  open room average at 0.6 m         8.2   12.2   14.6   17.1   20.3      15.6
+  shut passes open (toddler, 10 s) at 243.75 s, and stays above: True
+  shut passes open (room average) at 196.25 s, and stays above: True
+  shut toddler, 10 s: 12x (OSHA PEL and NIOSH REL, 8 h) first at 197.50 s, 35x (UK HSE EH40, 15 min) first at 275.00 s, 71x (NIOSH STEL, 15 min) first at 427.50 s, 94x (NIOSH IDLH) first at 550.00 s
+  shut room average: 12x (OSHA PEL and NIOSH REL, 8 h) first at 182.50 s, 35x (UK HSE EH40, 15 min) first at 260.00 s, 71x (NIOSH STEL, 15 min) first at 411.25 s, 94x (NIOSH IDLH) first at 536.25 s
+  shut: toddler (10 s) / room average over 60-600 s, median 0.95, range 0.34-1.43
+  open toddler, 10 s: 12x (OSHA PEL and NIOSH REL, 8 h) first at 66.25 s, 35x (UK HSE EH40, 15 min) first at 341.25 s, 71x (NIOSH STEL, 15 min) never, 94x (NIOSH IDLH) never
+  open room average: 12x (OSHA PEL and NIOSH REL, 8 h) first at 113.75 s, 35x (UK HSE EH40, 15 min) never, 71x (NIOSH STEL, 15 min) never, 94x (NIOSH IDLH) never
+  open: toddler (10 s) / room average over 60-600 s, median 1.63, range 0.98-2.40
+  open: toddler (10 s) above 35x for 44% of the writes from 340 to 600 s
+  largest cell at 0.6 m: shut 229-303x, open 267-347x over 120-600 s
+
+The half room's CO2 budget, g (residual = gain - in - door - leak)
+  shut t   60  gain   78.62  in   75.00  door    -0.00  leak  -0.03  residual   3.65 = 0.0608 g/s
+  shut t  120  gain  157.08  in  150.00  door    -0.00  leak  -0.06  residual   7.14 = 0.0595 g/s
+  shut t  300  gain  392.50  in  375.00  door     0.00  leak  -0.15  residual  17.65 = 0.0588 g/s
+  shut t  600  gain  785.00  in  750.00  door    -0.00  leak  -0.30  residual  35.30 = 0.0588 g/s
+  open t   60  gain   73.62  in   75.00  door    -4.47  leak  -0.11  residual   3.20 = 0.0533 g/s
+  open t  120  gain  139.29  in  150.00  door   -16.60  leak  -0.20  residual   6.09 = 0.0507 g/s
+  open t  300  gain  258.37  in  375.00  door  -130.20  leak  -1.10  residual  14.67 = 0.0489 g/s
+  open t  600  gain  335.90  in  750.00  door  -438.23  leak  -5.60  residual  29.72 = 0.0495 g/s
+
+The open doorway: gross flow each way through the whole door, against the doorway formula
+Cd/3 W sqrt(g H^3 dT/T), Cd 0.6, W 0.914 m, H 2.032 m, dT from the room's mean on the mid plane
+  t   10  in 0.413  out 0.396 kg/s, about 0.333 m3/s in; room 18.9 C; formula 0.292 m3/s; +14%
+  t   30  in 0.408  out 0.393 kg/s, about 0.329 m3/s in; room 17.5 C; formula 0.269 m3/s; +23%
+  t   60  in 0.349  out 0.337 kg/s, about 0.281 m3/s in; room 16.3 C; formula 0.246 m3/s; +14%
+  t  120  in 0.257  out 0.252 kg/s, about 0.207 m3/s in; room 15.1 C; formula 0.222 m3/s; -6%
+  t  300  in 0.217  out 0.215 kg/s, about 0.175 m3/s in; room 14.3 C; formula 0.204 m3/s; -14%
+  t  600  in 0.206  out 0.206 kg/s, about 0.166 m3/s in; room 14.4 C; formula 0.205 m3/s; -19%
+
+The outdoor air on the mid plane (x < -0.15 m), speed, m/s
+  shut t   30  median 0.00000  largest 0.0007
+  shut t  120  median 0.00001  largest 0.0018
+  shut t  300  median 0.00002  largest 0.0023
+  shut t  600  median 0.00005  largest 0.0024
+  open t   30  median 0.11582  largest 1.0219
+  open t  120  median 0.06901  largest 0.8466
+  open t  300  median 0.06008  largest 0.6830
+  open t  600  median 0.06347  largest 0.6208

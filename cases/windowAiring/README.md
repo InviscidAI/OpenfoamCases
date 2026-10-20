@@ -18,6 +18,9 @@ furniture, the room's surfaces held at 20 °C, and only the first five minutes, 
 is at its warmest and the exchange at its fastest. Read [What it cannot](#what-it-cannot)
 before any number here.
 
+The same cold inflow along the floor, through an open front door, is what lifts a dry-ice
+cauldron's CO2 off a living-room floor in [`dryIceCauldron`](../dryIceCauldron).
+
 ## The room
 
 | | value | from |
