@@ -1,0 +1,69 @@
+iceDamRoofVents: figures from the solved runs (scripts/extract_results.py)
+
+roof to the night air 1.733 m2K/W; the snow base is above 0 C where the deck's underside is above +0.579 C
+roof over the attic, wall to ridge: 4.713 m a side along the slope
+buried, where the insulation touches the deck: |x| 3.9224-4.572 m, 0.670 m a side along the slope (14.2% of the roof over the attic); snow base +6.05 C at the wall, +0.94 C where the air begins; 100% of it above 0 C at every write
+
+vented: 480 writes, 7.5-3600 s
+  THE NUMBER: share of the roof over the attic with its snow base above 0 C, mean of 3300-3600 s (41 writes): 0.00% -> 0%   (left slope 0.0%, right 0.0%)
+  share in five-minute windows (mean of the writes, both ends included):
+         0-300    s   0.00%  (left   0.0%, right   0.0%)
+       300-600    s   0.00%  (left   0.0%, right   0.0%)
+       600-900    s   0.00%  (left   0.0%, right   0.0%)
+       900-1200   s   0.00%  (left   0.0%, right   0.0%)
+      1200-1500   s   0.00%  (left   0.0%, right   0.0%)
+      1500-1800   s   0.00%  (left   0.0%, right   0.0%)
+      1800-2100   s   0.00%  (left   0.0%, right   0.0%)
+      2100-2400   s   0.00%  (left   0.0%, right   0.0%)
+      2400-2700   s   0.00%  (left   0.0%, right   0.0%)
+      2700-3000   s   0.00%  (left   0.0%, right   0.0%)
+      3000-3300   s   0.00%  (left   0.0%, right   0.0%)
+      3300-3600   s   0.00%  (left   0.0%, right   0.0%)
+  share at single writes: largest 0.00% (at 7.5 s), smallest 0.00% (at 7.5 s); at 3600 s 0.00%
+  deck underside over the attic, warmest face: -2.25 C over the last 300 s; largest at any write -1.57 C
+  attic air, mean: -2.683 C at 3600 s; -2.68 C over the last 300 s, within 0.1 K of it for good from 524 s
+  heat and flow per metre of house, five-minute time means:
+    1500-1800 s: attic air -2.68 C, rising -0.02e-4 K/s; ceiling in 50.99 W, deck out 9.71 W, boards out 0.001 W, stored -0.01 W, so the openings carry 41.29 W; soffitVent in 12.15 g/s, out 0.00 g/s; ridge in 0.00 g/s, out 12.15 g/s
+    3300-3600 s: attic air -2.68 C, rising +0.06e-4 K/s; ceiling in 50.99 W, deck out 9.69 W, boards out 0.001 W, stored 0.03 W, so the openings carry 41.27 W; soffitVent in 12.14 g/s, out 0.00 g/s; ridge in 0.00 g/s, out 12.14 g/s
+
+buried: 960 writes, 7.5-7200 s
+  THE NUMBER: share of the roof over the attic with its snow base above 0 C, mean of 6900-7200 s (41 writes): 44.10% -> 44%   (left slope 53.5%, right 34.7%)
+  share in five-minute windows (mean of the writes, both ends included):
+         0-300    s  15.01%  (left  15.0%, right  15.0%)
+       300-600    s  16.15%  (left  16.2%, right  16.1%)
+       600-900    s  18.03%  (left  18.2%, right  17.8%)
+       900-1200   s  21.10%  (left  21.2%, right  21.0%)
+      1200-1500   s  25.53%  (left  26.5%, right  24.5%)
+      1500-1800   s  27.00%  (left  28.9%, right  25.1%)
+      1800-2100   s  28.39%  (left  31.0%, right  25.8%)
+      2100-2400   s  29.53%  (left  34.2%, right  24.8%)
+      2400-2700   s  30.58%  (left  37.3%, right  23.8%)
+      2700-3000   s  31.48%  (left  39.9%, right  23.0%)
+      3000-3300   s  32.91%  (left  42.8%, right  23.0%)
+      3300-3600   s  34.11%  (left  45.2%, right  23.0%)
+      3600-3900   s  35.79%  (left  47.5%, right  24.0%)
+      3900-4200   s  37.73%  (left  49.3%, right  26.1%)
+      4200-4500   s  39.78%  (left  50.7%, right  28.9%)
+      4500-4800   s  40.83%  (left  51.8%, right  29.9%)
+      4800-5100   s  41.98%  (left  52.8%, right  31.2%)
+      5100-5400   s  42.48%  (left  53.0%, right  31.9%)
+      5400-5700   s  42.78%  (left  53.1%, right  32.4%)
+      5700-6000   s  42.84%  (left  53.0%, right  32.7%)
+      6000-6300   s  43.41%  (left  53.4%, right  33.4%)
+      6300-6600   s  43.70%  (left  53.9%, right  33.5%)
+      6600-6900   s  44.17%  (left  54.0%, right  34.3%)
+      6900-7200   s  44.10%  (left  53.5%, right  34.7%)
+  share at single writes: largest 47.51% (at 6847.5 s), smallest 14.26% (at 7.5 s); at 3600 s 35.87%
+  deck underside over the attic, warmest face: +2.39 C over the last 300 s; largest at any write +2.67 C
+  attic air, mean: +2.190 C at 3600 s; +2.54 C over the last 300 s, within 0.1 K of it for good from 4966 s
+  heat and flow per metre of house, five-minute time means:
+    1500-1800 s: attic air +0.58 C, rising +15.95e-4 K/s; ceiling in 31.50 W, deck out 23.25 W, stored 8.01 W, so the openings carry 0.25 W; ridge in 0.24 g/s, out 0.27 g/s
+    3300-3600 s: attic air +2.14 C, rising +3.68e-4 K/s; ceiling in 29.34 W, deck out 27.06 W, stored 1.84 W, so the openings carry 0.44 W; ridge in 0.25 g/s, out 0.26 g/s
+    6900-7200 s: attic air +2.54 C, rising +0.10e-4 K/s; ceiling in 28.82 W, deck out 28.26 W, stored 0.05 W, so the openings carry 0.51 W; ridge in 0.26 g/s, out 0.26 g/s
+  across the restart at 3600 s (share, attic air):
+     3585.0 s   33.44%  +2.185 C
+     3592.5 s   35.25%  +2.188 C
+     3600.0 s   35.87%  +2.190 C
+     3607.5 s   35.78%  +2.192 C
+     3615.0 s   34.87%  +2.194 C
+  share over the last 20 minutes: linear trend +0.55 points per 10 minutes

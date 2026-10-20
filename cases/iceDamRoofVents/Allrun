@@ -1,0 +1,44 @@
+#!/bin/bash
+# An attic on a still 22 F (-5.6 C) night under 9.5 in of snow, its soffit vents open or buried
+# in blown insulation: a 2-D section from gable side to gable side, from rest.
+#
+#   ./Allrun vented|buried [nProcs]
+#   ./Allrun --setup-only vented|buried [nProcs]
+#
+# vented   the soffit vents open, a baffle keeping a 2 in airway over the insulation at each
+#          eave, and the ridge vent: 0-3600 s.
+# buried   the insulation blown over the soffits, filling the eaves up to the deck; the ridge
+#          vent is the only opening: 0-7200 s (the clip shows 0-3600 s; the number is settled
+#          by 7200 s).
+# nProcs   MPI ranks, default 4 (both solved runs used 4).
+# --setup-only writes the run, meshes it, sets its fields, checks and decomposes it, and stops
+#          before the solve.
+#
+# scripts/make_case.py writes every dictionary, the initial fields and an Allrun into
+# runs/<run>/; that Allrun meshes the section with gmsh (scripts/make_mesh.py, which needs
+# Python with gmsh in $PYTHON, default python3), converts it with gmshToFoam, writes the
+# insulation's heat transfer face by face and the barometric pressure on the open faces and in
+# the cells (setup_fields.py), checks and decomposes the run, and, given `solve`, runs
+# buoyantPimpleFoam.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v gmshToFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+"${PYTHON:-python3}" -c "import gmsh" 2> /dev/null || { echo "needs gmsh for Python (pip install gmsh==4.15.2) in \$PYTHON or python3" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-4}
+case "$run" in
+  vented|buried) ;;
+  *) echo "usage: $0 [--setup-only] vented|buried [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+rm -rf "$r"; mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --ranks "$nproc"
+(cd "$r" && ./Allrun)
+grep -E '^ +cells:|Mesh OK|Failed' "$r/log.checkMesh"
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(cd "$r" && ./Allrun solve)
+echo "solved: $r"
