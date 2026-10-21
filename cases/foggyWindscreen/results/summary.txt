@@ -1,0 +1,118 @@
+foggyWindscreen: figures from the solved runs (scripts/extract_results.py)
+
+starting film 10 g/m2 on both screens; a face is misted while its film is above 0.01 g/m2 (0.1% of the start)
+occupants' water: 140 g/h in the car, 26.8199 mg/s per metre of section
+
+outside: 480 writes, 1.25-600 s; walls.dat 25800 rows to 599.99 s; windscreen 177 faces over 1.0621 m, rear screen 68 faces over 0.4054 m
+  windscreen still misted, % of its length (face by face at the write):
+      0 s 100.00%   60 s 100.00%  120 s  92.66%  180 s  83.05%  240 s  59.89%
+    300 s  31.07%  360 s  11.86%  420 s   1.13%  480 s   0.56%  540 s   0.56%  600 s   0.00%
+    the clip's rounded number: 2 min 93%, 5 min 31%, 7 min 1%, 8 min 1%, 9 min 1%, 10 min 0%
+  every 20 steps (walls.dat): first face clears at 70.30 s
+  windscreen clear from 541.14 s (last misted at 541.12 s); misted share 1.13% at 420 s
+    420 s to clearing: misted share 0.00-1.13% (the top faces, 12.0 mm)
+  windscreen clearing 480-600 s: 0.28 points a minute
+  windscreen clearing 540-600 s: 0.56 points a minute
+  share of the windscreen's length by film, % (of the starting 10 g/m2):
+       t s   >=90%  50-90%  10-50%  <10% misted   clear   taper 90%->clear mm   drawn >50% fog  >5% fog
+        60    73.4    23.7     2.8     0.0     0.0          282              98.3       100.0
+       120     2.3    85.9     4.5     0.0     7.3          960              90.4        92.7
+       180     0.6    54.8    26.6     1.1    16.9          876              72.3        83.1
+       240     0.6    24.3    30.5     4.5    40.1          630              36.7        59.3
+       300     0.6     1.1    27.1     2.3    68.9          324              13.6        31.1
+       360     0.6     0.6     7.3     3.4    88.1          120               1.1        11.9
+       480     0.0     0.0     0.6     0.0    99.4            6               0.6         0.6
+       600     0.0     0.0     0.0     0.0   100.0            0               0.0         0.0
+  faces cleared by 600 s: 177 of 177; per face, from half the starting film to clear: median 70.0 s; from a tenth to clear: median 7.50 s, 90th percentile 10.00 s, largest 12.50 s (write interval 1.25 s)
+  film at 600 s: largest 0.00 g/m2; largest at any write 10.85 g/m2
+  rear screen still misted: 120 s 100.0%, 300 s 100.0%, 420 s 100.0%, 480 s 97.1%, 540 s 92.6%, 600 s 88.2%
+  side glass still misted (walls.dat): 120 s 100.0%, 300 s 100.0%, 600 s 100.0%
+  warm-up against the scaled Brusey et al. cabin model (reference every 10 s):
+       t s   ref cabin   heads   cabin mean   ref supply   supply
+        10       7.69    9.39        7.77       52.20    52.20
+        20      10.12   12.19        8.95       52.20    52.20
+        30      12.31   14.34        9.99       52.20    52.20
+        60      17.71   18.99       12.44       52.20    52.20
+        90      21.73   22.03       14.23       52.20    52.20
+       120      24.74   24.31       15.63       52.20    52.20
+       300      32.63   31.70       20.27       52.20    52.20
+       600      36.16   36.13       23.07       52.20    52.20
+    10-120 s, heads less reference cabin: -0.43 (at 120 s) to +2.07 K (at 20 s); supply less reference supply: +0.00 to +0.00 K
+    supply less reference at 40 s +0.00 K, at 60 s +0.00 K, at 120 s +0.00 K; cabin mean less reference at 60 s -5.27 K, at 120 s -9.11 K
+  water budget, per metre: change in vapour + mist + films against in - out + occupants:
+       0-   1 s  d(store)/dt -4.9511e-05  in-out+S -4.9506e-05 kg/s  residual -0.01%
+       1-   2 s  d(store)/dt -5.2667e-05  in-out+S -5.2840e-05 kg/s  residual +0.33%
+       2-   5 s  d(store)/dt -4.1132e-05  in-out+S -4.1153e-05 kg/s  residual +0.05%
+       5-  10 s  d(store)/dt -1.8453e-05  in-out+S -1.8462e-05 kg/s  residual +0.05%
+      10-  30 s  d(store)/dt -1.3552e-05  in-out+S -1.3548e-05 kg/s  residual -0.03%
+      30-  60 s  d(store)/dt -1.9982e-05  in-out+S -1.9967e-05 kg/s  residual -0.08%
+      60- 120 s  d(store)/dt -3.1432e-05  in-out+S -3.1424e-05 kg/s  residual -0.02%
+     120- 240 s  d(store)/dt -4.2012e-05  in-out+S -4.2013e-05 kg/s  residual +0.00%
+     240- 360 s  d(store)/dt -2.6296e-05  in-out+S -2.6305e-05 kg/s  residual +0.03%
+     360- 480 s  d(store)/dt -8.9294e-06  in-out+S -8.9289e-06 kg/s  residual -0.01%
+     480- 540 s  d(store)/dt -7.7220e-06  in-out+S -7.7187e-06 kg/s  residual -0.04%
+     540- 600 s  d(store)/dt -7.6469e-06  in-out+S -7.6467e-06 kg/s  residual -0.00%
+    largest residual from 2 s on: 0.08%
+  cabin vapour and mist, g per metre: 0 s 9.48 and 0.000; 120 s 9.48 and 0.190; 300 s 9.39 and 0.235; 600 s 9.38 and 0.316
+  supply temperature: 52.20 C at 1.02 s, 52.20 C at 60 s, 52.20 C at 120 s, 52.20 C at 600 s
+  air at the heads: 18.99 C at 60 s, 24.31 C at 120 s, 31.70 C at 300 s, 36.13 C at 600 s; cabin mean 15.63 C at 120 s, 23.07 C at 600 s
+  time step: 516000 steps to 600 s, mean 1.16 ms
+
+recirc: 480 writes, 1.25-600 s; walls.dat 37241 rows to 599.99 s; windscreen 177 faces over 1.0621 m, rear screen 68 faces over 0.4054 m
+  windscreen still misted, % of its length (face by face at the write):
+      0 s 100.00%   60 s 100.00%  120 s  95.48%  180 s  91.53%  240 s  87.01%
+    300 s  80.79%  360 s  74.01%  420 s  67.23%  480 s  59.89%  540 s  51.98%  600 s  46.33%
+    the clip's rounded number: 2 min 95%, 5 min 81%, 7 min 67%, 8 min 60%, 9 min 52%, 10 min 46%
+  every 20 steps (walls.dat): first face clears at 83.30 s
+  still misted at 599.99 s: 46.33%
+  windscreen clearing 480-600 s: 6.78 points a minute
+  windscreen clearing 540-600 s: 5.65 points a minute
+  share of the windscreen's length by film, % (of the starting 10 g/m2):
+       t s   >=90%  50-90%  10-50%  <10% misted   clear   taper 90%->clear mm   drawn >50% fog  >5% fog
+        60    94.4     5.1     0.6     0.0     0.0           60             100.0       100.0
+       120    87.6     5.6     1.7     0.6     4.5           84              94.4        95.5
+       180    73.4    15.8     1.7     0.6     8.5          192              89.8        91.5
+       240    59.9    21.5     5.1     0.6    13.0          288              84.7        87.0
+       300    51.4    22.0     6.8     0.6    19.2          312              76.8        80.8
+       360    46.3    19.2     7.9     0.6    26.0          294              69.5        74.0
+       480    37.3    11.9     9.6     1.1    40.1          240              52.5        59.9
+       600    32.2     7.3     6.2     0.6    53.7          150              42.4        46.3
+  faces cleared by 600 s: 95 of 177; per face, from half the starting film to clear: median 65.0 s; from a tenth to clear: median 7.50 s, 90th percentile 10.00 s, largest 11.25 s (write interval 1.25 s)
+  film at 600 s: largest 35.27 g/m2; largest at any write 35.27 g/m2
+  rear screen still misted: 120 s 100.0%, 300 s 100.0%, 420 s 100.0%, 480 s 100.0%, 540 s 100.0%, 600 s 100.0%
+  side glass still misted (walls.dat): 120 s 100.0%, 300 s 100.0%, 600 s 100.0%
+  warm-up against the scaled Brusey et al. cabin model (reference every 10 s):
+       t s   ref cabin   heads   cabin mean   ref supply   supply
+        10       7.76    7.70        7.88       54.11    53.64
+        20      10.32    9.05        9.21       55.13    54.76
+        30      12.69   10.11       10.42       56.07    55.94
+        60      18.78   12.27       13.45       58.51    59.40
+        90      23.64   13.88       15.78       60.46    61.97
+       120      27.54   15.17       17.64       62.02    63.69
+       300      39.77   19.99       24.14       66.91    68.86
+       600      46.64   24.14       29.04       69.66    72.09
+    10-120 s, heads less reference cabin: -12.37 (at 120 s) to -0.06 K (at 10 s); supply less reference supply: -0.47 to +1.67 K
+    supply less reference at 40 s +0.15 K, at 60 s +0.89 K, at 120 s +1.67 K; cabin mean less reference at 60 s -5.33 K, at 120 s -9.90 K
+  water budget, per metre: change in vapour + mist + films against in - out + occupants:
+       0-   1 s  d(store)/dt -7.2495e-06  in-out+S -7.0637e-06 kg/s  residual -2.56%
+       1-   2 s  d(store)/dt +8.3173e-06  in-out+S +8.3889e-06 kg/s  residual -0.85%
+       2-   5 s  d(store)/dt +1.9881e-05  in-out+S +1.9909e-05 kg/s  residual -0.14%
+       5-  10 s  d(store)/dt +2.1993e-05  in-out+S +2.2034e-05 kg/s  residual -0.19%
+      10-  30 s  d(store)/dt +2.1340e-05  in-out+S +2.1483e-05 kg/s  residual -0.67%
+      30-  60 s  d(store)/dt +2.1798e-05  in-out+S +2.2091e-05 kg/s  residual -1.33%
+      60- 120 s  d(store)/dt +2.3580e-05  in-out+S +2.3896e-05 kg/s  residual -1.32%
+     120- 240 s  d(store)/dt +2.4463e-05  in-out+S +2.4716e-05 kg/s  residual -1.03%
+     240- 360 s  d(store)/dt +2.5482e-05  in-out+S +2.5753e-05 kg/s  residual -1.05%
+     360- 480 s  d(store)/dt +2.5697e-05  in-out+S +2.5917e-05 kg/s  residual -0.85%
+     480- 540 s  d(store)/dt +2.5765e-05  in-out+S +2.5920e-05 kg/s  residual -0.60%
+     540- 600 s  d(store)/dt +2.5837e-05  in-out+S +2.5955e-05 kg/s  residual -0.46%
+    largest residual from 2 s on: 1.33%
+  intake: mist drawn in, largest at any logged step 0 kg/s; vapour 30 s 5.38 g/kg, 60 s 5.88 g/kg, 120 s 7.04 g/kg, 300 s 10.69 g/kg, 600 s 14.76 g/kg
+    intake air at 120 s 31.73 C against the cabin's mean 17.64 C
+  cabin vapour and mist, g per metre: 0 s 9.48 and 0.000; 120 s 11.51 and 0.958; 300 s 14.91 and 2.735; 600 s 18.96 and 6.272
+  supply temperature: 53.00 C at 1.02 s, 59.40 C at 60 s, 63.69 C at 120 s, 72.09 C at 600 s
+  air at the heads: 12.27 C at 60 s, 15.17 C at 120 s, 19.99 C at 300 s, 24.14 C at 600 s; cabin mean 17.64 C at 120 s, 29.04 C at 600 s
+  time step: 744820 steps to 600 s, mean 0.81 ms
+
+at 120 s: recirc's supply 63.69 C against outside air's 52.20 C (+11.49 K); air at the heads recirc 15.17, outside 24.31 C; cabin mean recirc 17.64, outside 15.63 C
+  the reference model's recirculated supply less its outside-air supply at 120 s: +9.82 K

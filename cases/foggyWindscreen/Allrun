@@ -1,0 +1,44 @@
+#!/bin/bash
+# A misted car windscreen cleared by the heater on outside air or on recirculation, A/C off, on a
+# 3 C, 90% morning with two people inside: a 2-D section lengthwise through the cabin at the
+# driver's centreline, 0-600 s from the moment the blower starts.
+#
+#   ./Allrun outside|recirc [nProcs]
+#   ./Allrun --setup-only outside|recirc [nProcs]
+#
+# outside  the heater takes outside air and blows it at the windscreen at 52 C; the
+#          recirculation intake under the dash is shut.
+# recirc   the same heater takes the cabin's own air from the intake under the dash.
+# nProcs   MPI ranks, default 8 (both solved runs used 8).
+# --setup-only writes the run, meshes it, sets its zones and fields, checks and decomposes it,
+#          and stops before the solve.
+#
+# scripts/make_case.py writes every dictionary, the initial fields and an Allrun into
+# runs/<run>/; that Allrun meshes the section with gmsh (scripts/make_mesh.py), converts it with
+# gmshToFoam, sets the occupants' water sources (topoSet), writes the cells' barometric pressure
+# and where the side glass, door trim and cabin contents the section cannot hold lie
+# (setup_fields.py), checks and decomposes the run, and, given `solve`, runs buoyantPimpleFoam.
+# $PYTHON (default python3) needs shapely and gmsh 4.15.2.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v gmshToFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+PYTHON=${PYTHON:-python3}; export PYTHON
+"$PYTHON" -c "import gmsh, shapely" 2> /dev/null || { echo "needs gmsh (pip install gmsh==4.15.2) and shapely in \$PYTHON or python3" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  outside|recirc) ;;
+  *) echo "usage: $0 [--setup-only] outside|recirc [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+rm -rf "$r"; mkdir -p runs
+"$PYTHON" scripts/make_case.py "$run" "$r" --ranks "$nproc"
+(cd "$r" && ./Allrun)
+grep -E '^ +cells:|Mesh OK|Failed' "$r/log.checkMesh"
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(cd "$r" && ./Allrun solve)
+echo "solved: $r"
