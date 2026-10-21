@@ -1,0 +1,15 @@
+slatsDown t=50  coilInT: 0.943 K below 2 C  up1: 0.720 K (flow 0.4360 m3/s, area 0.3073)  up3: 0.811 K (flow 0.2491 m3/s, area 0.3085)  F: 0.0306
+slatsDown t=55  coilInT: 0.953 K below 2 C  up1: 0.730 K (flow 0.4362 m3/s, area 0.3073)  up3: 0.821 K (flow 0.2489 m3/s, area 0.3085)  F: 0.0307
+slatsDown t=60  coilInT: 0.953 K below 2 C  up1: 0.732 K (flow 0.4363 m3/s, area 0.3073)  up3: 0.823 K (flow 0.2487 m3/s, area 0.3085)  F: 0.0305
+slatsDown t=80  coilInT: 0.957 K below 2 C  up1: 0.735 K (flow 0.4364 m3/s, area 0.3073)  up3: 0.829 K (flow 0.2494 m3/s, area 0.3085)  F: 0.0306
+slatsDown t=85  coilInT: 0.962 K below 2 C  up1: 0.740 K (flow 0.4366 m3/s, area 0.3073)  up3: 0.834 K (flow 0.2497 m3/s, area 0.3085)  F: 0.0306
+slatsDown t=90  coilInT: 0.967 K below 2 C  up1: 0.744 K (flow 0.4366 m3/s, area 0.3073)  up3: 0.837 K (flow 0.2496 m3/s, area 0.3085)  F: 0.0307
+slatsUp  t=50  coilInT: 0.433 K below 2 C  up1: 0.187 K (flow 0.4392 m3/s, area 0.3073)  up3: 0.151 K (flow 0.2415 m3/s, area 0.3085)  F: 0.0315
+slatsUp  t=55  coilInT: 0.485 K below 2 C  up1: 0.239 K (flow 0.4390 m3/s, area 0.3073)  up3: 0.198 K (flow 0.2432 m3/s, area 0.3085)  F: 0.0318
+slatsUp  t=60  coilInT: 0.518 K below 2 C  up1: 0.273 K (flow 0.4390 m3/s, area 0.3073)  up3: 0.240 K (flow 0.2441 m3/s, area 0.3085)  F: 0.0317
+slatsUp  t=80  coilInT: 0.519 K below 2 C  up1: 0.277 K (flow 0.4388 m3/s, area 0.3073)  up3: 0.245 K (flow 0.2418 m3/s, area 0.3085)  F: 0.0314
+slatsUp  t=85  coilInT: 0.472 K below 2 C  up1: 0.228 K (flow 0.4390 m3/s, area 0.3073)  up3: 0.197 K (flow 0.2409 m3/s, area 0.3085)  F: 0.0313
+slatsUp  t=90  coilInT: 0.440 K below 2 C  up1: 0.196 K (flow 0.4395 m3/s, area 0.3073)  up3: 0.172 K (flow 0.2410 m3/s, area 0.3085)  F: 0.0312
+movedOut t=50  coilInT: 0.771 K below 2 C  up1: 0.542 K (flow 0.4380 m3/s, area 0.3073)  up3: 0.575 K (flow 0.2515 m3/s, area 0.3085)  F: 0.0308
+movedOut t=55  coilInT: 0.768 K below 2 C  up1: 0.538 K (flow 0.4377 m3/s, area 0.3073)  up3: 0.571 K (flow 0.2509 m3/s, area 0.3085)  F: 0.0309
+movedOut t=60  coilInT: 0.775 K below 2 C  up1: 0.546 K (flow 0.4379 m3/s, area 0.3073)  up3: 0.573 K (flow 0.2500 m3/s, area 0.3085)  F: 0.0307

@@ -17,6 +17,15 @@ runs:
     ./Allrun open        # the unit alone
     ./Allrun covered     # the same mesh less the cover's cells, which become walls
 
+Viewers of the clip asked whether the cover can be fixed: would the slats be better pointing
+up, and, against the rain that would let in, could the cover be moved further out with its
+bottom left open? Three more runs answer that with nothing changed but the cover, each from
+the fan's switch-on ([Fixing the cover](#fixing-the-cover-slats-up-or-the-front-moved-out)):
+
+    ./Allrun slatsDown   # the cover above, rebuilt and run again to 90 s, as the control
+    ./Allrun slatsUp     # the same boards turned to rise 35 degrees outward, to 90 s
+    ./Allrun movedOut    # the front moved out to 350 mm from the grille, the bottom open, to 60 s
+
 ## The unit
 
 From Daikin's documents for the Altherma 3 R outdoor unit ERGA06EV, a common European
@@ -261,6 +270,129 @@ and 0.7 under the cover.
 back of the unit round its end, or anything about the heat pump's capacity, efficiency, frost or
 running cost.
 
+## Fixing the cover: slats up, or the front moved out
+
+Viewers of the clip offered two fixes. One asked whether the slats would be better pointing
+up. Another answered that boards sloping up would let rain into the unit, and the first then
+suggested moving the cover further from the unit and leaving its bottom open for drainage.
+Does either of them take the coil's air back towards the open unit's 0.0 °C?
+
+Everything but the cover is the model above, unchanged: the unit, the fan's target of
+1.82113 m/s, the coil's -6 °C surface, effectiveness and NTU/L of 15.482 1/m, the mesh
+dictionaries and refinement levels, the schemes and solver settings, still air at 2 °C, from
+rest. `constant/`, `0.orig/`, `fvSchemes` and `fvSolution` are the files `covered` ran with; no
+setting was adjusted after these runs started.
+
+### The three covers
+
+- **`slatsDown`** is `covered`'s cover, rebuilt. A snappyHexMesh rebuild is not the same mesh to
+  the cell (above), so the cover the fixes are measured against was meshed and solved again
+  beside them.
+- **`slatsUp`** has the same lid, corner post and boards, each board mirrored across its own
+  panel: it fills the same span (x 0.6927-0.775 m for the front) at the same heights, but rises
+  35° outward instead of falling. The two covers' volumes agree (0.037610 m³). Nothing else moves;
+  this is the one-change test.
+- **`movedOut`** keeps the downward boards, with two changes, because the viewer offered them as
+  one fix. *Further out:* Daikin's installer guide asks for more than 350 mm in front of the
+  outlet (p. 56), so the front panel's inner edge moves from 0.700 m to 0.988 m from the wall
+  (0.638 + 0.350), and the lid and the side panel run out to the new front at 1.063 m. The side
+  stays 0.108 m from the unit's end. That is 0.99 m of inside depth, more than any cover found for
+  sale (Decoclim's L is 55-70 cm), so it is a cover built to measure. *Bottom open:* the boards
+  whose lower edge would fall below 0.29 m are left off, which leaves 10 boards in each panel
+  instead of 13, the lowest edge at 0.294 m, about the unit's base (0.300 m, the free space Daikin
+  asks for under the unit). The corner post still reaches down to the feet. The level-3
+  refinement box runs out to x = 1.14 m instead of 0.85 m, keeping its 0.075 m margin past the
+  front, and the cover's front and side cut planes move with the cover; its low strip is the open
+  band below 0.29 m.
+
+Each cover has its own mesh, built as above, with its cells taken out as in `covered`:
+
+| | cells with the cover | cells in the run | cover's cells | `checkMesh` of the run |
+|---|---:|---:|---:|---|
+| `slatsDown` | 447,753 | 409,200 | 38,553 | fails skewness only: 16 faces of `coverWalls`, at most 5.56 |
+| `slatsUp` | 447,396 | 408,643 | 38,753 | fails skewness only: 13 faces, at most 4.29 |
+| `movedOut` | 490,894 | 448,758 | 42,136 | fails skewness only: 2 faces, at most 4.21 |
+
+The coil zone is 14,720 cells and the fan zone 6,896 in all three. `covered` failed the same
+check on 19 faces and ran without trouble; so did these.
+
+One monitor is added to the three runs, `inletUpwindSeries`
+(`template/system/inletUpwindSeries.inc`): the cells one cell upstream of the coil's inlet face,
+the plane `inlet_upwind.py` reads, at every 0.25 s write instead of only after the solve. It is
+the direct check on the correction `F` in each new cover, and `extract_results.py` adds it to
+`summary.csv` as `upstream_K_below_outside_air`.
+
+`slatsUp`'s number was still rising at 60 s, so `slatsUp` and `slatsDown` were continued from
+their 60 s fields to 90 s (`startFrom latestTime`, `endTime 90`, nothing else changed). Neither
+steps at 60 s: slats up's corrected number reads 0.2848, 0.2855 and 0.2857 K at 59.75, 60 and
+60.25 s, and the fan's flow 0.3482-0.3488 m³/s either side. `Allrun` runs the two straight to 90
+s; the solved runs' restart is the only difference. `movedOut` was not continued.
+
+### Results
+
+The number is the one above: the coilInT monitor corrected with the same F = 0.0302, in K below
+the outside air, from `results/coil_number_covers.csv` (`scripts/coil_number.py`) and
+`results/<run>/summary.csv`:
+
+| air entering the coil, K below the outside air | 50-60 s | 80-90 s |
+|---|---:|---:|
+| `covered` (above) | 0.717 | not run |
+| **`slatsDown`**, the same cover rebuilt | **0.729** | **0.739** |
+| **`slatsUp`** | **0.247** | **0.242** |
+| **`movedOut`** | **0.551** | not run |
+
+- **The rebuilt cover agrees with the first.** `slatsDown` reads 0.729 K over 50-60 s against
+  `covered`'s 0.717 K on the other mesh, and 0.739 K over 80-90 s, so the comparison with the
+  first clip stands. From 20 s on its number stays between 0.705 and 0.757 K.
+- **The upstream cells agree with the corrected monitor** to within 0.012 K in every 10 s window
+  of all three runs (50-60 s: 0.727, 0.235 and 0.547 K; 80-90 s: 0.736 and 0.233 K), so the F
+  found on the first runs holds for the new covers. At the six times `inlet_upwind.py` reads
+  (`results/inlet_upwind_covers.txt`) F is 0.0305-0.0318.
+- **Turning the slats up is the better fix: about 0.5 K better than the cover as it was.** The
+  jet leaves upward and out under the lid's edge rather than down onto the ground. Almost none of
+  it comes back in under the lowest board (0.002 m³/s, against 0.018 m³/s at -1.2 °C with the
+  slats down), and the air arriving under the unit is 1.57 °C against 0.79 °C (cut planes,
+  50-60 s). The coil takes 3.08 K off its air against the cover's 2.88 K.
+- **Moving the front out with the bottom open helps less: 0.55 K.** The jet crosses 350 mm of air
+  before the boards, and cold air spills out along the ground through the open bottom; some
+  comes back in through that open band (0.038 m³/s at 0.4 °C over 50-60 s). The run joins two
+  changes, so it cannot say how much each gives alone, and only one distance was tried.
+
+| over 50-60 s | `slatsDown` | `slatsUp` | `movedOut` |
+|---|---:|---:|---:|
+| fan flow, m³/s | 0.3487 | 0.3483 | 0.3488 |
+| coil's drop per pass (design), K | 2.876 (2.909) | 3.081 (3.102) | 2.950 (2.980) |
+| air entering the space behind the unit from above / below / its open end, m³/s | 0.040 / 0.122 / 0.181 | 0.052 / 0.100 / 0.217 | 0.032 / 0.126 / 0.189 |
+| coldest air anywhere, whole run | -3.41 °C | -2.79 °C | -3.23 °C |
+
+### Slats up does not settle on one number
+
+From 20 s on, `slatsDown` stays within 0.705-0.757 K and `movedOut` within 0.522-0.589 K.
+`slatsUp` does not settle. Over 20-90 s its number drifts between 0.17 and 0.30 K, with a mean
+of 0.23 K: 0.17-0.19 K over 20-45 s, rising from about 47 s to a plateau of 0.29-0.30 K over
+62-78 s, then falling to 0.21 K by 90 s (1 s means). Shown as a 2 s mean to 0.1 K it reads 0.2
+until 56 s, 0.3 from 56 s to 85 s, and 0.2 again from 85.25 s to 90 s. The flow into the space
+behind the unit is steady through the whole run (about 0.05 m³/s from above, 0.10 from below and
+0.22 round its end). What changes is how cold the air coming round the unit's end is: 0.03 K
+below the outside air over 25-45 s, 0.20 K over 60-65 s, and back to 0.04 K at 90 s (cut plane
+`unitEnd`). A pocket of colder air reaches the unit's end, is drawn into the coil and drains
+away again. Where it comes from was not traced, and whether it comes back in a longer run was
+not tested. At its highest, slats up is still 0.4 K better than the cover with its slats down.
+
+### What the second clip shows
+
+The symmetry plane over the same window and on the same scale as the first clip, in two panels:
+the cover with its slats down (`slatsDown`) and with its slats up (`slatsUp`), from switch-on to
+8 s of flow at 0.4× speed, about 20 s, marked "0.4x speed" on screen, so that the jets can be
+seen forming and turning down or up. The runs wrote the plane every 0.25 s, 15 video frames at
+this speed; the frames between are blended along the flow, so the cold air moves between writes
+rather than fading from one place to the next, and the parcels move with the flow at the same
+0.4×. Each panel's number is the corrected value as a 2 s running mean to 0.1 K
+(`results/coil_number_covers.csv`, `shown`), so it climbs as the cold air reaches the coil: slats
+down reads 0.7 from 5.25 s and slats up 0.2 from 4.25 s, and at 8 s, the clip's last frame, they
+read **0.7 °C** and **0.2 °C**. It does not show the drift above, which comes after 45 s, or the
+moved cover, whose number is in the table.
+
 ## What it cannot
 
 - **Half a unit.** The model is cut by a symmetry plane through the middle of the unit, so
@@ -280,6 +412,22 @@ running cost.
   speed, and the unit defrosts from time to time.
 - **One mesh, one model, 60 s.** No mesh or time-step study, and URANS with k-omega SST. The
   60 s was shortened from 120 s for cost; both runs had settled well before it.
+
+The three covers' runs carry all of these, and:
+
+- **Rain and snow.** Boards sloping up outward catch rain on their top faces and drain it
+  inward, towards the unit, and a drop driven in at about the boards' slope, 35° below the
+  horizontal, goes straight through a gap. Downward boards shed rain outward, and a drop has to
+  travel upward to get past them. This was the objection to slats up under the first clip, and
+  the model has no rain in it. In the moved cover, the open bottom lets drifting snow in under
+  the boards as well as letting meltwater out.
+- **One fix, two changes; one gap.** The moved cover and its open bottom are one run, and the
+  front was moved only to Daikin's 350 mm.
+- **Slats up's number does not settle.** It drifts between 0.17 and 0.30 K over 20-90 s as colder
+  air comes and goes round the unit's end, so its figure is a range, not a settled value; a
+  longer run was not tried.
+- **Two runs, restarted.** `slatsDown` and `slatsUp` were solved to 60 s and continued from their
+  60 s fields; `movedOut` ends at 60 s.
 
 ## Sources
 
@@ -313,22 +461,53 @@ Python 3 with gmsh (the Python module), NumPy and PyVista.
     python3 scripts/inlet_upwind.py runs > results/inlet_upwind.txt
     python3 scripts/coil_number.py > results/coil_number.txt
 
+and for the three covers:
+
+    ./Allrun mesh up                 # runs/mesh-up/; slatsDown uses runs/mesh/
+    ./Allrun mesh out                # runs/mesh-out/
+    ./Allrun slatsDown               # [nProcs], default 7
+    ./Allrun slatsUp
+    ./Allrun movedOut
+    for r in slatsDown slatsUp movedOut; do python3 scripts/extract_results.py runs/$r results/$r; done
+    python3 scripts/inlet_upwind.py runs slatsDown slatsUp movedOut > results/inlet_upwind_covers.txt
+    python3 scripts/coil_number.py results -o coil_number_covers.csv slatsDown slatsUp movedOut \
+        > results/coil_number_covers.txt
+
 `Allrun mesh` writes the casing's and the cover's surfaces with `scripts/make_stl.py` and
 meshes them in `runs/mesh/` (blockMesh, surfaceFeatureExtract, snappyHexMesh on 8 ranks, the
 coil and fan zones by topoSet). `Allrun <run>` copies that mesh to `runs/<run>/`, takes the
 cover's cells out for `covered`, adds the monitors' face zones, checks the mesh, decomposes it
 and solves 0-60 s, writing the cut planes and monitors every 0.25 s and the fields every 5 s
 (the last three kept). After the solve it samples the cells upstream of the coil at 50, 55
-and 60 s. `./Allrun --setup-only <run>` stops before the solve. `scripts/make_open_faces.py`
+and 60 s. `slatsDown` and `slatsUp` run to 90 s and are sampled at 80, 85 and 90 s instead;
+`slatsUp` and `movedOut` build their own meshes first if they are not there, with
+`make_stl.py`'s second argument (`up`, `out`). `./Allrun --setup-only <run>` stops before the
+solve. `scripts/make_open_faces.py`
 rewrites the behind-the-unit face zones' dictionaries in `template/system/`. `./Allclean`
 removes the mesh and the runs.
 
 The runs took 27,072 s (`open`) and 14,457 s (`covered`) of wall time on 7 ranks each, side
 by side; the open run's step is the shorter because the jet crosses the cover's snapped cells.
-Each writes about 0.6 GB of cut planes.
+Each writes about 0.6 GB of cut planes. The covers' runs took 13,014 s to 60 s and 6,442 s more
+to 90 s (`slatsDown`, 8 ranks), 30,916 s and 14,743 s (`slatsUp`, 4 ranks) and 29,547 s
+(`movedOut`, 4 ranks), sharing the machine with other runs.
+
+**A rebuild is not the solved mesh to the cell**, for the covers as for the first two runs. From a
+clean copy, `./Allrun --setup-only` wrote byte for byte the solved runs' surfaces (`cover.stl`,
+`casing.stl`), mesh dictionaries, `constant/` apart from the mesh, and initial fields in `0/`;
+`fvSchemes`, `fvSolution` and `decomposeParDict` were identical, and `controlDict` with its
+function objects expanded differed only in the restarted runs' `startFrom latestTime`. The
+meshes came out at 447,676 / 409,123 cells (`slatsDown`), 447,319 / 408,566 (`slatsUp`) and
+491,181 / 449,045 (`movedOut`), within 0.06% of the solved counts, with the same cover cells
+(38,553, 38,753 and 42,136) and coil zone (14,720) in each, the fan zone 6,882-6,896 cells, and
+`checkMesh` failing only skewness on 28, 17 and 1 faces. The points, faces and decompositions
+differ. On one mesh, `--setup-only open` and `covered` write every file outside the
+`processor*` folders exactly as they did before the three covers were added (decomposePar
+splits the mesh differently from one call to the next, even on the same mesh).
 
 The case was set up by an agent, then meshed, checked and run on our own machine after the
 agent's tetrahedral mesh proved too slow; the 2-D versions before it were set aside because
 in a vertical section the open unit could only draw air from above or below itself. The
 files in `results/` are what `extract_results.py`, `inlet_upwind.py` and `coil_number.py`
-wrote from the two solved runs.
+wrote from the solved runs. `extract_results.py` joins a restarted run's monitor files, so
+`results/slatsDown/` and `results/slatsUp/` hold one series from 0.25 s to 90 s.

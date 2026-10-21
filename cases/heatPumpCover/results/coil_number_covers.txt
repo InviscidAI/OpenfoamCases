@@ -1,0 +1,8 @@
+slatsDown: 360 writes, 0.25-90 s; shown at 5/8/30/60/90 s: [0.6, 0.7, 0.7, 0.7, 0.7]
+  50-60 s (41 writes): 0.729 K below outside (monitor 0.949 K); upstream plane 0.727 K, corrected minus upstream +0.002 K
+  80-90 s (41 writes): 0.739 K below outside (monitor 0.958 K); upstream plane 0.736 K, corrected minus upstream +0.002 K
+slatsUp: 360 writes, 0.25-90 s; shown at 5/8/30/60/90 s: [0.2, 0.2, 0.2, 0.3, 0.2]
+  50-60 s (41 writes): 0.247 K below outside (monitor 0.481 K); upstream plane 0.235 K, corrected minus upstream +0.012 K
+  80-90 s (41 writes): 0.242 K below outside (monitor 0.477 K); upstream plane 0.233 K, corrected minus upstream +0.009 K
+movedOut: 240 writes, 0.25-60 s; shown at 5/8/30/60/90 s: [0.4, 0.7, 0.5, 0.6, None]
+  50-60 s (41 writes): 0.551 K below outside (monitor 0.776 K); upstream plane 0.547 K, corrected minus upstream +0.004 K

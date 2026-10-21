@@ -8,12 +8,23 @@ past it, so that snappyHexMesh cuts them with the domain boundary.
 The top board of each louvred panel is filled out to the lid with a 7 mm x 10 mm wedge,
 so that board and lid share a face instead of a single edge.
 Needs the gmsh Python module (4.15.2 wrote the solved runs' surfaces).
-Usage: python3 make_stl.py <output dir>
+
+The cover is the second argument:
+  down  the cover as built above, its boards sloping 35 degrees down outward (the default)
+  up    the same lid, post and boards, each board mirrored across its own panel, so that it fills
+        the same span and heights but rises 35 degrees outward
+  out   the downward boards with the front's inner edge moved from 0.700 to 0.988 m (Daikin's
+        350 mm in front of the outlet), the lid and the side run out to it, and the boards whose
+        lower edge would fall below 0.29 m left off, so the bottom is open up to the unit's base
+Usage: python3 make_stl.py <output dir> [down|up|out]
 """
 import math, sys
 import gmsh
 
 out = sys.argv[1]
+variant = sys.argv[2] if len(sys.argv) > 2 else 'down'
+assert variant in ('down', 'up', 'out'), variant
+ui = .988 if variant == 'out' else .700    # the boards' inner edge, x for the front
 E = 0.05                       # overshoot past the symmetry plane and the house wall
 gmsh.initialize()
 gmsh.option.setNumber('General.Terminal', 0)
@@ -58,9 +69,9 @@ casing += fcut
 write('casing', casing, 0.02)
 
 # Cover: lid, corner post, front and side louvre boards (Kreg plan: 0.089 x 0.0127 m boards,
-# 0.0826 m pitch, 35 degrees down outward).
+# 0.0826 m pitch, 35 degrees down outward; turned to rise outward for 'up').
 gmsh.model.add('cover')
-cover = [box(-E, 1.100, -E, .775, 1.120, .625), box(.700, .030, .550, .775, 1.100, .625)]
+cover = [box(-E, 1.100, -E, ui + .075, 1.120, .625), box(ui, .030, .550, ui + .075, 1.100, .625)]
 a = math.radians(35)
 rise = .075 * math.tan(a)
 nx = -math.sin(a) * .0127
@@ -69,21 +80,27 @@ for side in ('front', 'side'):
     i = 0
     while True:
         yi = 1.1 - i * .0826
-        if yi + ny < .03:
+        if variant == 'out':
+            if yi - rise + ny < .29:      # the bottom left open to the unit's base
+                break
+        elif yi + ny < .03:
             break
-        # (u, y): u is x for the front boards, z for the side boards
-        poly = [(.700, yi), (.775, yi - rise), (.775 + nx, yi - rise + ny), (.700 + nx, yi + ny)]
+        # (u, y): u is x for the front boards, z for the side boards (z = u - ui + 0.550)
+        poly = [(ui, yi), (ui + .075, yi - rise), (ui + .075 + nx, yi - rise + ny), (ui + nx, yi + ny)]
         if i == 0:
-            poly = [(.700 + nx, 1.1)] + poly       # wedge up to the lid
+            poly = [(ui + nx, 1.1)] + poly       # wedge up to the lid
+        if variant == 'up':
+            # mirror across the panel, u -> (ui + nx) + (ui + .075) - u: same span, rising outward
+            poly = [(2 * ui + .075 + nx - u, y) for u, y in poly]
         if side == 'front':
             pts = [occ.addPoint(u, y, -E) for u, y in poly]
         else:
-            pts = [occ.addPoint(-E, y, u - .700 + .550) for u, y in poly]
+            pts = [occ.addPoint(-E, y, u - ui + .550) for u, y in poly]
         ls = [occ.addLine(pts[j], pts[(j + 1) % len(pts)]) for j in range(len(pts))]
         face = occ.addPlaneSurface([occ.addCurveLoop(ls)])
-        ex = occ.extrude([(2, face)], 0, 0, .550 + E) if side == 'front' else occ.extrude([(2, face)], .700 + E, 0, 0)
+        ex = occ.extrude([(2, face)], 0, 0, .550 + E) if side == 'front' else occ.extrude([(2, face)], ui + E, 0, 0)
         cover += [q for q in ex if q[0] == 3]
         i += 1
-    print(side, 'boards:', i)
+    print(side, 'boards:', i, 'lowest edge', round(yi + .0826 - rise + ny, 4))
 write('cover', cover, 0.01)
 gmsh.finalize()

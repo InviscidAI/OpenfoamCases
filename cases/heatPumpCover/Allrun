@@ -1,22 +1,34 @@
 #!/bin/bash
-# A heat pump's outdoor unit in the open and inside a slatted cover with a lid: one mesh, two runs.
+# A heat pump's outdoor unit in the open and inside a slatted cover with a lid, then three covers
+# side by side: the same cover, its slats turned up, and its front moved out with the bottom open.
 #
-#   ./Allrun mesh                               # the shared mesh only, in runs/mesh/
-#   ./Allrun open|covered [nProcs]
-#   ./Allrun --setup-only open|covered [nProcs]
+#   ./Allrun mesh [down|up|out]                 # a cover's mesh only: runs/mesh/ (down, the default),
+#                                               # runs/mesh-up/ or runs/mesh-out/
+#   ./Allrun open|covered|slatsDown|slatsUp|movedOut [nProcs]
+#   ./Allrun --setup-only open|covered|slatsDown|slatsUp|movedOut [nProcs]
 #
-# open     the unit alone. The cover is in the mesh as the cell zone coverCells, which is air here.
-# covered  the same mesh less coverCells (subsetMesh); the faces it leaves become the wall coverWalls.
-#          Every cell of covered is a cell of open, with identical points.
-# nProcs   MPI ranks for the solve, default 7 (both runs used 7). The mesh is always made on 8
-#          ranks, as the solved runs' was.
-# --setup-only builds the mesh if runs/mesh/ has none, writes the run, sets its zones, checks
+# open      the unit alone. The cover is in the mesh as the cell zone coverCells, which is air here.
+# covered   the same mesh less coverCells (subsetMesh); the faces it leaves become the wall coverWalls.
+#           Every cell of covered is a cell of open, with identical points. 0-60 s.
+# slatsDown covered again on the shared mesh, with the monitor below added, to 90 s: the control
+#           for the two fixes (it was solved on a mesh rebuilt the same way; README).
+# slatsUp   the same lid, post and boards, each board turned to rise 35 degrees outward instead of
+#           falling, nothing else moved; on its own mesh (runs/mesh-up/), to 90 s.
+# movedOut  the downward boards with the front moved out to 350 mm from the grille and the boards
+#           below the unit's base left off; on its own mesh (runs/mesh-out/), to 60 s.
+#           The three covers' runs add the monitor inletUpwindSeries (template/system/
+#           inletUpwindSeries.inc), the cells one cell upstream of the coil at every write.
+# nProcs   MPI ranks for the solve, default 7 (open and covered used 7, slatsDown 8, slatsUp and
+#          movedOut 4). The meshes are always made on 8 ranks, as the solved runs' were.
+# --setup-only builds the run's mesh if it is not there, writes the run, sets its zones, checks
 #          and decomposes it, and stops before the solve.
 #
-# The mesh is built once, in runs/mesh/, from the surfaces scripts/make_stl.py writes and the
-# dictionaries in mesh/system/; each run is then written to runs/<run>/ from it and template/.
-# To run both side by side, run ./Allrun mesh first. The solve needs the fan's momentum source,
-# src/rampedMeanVelocityForce, which is compiled into $FOAM_USER_LIBBIN if it is not there.
+# Each cover's mesh is built once from the surfaces scripts/make_stl.py writes and the dictionaries
+# in mesh/system/; for out, the level-3 refinement box reaches 0.075 m past the moved front, as it
+# does past the cover's front for down and up. Each run is then written to runs/<run>/ from its
+# mesh and template/. To run several side by side, build their meshes first. The solve needs the
+# fan's momentum source, src/rampedMeanVelocityForce, which is compiled into $FOAM_USER_LIBBIN if it
+# is not there.
 cd "${0%/*}" || exit 1
 set -euo pipefail
 command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
@@ -24,16 +36,25 @@ command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (
 setupOnly=false
 if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
 run=${1:-}; nproc=${2:-7}
-usage="usage: $0 mesh | [--setup-only] open|covered [nProcs]"
-case "$run" in mesh|open|covered) ;; *) echo "$usage" >&2; exit 2 ;; esac
+runs="open|covered|slatsDown|slatsUp|movedOut"
+usage="usage: $0 mesh [down|up|out] | [--setup-only] $runs [nProcs]"
+case "$run" in mesh) cover=${2:-down} ;;
+    open|covered|slatsDown) cover=down ;; slatsUp) cover=up ;; movedOut) cover=out ;;
+    *) echo "$usage" >&2; exit 2 ;; esac
+case "$cover" in down) M=runs/mesh ;; up|out) M=runs/mesh-$cover ;; *) echo "$usage" >&2; exit 2 ;; esac
 
-# ---- the shared mesh --------------------------------------------------------------------------
+# ---- the cover's mesh -------------------------------------------------------------------------
 buildMesh() {
-    rm -rf runs/mesh; mkdir -p runs/mesh/constant/triSurface
-    cp -r mesh/system runs/mesh/
-    python3 scripts/make_stl.py runs/mesh/constant/triSurface > runs/mesh/log.make_stl 2>&1
+    rm -rf $M; mkdir -p $M/constant/triSurface
+    cp -r mesh/system $M/
+    if [ "$cover" = out ]; then
+        sed -i 's/inner { type searchableBox; min (-1 -1 -1); max (0.85 1.20 0.70); }/inner { type searchableBox; min (-1 -1 -1); max (1.14 1.20 0.70); }/' \
+            $M/system/snappyHexMeshDict
+        grep -q 'max (1.14 1.20 0.70)' $M/system/snappyHexMeshDict
+    fi
+    python3 scripts/make_stl.py $M/constant/triSurface $cover > $M/log.make_stl 2>&1
     (
-        cd runs/mesh
+        cd $M
         blockMesh > log.blockMesh 2>&1
         surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
         decomposePar -force > log.decomposePar 2>&1
@@ -44,18 +65,18 @@ buildMesh() {
         topoSet -dict system/topoSetDict.zones -constant > log.topoSet.zones 2>&1
         checkMesh -constant > log.checkMesh 2>&1 || true
     )
-    grep -E '^ +cells:' runs/mesh/log.checkMesh
+    grep -E '^ +cells:' $M/log.checkMesh
 }
 if [ "$run" = mesh ]; then buildMesh; exit 0; fi
-[ -f runs/mesh/constant/polyMesh/faces ] || buildMesh
+[ -f $M/constant/polyMesh/faces ] || buildMesh
 
 # ---- the run ----------------------------------------------------------------------------------
 r=runs/$run
 rm -rf "$r"; mkdir -p "$r/constant" "$r/system"
-cp -r runs/mesh/constant/polyMesh "$r/constant/"
+cp -r $M/constant/polyMesh "$r/constant/"
 rm -rf "$r/constant/polyMesh/sets"
-if [ "$run" = covered ]; then
-    # the only difference between the runs: the cover's cells are taken out of the mesh
+if [ "$run" != open ]; then
+    # the only difference between open and covered: the cover's cells are taken out of the mesh
     cp mesh/system/controlDict mesh/system/fvSchemes mesh/system/fvSolution \
        mesh/system/topoSetDict.coverRemoval "$r/system/"
     (
@@ -71,6 +92,28 @@ fi
 cp -r template/constant/. "$r/constant/"
 cp -r template/system/. "$r/system/"
 [ "$nproc" = 7 ] || sed -i "s/^numberOfSubdomains 7;$/numberOfSubdomains $nproc;/" "$r/system/decomposeParDict"
+upwindTimes=50,55,60
+case "$run" in
+    open|covered) rm "$r/system/inletUpwindSeries.inc" ;;   # the first two runs, as they were solved
+    *) sed -i 's|^// Face-flux monitors|#include "inletUpwindSeries.inc"\n&|' "$r/system/functions.inc"
+       grep -q '^#include "inletUpwindSeries.inc"' "$r/system/functions.inc" ;;
+esac
+case "$run" in open|covered|movedOut) ;; *)
+    # slatsDown and slatsUp run on to 90 s; the fields kept at the end are 80, 85 and 90 s
+    sed -i 's/ endTime 60;/ endTime 90;/' "$r/system/controlDict"
+    grep -q ' endTime 90;' "$r/system/controlDict"
+    upwindTimes=80,85,90 ;;
+esac
+if [ "$run" = movedOut ]; then
+    # the cover's front and side cut planes follow the moved front; the low strip is the open band
+    sed -i -e '/^ *coverFront\(Low\|High\) /s/point (.775 0 0)/point (1.063 0 0)/' \
+        -e 's/bounds (.65 -.02 -.02) (.90 .040 .57)/bounds (.94 -.02 -.02) (1.19 .30 .57)/' \
+        -e 's/bounds (.65 .020 -.02) (.90 1.14 .57)/bounds (.94 .28 -.02) (1.19 1.14 .57)/' \
+        -e 's/bounds (-.02 -.02 .50) (.72 .040 .75)/bounds (-.02 -.02 .50) (1.01 .30 .75)/' \
+        -e 's/bounds (-.02 .020 .50) (.72 1.14 .75)/bounds (-.02 .28 .50) (1.01 1.14 .75)/' \
+        "$r/system/functions.inc"
+    [ "$(grep -c -e 'point (1.063 0 0)' -e '(1.01 .30 .75)' -e '(1.01 1.14 .75)' "$r/system/functions.inc")" = 4 ]
+fi
 
 cd "$r"
 # face zones for the face-flux monitors: the fan's downstream face, the coil's two faces, and
@@ -91,5 +134,5 @@ postProcess -dict system/planesT0 -fields '(T U)' -time 0 > log.postProcess.t0 2
 mpirun -np "$nproc" buoyantBoussinesqPimpleFoam -parallel > log.buoyantBoussinesqPimpleFoam 2>&1
 # the cells just upstream of the coil, for the correction to coilInT (scripts/inlet_upwind.py)
 mpirun -np "$nproc" postProcess -parallel -dict system/inletUpwindDict -fields '(T U)' \
-    -time 50,55,60 > log.postProcess.inletUpwind 2>&1
+    -time $upwindTimes > log.postProcess.inletUpwind 2>&1
 echo "solved: $r"

@@ -10,9 +10,11 @@ the upstream air's distance from the coil's surface (-6 C) by which coilInT read
 which coil_number.py takes out.
 
     python3 scripts/inlet_upwind.py runs > results/inlet_upwind.txt
+    python3 scripts/inlet_upwind.py runs slatsDown slatsUp movedOut > results/inlet_upwind_covers.txt
 
 after, in each run, postProcess -dict system/inletUpwindDict -fields '(T U)' -time 50,55,60
-(Allrun does this after the solve).
+(Allrun does this after the solve; at 80,85,90 for the runs that go on to 90 s). Every time
+the run has sampled is read, and a run continued from a later start has its coilInT files joined.
 """
 import sys
 from pathlib import Path
@@ -22,11 +24,13 @@ import pyvista as pv
 
 OUT_K, TS_K = 275.15, 267.15
 runs = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("runs")
-for run in ("open", "covered"):
+for run in sys.argv[2:] or ("open", "covered"):
     pp = runs / run / "postProcessing"
-    dat = max((pp / "coilInT").glob("*/*.dat"), key=lambda q: q.stat().st_size)
-    tin = {round(float(l.split()[0]), 2): float(l.split()[1]) for l in open(dat) if l[0] != "#"}
-    for t in ("50", "55", "60"):
+    tin = {}
+    for d in sorted((pp / "coilInT").iterdir(), key=lambda d: float(d.name)):
+        dat = max(d.glob("*.dat"), key=lambda q: q.stat().st_size)
+        tin.update({round(float(l.split()[0]), 2): float(l.split()[1]) for l in open(dat) if l[0] != "#"})
+    for t in sorted((d.name for d in (pp / "inletUpwind").iterdir()), key=float):
         row = [f"{run:8s} t={t}  coilInT: {OUT_K - tin[float(t)]:.3f} K below 2 C"]
         up1 = None
         for s in ("up1", "up3"):
