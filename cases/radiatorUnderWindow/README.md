@@ -25,7 +25,9 @@ radiator's heat reaches the room in the first five minutes:
 They have their own section, [Curtains](#curtains), with their own limits.
 
 Opening the window above the radiator, wide open or on tilt, is a case of its own on this
-room made 3-D and 3.5 m wide: [`windowAiring`](../windowAiring).
+room made 3-D and 3.5 m wide: [`windowAiring`](../windowAiring). That 3-D room with its window
+shut, its radiator against a warm floor giving the same 60 W, is
+[`underfloorVsRadiator`](../underfloorVsRadiator).
 
 ## The room
 

@@ -21,6 +21,9 @@ before any number here.
 The same cold inflow along the floor, through an open front door, is what lifts a dry-ice
 cauldron's CO2 off a living-room floor in [`dryIceCauldron`](../dryIceCauldron).
 
+The same room with its window shut, heated with the radiator's 60 W either from the radiator or
+through the whole floor, is [`underfloorVsRadiator`](../underfloorVsRadiator).
+
 ## The room
 
 | | value | from |

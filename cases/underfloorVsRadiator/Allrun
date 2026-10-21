@@ -1,0 +1,39 @@
+#!/bin/bash
+# windowAiring's room with its window shut on a still 0 C morning, heated with the same 60 W
+# by the radiator under the window or by the whole floor, 0-1200 s from switch-on.
+#
+#   ./Allrun radiator|floor [nProcs]
+#   ./Allrun --setup-only radiator|floor [nProcs]
+#
+# radiator  the radiator box under the window gives 60 W; the floor is adiabatic.
+# floor     no radiator; the floor gives 60 W as a uniform 4.29 W/m2.
+# nProcs    MPI ranks, default 8 (both solved runs used 8).
+# --setup-only writes the run, meshes it, sets its zones and fields, checks it, writes the
+#          t = 0 planes and decomposes it, and stops before the solve.
+#
+# scripts/make_case.py writes every dictionary, the initial fields and an Allrun into
+# runs/<run>/; that Allrun meshes (blockMesh, the glass cut out of the window wall by
+# topoSet and createPatch), sets the radiator's and the occupied zone's cell zones, copies
+# 0.orig to 0, checks the mesh, writes the planes at t = 0 from the initial fields
+# (system/planesT0) and decomposes the run, and, given `solve`, runs buoyantPimpleFoam.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  radiator|floor) ;;
+  *) echo "usage: $0 [--setup-only] radiator|floor [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+rm -rf "$r"; mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(cd "$r" && ./Allrun)
+grep -E '^ +cells:|Mesh OK|Failed' "$r/log.checkMesh"
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(cd "$r" && ./Allrun solve)
+echo "solved: $r"

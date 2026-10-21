@@ -1,0 +1,68 @@
+underfloorVsRadiator: figures from the two runs (scripts/extract_results.py)
+
+radiator
+  to t = 1200 s in 20935 steps, mean step 0.0573 s, 13384 s of wall time
+  heat budget over 20875 steps (1.92-1198.07 s, dU/dt over 3.75 s): gap mean +0.011 W, largest 0.57 W
+  head (1.1 m) minus ankles (0.1 m), occupied zone, minute means, K:
+    min    0-60     60-120   120-180   180-240   240-300   300-360   360-420   420-480   480-540   540-600 
+           -0.010     0.001     0.039     0.066     0.079     0.084     0.110     0.138     0.159     0.185
+    min  600-660   660-720   720-780   780-840   840-900   900-960   960-1020 1020-1080 1080-1140 1140-1200
+            0.211     0.231     0.241     0.253     0.259     0.272     0.277     0.284     0.284     0.288
+    at 1200 s 0.292; mean over the last 60 s 0.288, last 300 s 0.281 (sd 0.007); 900-1050 s 0.275, 1050-1200 s 0.287
+    range of the minute means from 120 s: 0.039 to 0.288
+  occupied zone, C           ankle 0.1 m  knee 0.6 m  head 1.1 m  standing 1.7 m   room mean
+    at     60 s                   20.02       20.02       20.01           20.01       20.04
+    at    300 s                   19.97       20.04       20.05           20.24       20.14
+    at    600 s                   19.98       20.07       20.18           20.35       20.23
+    at    900 s                   20.00       20.12       20.27           20.41       20.28
+    at   1200 s                   20.03       20.18       20.33           20.44       20.32
+    room mean rose 0.042 K over the last 300 s
+  glass inside surface over the last 300 s: mean 7.04 C (range 6.77-7.32); loss h (Ts - 0 C) A 37.21 W
+  floor surface over the last 300 s: mean 20.01 C, warmest face 20.17 C; at 1200 s mean 20.02 C against the room's 20.32 C and the ankles' 20.03 C
+  heat, W, mean over 1140-1200 s (positive into the air):
+    source 60.0, glass -36.93, floor +0.00, ceiling -12.85, innerWall -3.36, sideWalls -3.36, windowWall +0.00, stored (dU/dt) +3.45
+  mid plane (z = 0.005 m) at 1200 s:
+  x = 0.962 m  y (m)   0.005  0.029  0.062  0.107  0.165  0.225  0.375  0.525  0.825  1.125  1.425  1.725  2.025  2.385
+                 T (C)   20.02  20.02  20.02  20.04  20.05  20.07  20.11  20.16  20.23  20.30  20.40  20.46  20.47  20.64
+                Ux (m/s)-0.000 -0.002 -0.005 -0.006 -0.006 -0.006 -0.010 -0.016 -0.015 -0.031 -0.043 -0.037 -0.031 +0.147
+  x = 2.039 m  y (m)   0.005  0.029  0.062  0.107  0.165  0.225  0.375  0.525  0.825  1.125  1.425  1.725  2.025  2.385
+                 T (C)   20.02  20.02  20.02  20.03  20.04  20.06  20.11  20.16  20.24  20.35  20.40  20.45  20.48  20.57
+                Ux (m/s)+0.000 -0.000 -0.001 -0.002 -0.003 -0.004 -0.007 -0.010 -0.017 -0.028 -0.026 -0.024 -0.011 +0.112
+  x = 3.032 m  y (m)   0.005  0.029  0.062  0.107  0.165  0.225  0.375  0.525  0.825  1.125  1.425  1.725  2.025  2.385
+                 T (C)   20.02  20.02  20.03  20.04  20.05  20.07  20.10  20.14  20.25  20.36  20.41  20.42  20.47  20.33
+                Ux (m/s)-0.001 -0.001 -0.002 -0.001 -0.000 -0.000 -0.001 -0.002 -0.011 -0.011 -0.015 -0.017 -0.010 +0.046
+
+floor
+  to t = 1200 s in 25037 steps, mean step 0.0479 s, 15957 s of wall time
+  heat budget over 24972 steps (1.92-1198.12 s, dU/dt over 3.75 s): gap mean -0.007 W, largest 0.58 W
+  head (1.1 m) minus ankles (0.1 m), occupied zone, minute means, K:
+    min    0-60     60-120   120-180   180-240   240-300   300-360   360-420   420-480   480-540   540-600 
+           -0.045     0.255     0.291     0.279     0.347     0.341     0.360     0.324     0.312     0.301
+    min  600-660   660-720   720-780   780-840   840-900   900-960   960-1020 1020-1080 1080-1140 1140-1200
+            0.287     0.260     0.298     0.274     0.302     0.292     0.307     0.292     0.273     0.290
+    at 1200 s 0.308; mean over the last 60 s 0.290, last 300 s 0.291 (sd 0.022); 900-1050 s 0.298, 1050-1200 s 0.283
+    range of the minute means from 120 s: 0.260 to 0.360
+  occupied zone, C           ankle 0.1 m  knee 0.6 m  head 1.1 m  standing 1.7 m   room mean
+    at     60 s                   19.92       20.10       20.02           20.01       20.05
+    at    300 s                   19.87       20.20       20.20           20.19       20.18
+    at    600 s                   20.00       20.29       20.30           20.30       20.29
+    at    900 s                   20.09       20.36       20.36           20.37       20.36
+    at   1200 s                   20.10       20.40       20.41           20.42       20.40
+    room mean rose 0.040 K over the last 300 s
+  glass inside surface over the last 300 s: mean 6.57 C (range 6.52-6.62); loss h (Ts - 0 C) A 34.70 W
+  floor surface over the last 300 s: mean 22.21 C, warmest face 25.19 C; at 1200 s mean 22.29 C against the room's 20.40 C and the ankles' 20.10 C
+  heat, W, mean over 1140-1200 s (positive into the air):
+    source 0.0, glass -34.72, floor +60.00, ceiling -8.04, innerWall -6.19, sideWalls -7.95, windowWall +0.00, stored (dU/dt) +3.09
+  mid plane (z = 0.005 m) at 1200 s:
+  x = 0.962 m  y (m)   0.005  0.029  0.062  0.107  0.165  0.225  0.375  0.525  0.825  1.125  1.425  1.725  2.025  2.385
+                 T (C)   19.09  18.95  19.46  20.09  20.37  20.39  20.40  20.40  20.40  20.41  20.40  20.40  20.40  20.20
+                Ux (m/s)+0.181 +0.246 +0.177 +0.080 +0.030 +0.023 +0.017 +0.009 -0.004 -0.006 -0.007 +0.012 +0.028 -0.009
+                along the floor faster than 0.03 m/s into the room up to the cell at y = 0.165 m; coolest 18.82 C at y = 0.016 m; air at 0.375-2.025 m 20.39-20.41 C
+  x = 2.039 m  y (m)   0.005  0.029  0.062  0.107  0.165  0.225  0.375  0.525  0.825  1.125  1.425  1.725  2.025  2.385
+                 T (C)   21.08  19.72  19.70  19.93  20.21  20.34  20.38  20.38  20.38  20.41  20.42  20.42  20.41  20.39
+                Ux (m/s)+0.057 +0.149 +0.134 +0.092 +0.045 +0.023 +0.013 +0.009 +0.006 -0.004 -0.003 +0.011 +0.007 -0.076
+                along the floor faster than 0.03 m/s into the room up to the cell at y = 0.195 m; coolest 19.65 C at y = 0.044 m; air at 0.375-2.025 m 20.38-20.42 C
+  x = 3.032 m  y (m)   0.005  0.029  0.062  0.107  0.165  0.225  0.375  0.525  0.825  1.125  1.425  1.725  2.025  2.385
+                 T (C)   21.53  20.13  19.96  20.04  20.19  20.25  20.34  20.39  20.40  20.41  20.41  20.41  20.42  20.38
+                Ux (m/s)+0.046 +0.109 +0.104 +0.076 +0.034 +0.004 -0.027 -0.015 -0.016 -0.005 -0.001 +0.003 -0.003 -0.025
+                along the floor faster than 0.03 m/s into the room up to the cell at y = 0.165 m; coolest 19.96 C at y = 0.062 m; air at 0.375-2.025 m 20.31-20.45 C
