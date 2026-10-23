@@ -18,6 +18,13 @@ furniture, the room's surfaces held at 20 °C, and only the first five minutes, 
 is at its warmest and the exchange at its fastest. Read [What it cannot](#what-it-cannot)
 before any number here.
 
+Two more runs put a US double-hung window in the same wall, its top sash lowered 10 cm, or the
+same 10 cm split between the top sash lowered 5 cm and the bottom sash raised 5 cm, the US tip
+for airing a room. They are in [A US double-hung window](#a-us-double-hung-window):
+
+    ./Allrun doubleHungTop     # the top sash lowered 10 cm, 0-300 s
+    ./Allrun doubleHungSplit   # the top sash lowered 5 cm and the bottom one raised 5 cm, 0-300 s
+
 The same cold inflow along the floor, through an open front door, is what lifts a dry-ice
 cauldron's CO2 off a living-room floor in [`dryIceCauldron`](../dryIceCauldron).
 
@@ -278,6 +285,149 @@ all of its air.
 - **Not about heating costs.** The case does not compute the heat lost through the window, so
   it does not test the advice's point about costs, only the air.
 
+## A US double-hung window
+
+The US window is the double-hung: two sashes in two tracks, the upper one outside and the lower
+one inside, each sliding up or down. On a cold day it is opened a crack, usually at the top, and
+a common tip is to open it a little at the top and a little at the bottom instead. These two runs
+put such a window in this room's wall and compare the two ways of opening the same 10 cm.
+
+**It is a still morning: no wind.** The flow is driven by buoyancy alone, the room's air at
+20 °C against the outdoor air at 0 °C. Wind, which on most days drives more air through a
+window than buoyancy does, would change both numbers and could change their ratio.
+
+### The window
+
+| | value | from |
+|---|---|---|
+| frame | Andersen 400 Series Tilt-Wash TW3042, 956 × 1343 mm (3'-1 5/8" × 4'-4 7/8") | Andersen's table of sizes |
+| clear opening | 0.86 m wide (the table's "window width − 1.852"" × 2", 862 mm) and 1.24 m tall, from a 0.95 m sill | the width Andersen's; the height the frame's 1343 mm less a 47 mm head and sill, ours, like the 47 mm jambs |
+| sill | 0.95 m above the floor: the frame on this room's 0.90 m sill, plus the frame's sill | this room's |
+| sashes | two, each 0.65 m tall and 40 mm deep, the upper in the outer track (x −0.08 to −0.04 m), the lower in the inner (x −0.04 to 0), at the wall's inside face; shut, they overlap 0.06 m at the meeting rails | the lower sash's height from the table's 557 mm of glass ("Lower Sash = lower sash height − 3.831"", 97 mm of rails); the upper taken as tall; the depth and the tracks ours |
+| `doubleHungTop` | the upper sash lowered 10 cm: a slot 0.86 × 0.10 m above it, 0.086 m² | a 10 cm slit at the top, the winter crack |
+| `doubleHungSplit` | the upper sash lowered 5 cm and the lower raised 5 cm: slots 0.86 × 0.05 m at the head and at the sill, 0.043 m² each, 1.19 m apart (centre to centre) | the US tip, the same open area |
+| radiator, room, outside | as `open` and `tilted`: the 1.0 m radiator at 60 W under the window, the room's surfaces at 20 °C, still outdoor air at 0 °C | |
+
+Both sashes are solid: their cells are taken out of the mesh with the wall's, as the tilted
+sash's are. Their faces, the reveal and the wall's outer face are adiabatic. There is no insect
+screen, no leakage past the weatherstrips and no detail of the meeting rails or the sash
+frames.
+
+**Why this pair.** On a still day a single opening swaps air by buoyancy alone, cold in through
+its lower part and warm out through its upper, at Q = (C_d/3) W h √(g h ΔT/T) for an opening of
+width W and height h (Linden 1999; BS 5925). Where the slot sits on the wall does not enter, so
+the bottom sash raised 10 cm and the top sash lowered 10 cm would show two nearly equal numbers.
+Two openings at different heights work as a stack instead, cold in at the bottom and warm out at
+the top, at Q = C_d A* √(2 g Δz ΔT/T) with A* = a/√2 for two equal openings of area a (CIBSE
+AM10; BS 5925): for these slots about five times as much as the single slot, through the same
+open area. Keeping the open area the same makes the arrangement the only difference.
+
+### The double-hung runs' model
+
+`open` and `tilted`'s model, with four differences outside the solver's physics and numerics:
+
+- **The outdoor boundary is barometric.** The open faces hold p0 = 1e5 exp(−g y/(R T)), the
+  still 0 °C air's own pressure at each face's height, and every cell starts at that pressure,
+  with its own density in p_rgh (`barometric_p.py`, written by `make_case.py`), so the solve
+  starts at rest. `open` and `tilted` hold p0 = 1e5/(1 + g y/(R T)) on the faces and start from
+  a uniform p_rgh. The two forms differ by about 0.01 Pa at the top of the box, but the second
+  is not rest for a compressible gas: in another case's still outdoor box, which nothing drove,
+  it moved the air at up to 0.06 m/s ([`dryIceCauldron`](../dryIceCauldron), "How the case got
+  here").
+- **The mesh** is `open`'s box with a uniform 10 mm band from 0.90 to 2.24 m up, indoors and
+  out, for the slots (a 5 cm slot is five cells tall), and `open`'s cells across the room's
+  width split so that a cell face falls on the window's edges at ±0.43 m: 1,422,720 cells in
+  the box, 1,079,176 kept, `checkMesh` OK, one region. Both runs have the same mesh but for
+  the sashes' cells.
+- **The monitors** add the gross flow each way through the two slots, in the sashes' tracks
+  (`slotHead` at x = −0.06 m, `slotSill` at x = −0.02 m), and through the frame's plane x = 0
+  below and above 1.30 m, and a per-step budget of the room's own air through the frame's plane
+  (`fluxBudget`, s's own face flux as the scalar transport discretises it). The frame's plane
+  lies in front of the sashes, and the room's air turning in the recess there crosses it twice,
+  so the air coming in is read at the slots.
+- **The planes** are written every 1.25 s, the mid-plane at z = 0 and the floor plane, and the
+  full fields every 60 s.
+
+### Checks
+
+- **The generator against the solved runs.** From a clean copy, `./Allrun --setup-only
+  doubleHungTop` and `doubleHungSplit` wrote the solved runs' meshes (points, faces, owner,
+  neighbour, boundary, cell, face and point zones) and every initial field, the barometric p
+  and p_rgh included, byte for byte, 1,079,176 cells each. Their `0.orig`, `constant/`,
+  `fvSchemes`, `fvSolution` and `setFieldsDict` have the solved runs' values and differ only in
+  comments and layout. Their monitors were tidied: the solved runs also logged the cell that set
+  the time step and the probes, and named the slots' inflow monitors `slotHeadArea` and
+  `slotSillArea`. A few steps of each new setup gave the solved runs' first steps' monitors to
+  four or five figures.
+- **Three legs, two decompositions.** Each run was solved 0-30 s on 8 ranks (the two side by
+  side), then 30-35 s and 35-300 s on 16 ranks, each leg from the last one's field write;
+  `extract_results.py` joins the monitors' pieces. A re-solve will not match the committed
+  histories to the last digit.
+- **The scalar's budget** closes to 0.50% (top) and 0.11% (split) of what has left the room at
+  300 s, and within 0.9% and 0.4% at every write from 10 s on.
+- **Still air outside.** At 1.25 s the outdoor air in the outer half of the box in front of the
+  window (x < −0.99 m) on the mid-plane moved at a median 8.9e-6 m/s in `doubleHungTop`. In
+  `doubleHungSplit` the same air moved at 2.7e-3 m/s, and at 4.4e-4 m/s at the box's sides on
+  the floor plane: its two slots 1.2 m apart draw air in at the sill and push it out at the
+  head, a source and a sink, and the box moves with them. The two runs share the mesh, boundary
+  and fields, so the first is the second's control.
+
+### Results
+
+From `results/summary_doubleHung.txt` and `results/<run>/history.csv`. The air in is the gross
+flow into the room through the slots, as volume of 0 °C air (1.275 kg/m³).
+
+| | `doubleHungTop` | `doubleHungSplit` |
+|---|---:|---:|
+| **share of the room's own air replaced, at 60 / 120 / 300 s** | 0.72 / 1.41 / **3.35%** | 5.04 / 10.07 / **25.14%** |
+| **air in, mean over 0-300 s** | **13.5 m³/h** (0.40 room volumes an hour) | **97.2 m³/h** (2.89 an hour) |
+| air in at 300 s | 12.3 m³/h | 95.4 m³/h |
+| the room's mass-average temperature at 300 s | 19.8 °C | 17.6 °C |
+| over the last minute | 0.03 K cooler, 0.6 points more replaced | 0.31 K cooler, 5.0 points more replaced |
+
+**With the same open area, the split window takes in 7.2 times as much air** over the five
+minutes, and replaces 7.5 times as much of the room's air. With one slot at the head, the cold
+air comes in along the slot's lower edge and the warm air goes out along its upper edge, the
+two streams sharing 10 cm of height. Split, the sill slot only takes air in and the head slot
+only lets it out (the mean flows the other way are below 1e-5 kg/s): cold air pours in at the
+sill, falls past the radiator to the floor and spreads across it, and the room's warm air
+leaves at the head. The pressure that drives it builds over the 1.2 m between the slots.
+
+**Against the orifice formulas**, with C_d 0.61 and each run's mean room temperature over the
+five minutes: the single slot's formula gives 16.5 m³/h and the run 82% of it, an effective
+C_d of 0.50; the two slots' formula gives 82.8 m³/h and the run 117% of it, an effective C_d of
+0.72. Both are in the usual range for small openings. The formulas put the split at 5.0 times
+the single slot, the runs at 7.2: a likely reason, not tested here, is that the single slot's
+two streams shear against each other in its 10 cm, where the split gives each stream a slot of
+its own.
+
+**Against the turn-tilt window in the same room**: wide open it replaces 91.3% in five minutes,
+on tilt 15.2% and takes in 65 m³/h. The slit at the top replaces 22% of the tilted window's
+share and takes in 21% of its air. The split replaces 1.66 times the tilted window's share and
+takes in 1.50 times its air, but it is nowhere near a window opened wide.
+
+### What the clip shows, and what it does not
+
+**It shows** the mid-plane through the window, the top sash lowered above and the split below,
+from the moment the window opens to 300 s, 15× fast, coloured by the air's temperature, with
+parcels of air carried by the solved flow in the plane, the wall and both sashes drawn over it.
+Each panel has one number, the share of the room's own air replaced, in whole percent: it ends
+at 3% and 25%. It shows no flow rates.
+
+### What these two runs cannot
+
+- **A still day at 0 °C.** No wind, one temperature difference, 20 K at the start.
+- **One slot size, one split.** 10 cm at the top, or 5 cm at each end; wider openings, the
+  bottom sash raised alone, and an insect screen over the lower half, as US windows usually
+  have, are not run.
+- **A drawn window.** The upper sash's height is taken equal to the lower's, the head and sill
+  members as 47 mm, the sashes as plain 40 mm slabs; no weatherstrips, no leakage, no meeting
+  rail detail.
+- **Warm surfaces, an empty room, a 60 W radiator**, as `open` and `tilted`.
+- **The first five minutes.** Neither room has settled at 300 s: the split room still cools
+  0.31 K a minute.
+- **URANS on one mesh,** k-omega SST with wall functions, no mesh or time-step study.
+
 ## Sources
 
 - Umweltbundesamt, "Wie lüfte ich richtig?":
@@ -309,6 +459,11 @@ all of its air.
 - Winkhaus, activPilot scissor SC2.20-9.LS, technical data sheet:
   https://media.meesenburg.com/image/upload/v1683872240/document/0000098604/technical_data_sheet_0000098604_5062140_technisches_Datenblatt_5062140.pdf
 - VEKA Softline 82 and aluplast Ideal 4000, sash profile depths.
+- Andersen, *400 Series Product Guide* (2025-26), "Table of Sizes for Tilt-Wash Double-Hung
+  Windows", as filed with a planning application in Haddonfield, NJ:
+  https://cms5.revize.com/revize/boroughofhaddonfield/HPC/2025/HPC%202025-0223%20-%20334%20Kings%20Hwy%20E%20-%20Windows.pdf
+- P. F. Linden, "The fluid mechanics of natural ventilation", Annual Review of Fluid Mechanics 31
+  (1999); BS 5925 and CIBSE AM10, the single-opening and two-opening formulas.
 
 ## Running it
 
@@ -342,3 +497,25 @@ no fields, meshes, planes or logs.
 The case was built, checked and solved by an agent on our own machine, and sent back once to
 have the tilted window checked against the German sources and measured rates, which found the
 two faults above; both runs were then solved again.
+
+The double-hung runs:
+
+    ./Allrun doubleHungTop           # [nProcs], default 16
+    ./Allrun doubleHungSplit
+    python3 scripts/extract_results.py runs results
+
+They are written and meshed the same way, without a baffle, with the two sashes' cells taken
+out with the wall's, and with each cell's and outdoor face's barometric pressure in place of the
+faces' hydrostatic pressure. They write the planes every 1.25 s and the fields every 60 s (the
+last one kept). Solved in legs of 0-30 s on 8 ranks, beside each other, then 30-35 s and
+35-300 s on 16 ranks alone, they took 3,260 + 256 + 13,764 s (`doubleHungTop`) and
+5,841 + 572 + 27,962 s (`doubleHungSplit`) of wall time; the split run's 5 cm slots, at about
+1 m/s through 10 mm cells, set its smaller time step. `results/` holds their histories, every
+step's monitors sampled at the plane writes, and `summary_doubleHung.txt`, which also reads
+`open`'s and `tilted`'s histories for the comparison; no fields, meshes, planes or logs.
+`extract_results.py` writes the double-hung results from `runs/doubleHungTop` and
+`runs/doubleHungSplit` and the turn-tilt window's from `runs/open` and `runs/tilted`, for
+whichever pair is there.
+
+They were built by an agent on our own machine from this case's generator, and checked and
+solved there.

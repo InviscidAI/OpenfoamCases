@@ -1,0 +1,50 @@
+Outdoor air at 0 C: rho 1.2752 kg/m3. Room 33.6 m3 as drawn; m3/h and room volumes an
+hour are volume flows of outdoor air. in = gross flow into the room through the slots.
+
+== doubleHungTop: 17639 steps to t = 300 s, monitors in pieces from 0, 30, 35 s; radiator 60-60 W
+   room zone 785400 cells, 33.6000 m3; frame's plane x = 0: 1298 faces, 0.5074 m2 of air
+   head slot: 220 faces, 0.0860 m2
+   room mass 39.9161 kg at the first step, 39.9420 kg at 300 s
+   t  60 s: share replaced  0.72%; in 0.00484 kg/s =  13.7 m3/h, mean over 0-t  13.6 m3/h = 0.40/h; room 19.95 C; budget error +0.57% of what left
+   t 120 s: share replaced  1.41%; in 0.00465 kg/s =  13.1 m3/h, mean over 0-t  13.7 m3/h = 0.41/h; room 19.91 C; budget error +0.59% of what left
+   t 300 s: share replaced  3.35%; in 0.00435 kg/s =  12.3 m3/h, mean over 0-t  13.5 m3/h = 0.40/h; room 19.81 C; budget error +0.50% of what left
+   means over 0-300 s, kg/s:
+     headIn   0.00477
+     headOut  0.00469
+     frameIn  0.01278
+     frameOut 0.01270
+     in       0.00477
+     out      0.00469
+   room mean T over 0-300 s 19.89 C; over the last minute it fell 0.026 K and the share rose 0.62 points
+
+== doubleHungSplit: 21449 steps to t = 300 s, monitors in pieces from 0, 30, 35 s; radiator 60-60 W
+   room zone 785400 cells, 33.6000 m3; frame's plane x = 0: 1298 faces, 0.5074 m2 of air
+   head slot: 110 faces, 0.0430 m2
+   sill slot: 110 faces, 0.0430 m2
+   room mass 39.9161 kg at the first step, 40.2435 kg at 300 s
+   t  60 s: share replaced  5.04%; in 0.03482 kg/s =  98.3 m3/h, mean over 0-t  98.2 m3/h = 2.92/h; room 19.29 C; budget error +0.11% of what left
+   t 120 s: share replaced 10.07%; in 0.03462 kg/s =  97.8 m3/h, mean over 0-t  98.1 m3/h = 2.92/h; room 18.74 C; budget error +0.08% of what left
+   t 300 s: share replaced 25.14%; in 0.03379 kg/s =  95.4 m3/h, mean over 0-t  97.2 m3/h = 2.89/h; room 17.61 C; budget error +0.11% of what left
+   means over 0-300 s, kg/s:
+     headIn   0.00000
+     headOut  0.03336
+     sillIn   0.03444
+     sillOut  0.00000
+     frameIn  0.03458
+     frameOut 0.03349
+     in       0.03444
+     out      0.03336
+   room mean T over 0-300 s 18.60 C; over the last minute it fell 0.312 K and the share rose 5.00 points
+
+orifice formulas, Cd 0.61, W 0.86 m, dT and Tm from each run's mean room temperature over 0-300 s:
+   doubleHungTop: one slot 0.1 m tall: 16.5 m3/h; the run's 13.5 m3/h is 82% of it, an effective Cd 0.50
+   doubleHungSplit: two slots 0.05 m tall, 1.19 m apart: 82.8 m3/h; the run's 97.2 m3/h is 117% of it, an effective Cd 0.72
+
+split / top: mean inflow over 0-300 s 7.22; share replaced at 300 s 7.51; the formulas 5.01
+
+open (results/open/history.csv): share replaced at 300 s 91.29%, mean inflow over 0-300 s 0.23510 kg/s = 663.7 m3/h
+   doubleHungTop / open: share at 300 s 0.037, mean inflow 0.020
+   doubleHungSplit / open: share at 300 s 0.275, mean inflow 0.147
+tilted (results/tilted/history.csv): share replaced at 300 s 15.15%, mean inflow over 0-300 s 0.02293 kg/s = 64.7 m3/h
+   doubleHungTop / tilted: share at 300 s 0.221, mean inflow 0.208
+   doubleHungSplit / tilted: share at 300 s 1.659, mean inflow 1.502

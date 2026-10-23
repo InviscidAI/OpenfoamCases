@@ -22,6 +22,13 @@ The Allrun written into the run directory does the rest; ../Allrun drives it.
 
 `tilted-thin` and `--outdoor fixed` rebuild the superseded first build (README, "How the
 case got here"); the solved runs are `open` and `tilted` with the default hydrostatic boundary.
+
+`doubleHungTop` and `doubleHungSplit` put a US double-hung window (README, "A US double-hung
+window") in the same room, wall and radiator: two solid sashes, each 40 mm deep in its own
+track, the top sash lowered 10 cm, or the top sash lowered 5 cm and the bottom one raised 5 cm.
+They are written with the barometric outdoor boundary (`--outdoor barometric`, forced), a
+uniform 10 mm band over the window's height and the per-step budget monitor; README, "The
+double-hung runs' model", says what that changes against `open` and `tilted`.
 """
 import argparse
 import os
@@ -77,6 +84,30 @@ YS = [(OUT_YLO, 0.0, 10, 0.15), (0.0, 0.15, 8, 3.0), (0.15, 0.75, 20, 1.0),
       (ROOM_Y, OUT_YHI, 10, 6.67)]
 ZS = [(-OUT_HZ, -ROOM_HZ, 4, 0.4), (-ROOM_HZ, -WIN_HZ, 20, 0.2), (-WIN_HZ, 0.0, 14, 2.5),
       (0.0, WIN_HZ, 14, 0.4), (WIN_HZ, ROOM_HZ, 20, 5.0), (ROOM_HZ, OUT_HZ, 4, 2.5)]
+
+# ---------------------------------------------------------------- the double-hung window
+# Andersen 400 Series Tilt-Wash TW3042 (README, "A US double-hung window"): a clear opening
+# 0.86 m wide (the table's 862 mm) and 1.24 m tall from a 0.95 m sill (the 1343 mm frame less a
+# 47 mm head and sill, on this room's 0.90 m sill). Two sashes 0.65 m tall (the lower sash's
+# 557 mm of glass plus its 97 mm of rails; the upper taken as tall), each DH_SASH_D deep: the upper in the
+# outer track, x -0.08 to -0.04, the lower in the inner, x -0.04 to 0, at the wall's inside face.
+# Shut, they overlap 0.06 m at the meeting rails.
+DH_WIN = dict(y0=0.95, y1=2.19, hz=0.43)
+DH_SASH_H = 0.65
+DH_SASH_D = 0.04
+# (upper sash's bottom, lower sash's bottom), m: the top sash lowered 10 cm, or the 10 cm split
+DH_RUNS = {"doubleHungTop": (1.44, 0.95), "doubleHungSplit": (1.49, 1.00)}
+# a uniform 10 mm band from 0.90 to 2.24 m, indoors and out, for the 5 cm slots; the rest of YS
+# as above, with 8 cells graded 3:1 to the ceiling
+DH_YS = [(OUT_YLO, 0.0, 10, 0.15), (0.0, 0.15, 8, 3.0), (0.15, 0.75, 20, 1.0),
+         (0.75, 0.90, 5, 1.0), (0.90, 2.24, 134, 1.0), (2.24, ROOM_Y, 8, 3.0),
+         (ROOM_Y, OUT_YHI, 10, 6.67)]
+# ZS's breaks, counts and size progression, each 14-cell half-window section split 3 + 11 so
+# that a cell face falls on the narrower window's edges, +-0.43 m
+_q = 2.5 ** (1 / 13)
+DH_ZS = [(-OUT_HZ, -ROOM_HZ, 4, 0.4), (-ROOM_HZ, -0.5, 20, 0.2), (-0.5, -0.43, 3, _q ** 2),
+         (-0.43, 0.0, 11, _q ** 10), (0.0, 0.43, 11, _q ** -10), (0.43, 0.5, 3, _q ** -2),
+         (0.5, ROOM_HZ, 20, 5.0), (ROOM_HZ, OUT_HZ, 4, 2.5)]
 
 HDR = "FoamFile {{ version 2.0; format ascii; class {cls}; object {obj}; }}\n"
 
@@ -703,6 +734,384 @@ def system(case, run, tend, write_int, nprocs, field_int):
     """)
 
 
+# ---------------------------------------------------------------- the double-hung runs
+def use_double_hung_window():
+    """The double-hung window's opening and mesh bands, in place of the turn-tilt window's."""
+    global WIN_Y0, WIN_Y1, WIN_HZ, YS, ZS
+    WIN_Y0, WIN_Y1, WIN_HZ = DH_WIN["y0"], DH_WIN["y1"], DH_WIN["hz"]
+    YS, ZS = DH_YS, DH_ZS
+
+
+def double_hung_dicts(case, run):
+    big = 100
+    uy, ly = DH_RUNS[run]
+    xo, xm = -2 * DH_SASH_D, -DH_SASH_D     # the outer track's outer face, the tracks' boundary
+    # cells kept: as topo_dicts, less the two sashes, each a solid 40 mm deep in its own track
+    write(f"{case}/system/topoSetDict.keep", "dictionary", "topoSetDict", f"""
+    actions
+    (
+        {{ name keep; type cellSet; action new; source boxToCell; box (-{big} -{big} -{big}) ({big} {big} {big}); }}
+        // the wall slab, apart from the opening
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (-{WALL_T} -{big} -{big}) (0 {WIN_Y0} {big}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (-{WALL_T} {WIN_Y1} -{big}) (0 {big} {big}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (-{WALL_T} -{big} -{big}) (0 {big} -{WIN_HZ}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (-{WALL_T} -{big} {WIN_HZ}) (0 {big} {big}); }}
+        // beyond the room's floor, ceiling and side walls
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (0 -{big} -{big}) ({big} 0 {big}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (0 {ROOM_Y} -{big}) ({big} {big} {big}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (0 -{big} -{big}) ({big} {big} -{ROOM_HZ}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box (0 -{big} {ROOM_HZ}) ({big} {big} {big}); }}
+        // the upper sash in the outer track, the lower sash in the inner
+        {{ name keep; type cellSet; action subtract; source boxToCell; box ({xo} {uy} -{WIN_HZ}) ({xm} {uy + DH_SASH_H:.2f} {WIN_HZ}); }}
+        {{ name keep; type cellSet; action subtract; source boxToCell; box ({xm} {ly} -{WIN_HZ}) (0 {ly + DH_SASH_H:.2f} {WIN_HZ}); }}
+    );
+    """)
+    # the exposed faces outside the room (the wall's outer face, the reveal and the sashes) and
+    # the lower sash's face in the frame's plane, x = 0 -> outerWalls, adiabatic
+    write(f"{case}/system/topoSetDict.split", "dictionary", "topoSetDict", f"""
+    actions
+    (
+        {{ name outerFaces; type faceSet; action new; source patchToFace; patch walls; }}
+        {{ name outerFaces; type faceSet; action subset; source boxToFace; box (-{big} -{big} -{big}) (-0.0001 {big} {big}); }}
+        {{ name sashRoom; type faceSet; action new; source patchToFace; patch walls; }}
+        {{ name sashRoom; type faceSet; action subset; source boxToFace; box (-0.0001 {WIN_Y0 + 1e-5:g} -{WIN_HZ - 1e-5:g}) (0.0001 {WIN_Y1 - 1e-5:g} {WIN_HZ - 1e-5:g}); }}
+        {{ name outerFaces; type faceSet; action add; source faceToFace; set sashRoom; }}
+    );
+    """)
+    write(f"{case}/system/createPatchDict", "dictionary", "createPatchDict", """
+    pointSync false;
+    patches
+    (
+        {
+            name outerWalls;
+            patchInfo { type wall; }
+            constructFrom set;
+            set outerFaces;
+        }
+    );
+    """)
+
+    def zone(name, x, y0, y1, oriented=True):
+        # the internal faces in the plane x between y0 and y1 across the opening's width;
+        # oriented into the room (from the outdoor cells) where the plane has outdoor cells on
+        # one side, and +x otherwise
+        src = ("setsToFaceZone; faceSet {0}Faces; cellSet outdoorCells;" if oriented
+               else "setToFaceZone; faceSet {0}Faces;").format(name)
+        return f"""
+        {{ name {name}Faces; type faceSet; action new; source boxToFace; box ({x - .0001} {y0 + .000001} -0.429999) ({x + .0001} {y1 - .000001} 0.429999); }}
+        {{ name {name}Faces; type faceSet; action subtract; source faceToFace; set boundaryFaces; }}
+        {{ name {name}; type faceZoneSet; action new; source {src} }}"""
+    zones = (zone("opening1", 0, WIN_Y0, WIN_Y1) + zone("lower", 0, WIN_Y0, 1.30)
+             + zone("upper", 0, 1.30, WIN_Y1) + zone("clearOpening", -WALL_T, WIN_Y0, WIN_Y1, False)
+             + zone("slotHead", -0.06, uy + DH_SASH_H, WIN_Y1, False))
+    if ly > WIN_Y0:
+        zones += zone("slotSill", -0.02, WIN_Y0, ly, False)
+    write(f"{case}/system/topoSetDict.zones", "dictionary", "topoSetDict", f"""
+    actions
+    (
+        // the radiator as in open and tilted, 1.0 m long, wider than this window
+        {{ name radiatorCells; type cellSet; action new; source boxToCell; box ({RAD['x0']} {RAD['y0']} -0.5) ({RAD['x1']} {RAD['y1']} 0.5); }}
+        {{ name radiator; type cellZoneSet; action new; source setToCellZone; set radiatorCells; }}
+        {{ name roomCells; type cellSet; action new; source boxToCell; box (0 0 -{ROOM_HZ}) ({ROOM_X:g} {ROOM_Y} {ROOM_HZ}); }}
+        {{ name room; type cellZoneSet; action new; source setToCellZone; set roomCells; }}
+        {{ name indoor; type cellZoneSet; action new; source setToCellZone; set roomCells; }}
+        {{ name outdoorCells; type cellSet; action new; source boxToCell; box (-{big} -{big} -{big}) (0 {big} {big}); }}
+        {{ name boundaryFaces; type faceSet; action new; source patchToFace; patches (".*"); }}
+        // opening1: the frame's plane x = 0 (the monitored opening, in front of the sashes);
+        // lower and upper: its parts below and above 1.30 m; clearOpening: the reveal's outer
+        // face; slotHead and slotSill: the gaps above the upper sash and below the lower one{zones}
+    );
+    """)
+    write(f"{case}/system/setFieldsDict", "dictionary", "setFieldsDict", f"""
+    defaultFieldValues ( volScalarFieldValue T {TOUT} volScalarFieldValue s 0 );
+    regions
+    (
+        // the room: 20 C, all of it the room's own air; the reveal and outdoors: 0 C
+        boxToCell {{ box (0 -1 -{big}) ({big} {big} {big});
+                    fieldValues ( volScalarFieldValue T {TAMB} volScalarFieldValue s 1 ); }}
+    );
+    """)
+
+
+def double_hung_monitors(run):
+    """The opening's parts and the slots: gross flow each way and net, kg/s, + into the room."""
+    names = ["upper", "slotHead"] + (["lower", "slotSill"] if DH_RUNS[run][1] > WIN_Y0 else [])
+    txt = "\n// the window's parts: the frame's plane below and above 1.30 m, and the slots\n"
+    for n in names:
+        txt += f"{n}In {{ $opening1In; name {n}; }}\n{n}Out {{ $opening1Out; name {n}; }}\n{n}Net {{ $opening1Net; name {n}; }}\n"
+    return txt + "clearOpeningIn { $opening1In; name clearOpening; }\n"
+
+
+# ---------------------------------------------------------------- the barometric outdoor boundary
+def barometric_system(case, run, tend, write_int, nprocs, field_int, extra="",
+                      into_room="(1 0 0)", mid="(0 1.2 0)", label="windowAiring"):
+    """controlDict, functions and planesT0 for the barometric boundary; fvSchemes, fvSolution and
+    decomposeParDict as system(). The functions: system()'s, with the opening's zone `opening1`,
+    its net flow, the room's mean s and the per-step scalar budget (fluxBudget), and without
+    wallHeatFlux and the plane beside the window. into_room is the opening's inward normal and
+    mid a point of the clip's mid-plane, normal z; extra is appended."""
+    system(case, run, tend, write_int, nprocs, field_int)
+    cd = open(f"{case}/system/controlDict").read()
+    for a, b in (("// windowAiring, run", f"// {label}, run"), ("the last two kept", "the last one kept"),
+                 ("purgeWrite      2", "purgeWrite      1"),
+                 ("runTimeModifiable true", "runTimeModifiable false")):
+        assert cd.count(a) == 1, a
+        cd = cd.replace(a, b)
+    open(f"{case}/system/controlDict", "w").write(cd)
+    with open(f"{case}/system/fvSchemes", "a") as f:
+        f.write("\n// fluxBudget rebuilds s's face flux from its matrix\nfluxRequired { s; }\n")
+    out_dir = into_room.replace("(", "").replace(")", "").split()
+    out_dir = "(" + " ".join(v[1:] if v.startswith("-") else ("0" if v == "0" else "-" + v) for v in out_dir) + ")"
+    write(f"{case}/system/functions", "dictionary", "functions", f"""
+    // the share of the room's own air, carried as a passive scalar with T's diffusivity:
+    // alpha + alphat = mu/Pr + mut/Prt with radiatorUnderWindow's Pr 0.71 and Prt 0.85 (no nut key)
+    s
+    {{
+        type            scalarTransport;
+        libs            (solverFunctionObjects);
+        field           s;
+        phi             phi;
+        rho             rho;
+        alphaD          1.4084507;
+        alphaDt         1.1764706;
+        writeControl    writeTime;
+    }}
+
+    // ---- every time step: the room's air and the opening -----------------------------
+    roomAir
+    {{
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      cellZone;
+        name            room;
+        operation       weightedVolIntegrate;
+        weightField     rho;
+        fields          (s);
+        writeFields     false;
+        writeControl    timeStep;
+        log             false;
+    }}
+    indoorAir
+    {{
+        $roomAir;
+        name            indoor;
+    }}
+    roomMass
+    {{
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      cellZone;
+        name            room;
+        operation       volIntegrate;
+        fields          (rho);
+        writeFields     false;
+        writeControl    timeStep;
+        log             false;
+    }}
+    roomMeanT
+    {{
+        type            volFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      cellZone;
+        name            room;
+        operation       weightedVolAverage;
+        weightField     rho;
+        fields          (T);
+        writeFields     false;
+        writeControl    timeStep;
+        log             false;
+    }}
+    roomMeanS {{ $roomMeanT; fields (s); }}
+    // gross mass flow each way through the opening, kg/s: in = into the room
+    opening1In
+    {{
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      faceZone;
+        name            opening1;
+        operation       sumDirection;
+        direction       {into_room};
+        fields          (phi);
+        writeFields     false;
+        writeControl    timeStep;
+        log             false;
+    }}
+    opening1Out
+    {{
+        $opening1In;
+        direction       {out_dir};
+    }}
+    opening1Net {{ $opening1In; operation sumDirectionBalance; }}
+    // the room's own air leaving: sum of phi s over the opening (net, + into the room)
+    opening1S
+    {{
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        regionType      faceZone;
+        name            opening1;
+        operation       weightedSum;
+        weightField     phi;
+        fields          (s T);
+        writeFields     false;
+        writeControl    timeStep;
+        log             false;
+    }}
+    // the scalar's budget: s's own face flux, convection and diffusion as the scalarTransport
+    // discretises them, summed over opening1 into the room every step; processor faces once
+    fluxBudget
+    {{
+        type            coded;
+        libs            (utilityFunctionObjects);
+        name            fluxBudget;
+        executeControl  timeStep;
+        writeControl    none;
+        codeInclude
+        #{{
+            #include "fvCFD.H"
+            #include "turbulentFluidThermoModel.H"
+            #include "coupledPolyPatch.H"
+            #include <fstream>
+        #}};
+        codeOptions
+        #{{
+            -I$(LIB_SRC)/finiteVolume/lnInclude -I$(LIB_SRC)/meshTools/lnInclude -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude -I$(LIB_SRC)/transportModels/compressible/lnInclude -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude
+        #}};
+        codeLibs
+        #{{
+            -lfiniteVolume -lmeshTools -lcompressibleTurbulenceModels
+        #}};
+        codeExecute
+        #{{
+            const fvMesh& m = mesh();
+            const auto& s = m.lookupObject<volScalarField>("s");
+            const auto& phi = m.lookupObject<surfaceScalarField>("phi");
+            const auto& turb = m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+            volScalarField D("DsBudget", turb.mu()/0.71 + turb.mut()/0.85);
+            fvScalarMatrix adv(fvm::div(phi, s, "div(phi,s)"));
+            fvScalarMatrix diff(fvm::laplacian(D, s));
+            surfaceScalarField flux("sFluxBudget", adv.flux() - diff.flux());
+            scalar q = 0;
+            forAll(m.faceZones(), zi)
+            {{
+                const faceZone& z = m.faceZones()[zi];
+                if (z.name() != "opening1") continue;
+                forAll(z, j)
+                {{
+                    const label f = z[j];
+                    scalar value = 0;
+                    if (f < m.nInternalFaces()) value = flux[f];
+                    else
+                    {{
+                        const label patch = m.boundaryMesh().whichPatch(f);
+                        const polyPatch& pp = m.boundaryMesh()[patch];
+                        const auto* cpp = isA<coupledPolyPatch>(pp);
+                        if (cpp && !cpp->owner()) continue;
+                        value = flux.boundaryField()[patch][pp.whichFace(f)];
+                    }}
+                    q += (z.flipMap()[j] ? -1 : 1)*value;
+                }}
+            }}
+            reduce(q, sumOp<scalar>());
+            if (Pstream::master())
+            {{
+                fileName dir = m.time().globalPath()/"postProcessing"/"fluxBudget";
+                mkDir(dir);
+                std::ofstream os((dir/"budget.dat").c_str(), std::ios_base::app);
+                os.precision(12);
+                // t, net s entering through opening1 (kg/s), a second opening's (none: 0), the radiator (W)
+                os << m.time().value() << " " << q << " 0 {RAD_W:g}\\n";
+            }}
+        #}};
+    }}
+    minMax
+    {{
+        type            fieldMinMax;
+        libs            (fieldFunctionObjects);
+        fields          (T s U);
+        writeControl    adjustableRunTime;
+        writeInterval   {write_int};
+        log             false;
+    }}
+
+    // ---- the clip: the section through the middle of the window, and the floor ----
+    // No bounds on any plane: in an earlier case a plane with a thin bounds box wrote nothing.
+    planes
+    {{
+        type            surfaces;
+        libs            (sampling);
+        writeControl    adjustableRunTime;
+        writeInterval   {write_int};
+        surfaceFormat   vtk;
+        formatOptions   {{ vtk {{ format binary; }} }}
+        interpolate     false;
+        fields          (T U s);
+        surfaces
+        {{
+            mid     {{ type cuttingPlane; point {mid}; normal (0 0 1); interpolate false; }}
+            ankle   {{ type cuttingPlane; point (2 0.1 0); normal (0 1 0); interpolate false; }}
+        }}
+    }}
+    """)
+    if extra:
+        with open(f"{case}/system/functions", "a") as f:
+            f.write(extra)
+    fo = open(f"{case}/system/functions").read()
+    plane = fo[fo.index("\nplanes\n") + 1:]
+    plane = plane[:plane.index("\n}\n") + 3]
+    with open(f"{case}/system/planesT0", "w") as f:
+        f.write(HDR.format(cls="dictionary", obj="planesT0"))
+        f.write("functions {\n" + plane + "}\n")
+
+
+# p and p_rgh at rest in the still outdoor air's barometric pressure, and p0 on the open faces
+BAROMETRIC_P = '''#!/usr/bin/env python3
+"""Start the run at rest in the still TOUT K outdoor air's barometric pressure, and hold the open
+faces at it: each cell's p = 1e5 exp(-g y/(R TOUT)), its p_rgh = p + rho g y with its own
+rho = p/(R T), and p0 on 0/p_rgh's `outside` patch at each face's height. Heights from 0/Cy,
+which `postProcess -func writeCellCentres` writes in the case's format, binary or ascii."""
+import math
+import re
+import struct
+
+G, R = 9.81, 8314.47 / 28.96
+
+
+def values(raw, chunk):
+    m = re.search(rb"(?:value|internalField)\\s+nonuniform\\s+List<scalar>\\s*(\\d+)\\s*\\(", chunk)
+    n, a = int(m[1]), m.end()
+    if re.search(rb"format\\s+binary", raw):
+        return struct.unpack("<%dd" % n, chunk[a:a + 8 * n])
+    return [float(v) for v in chunk[a:chunk.index(b")", a)].split()]
+
+
+raw = open("0/Cy", "rb").read()
+y = values(raw, raw[:raw.index(b"boundaryField")])
+face_y = values(raw, raw[re.search(rb"\\n\\s*outside\\s*\\n\\s*\\{", raw).start():])
+traw = open("0/T", "rb").read()
+T = values(traw, traw[:traw.index(b"boundaryField")])
+assert len(y) == len(T)
+p = [1e5 * math.exp(-G * v / (R * TOUT)) for v in y]
+p_rgh = [v + v / (R * t) * G * yy for v, t, yy in zip(p, T, y)]
+p0 = [1e5 * math.exp(-G * v / (R * TOUT)) for v in face_y]
+
+
+def nonuniform(v):
+    return "nonuniform List<scalar>\\n%d\\n(\\n" % len(v) + "\\n".join(format(x, ".14g") for x in v) + "\\n)"
+
+
+for name, v in (("p", p), ("p_rgh", p_rgh)):
+    src = open("0/" + name).read()
+    assert src.count("internalField uniform 1e5;") == 1
+    src = src.replace("internalField uniform 1e5;", "internalField " + nonuniform(v) + ";")
+    if name == "p_rgh":
+        assert src.count("p0 uniform 1e5;") == 1
+        src = src.replace("p0 uniform 1e5;", "p0 " + nonuniform(p0) + ";")
+    open("0/" + name, "w").write(src)
+print("barometric p and p_rgh in %d cells; p0 on %d outdoor faces, y %.3f to %.3f m"
+      % (len(p), len(p0), min(face_y), max(face_y)))
+'''
+
+
 ALLRUN = """#!/bin/bash
 # Mesh, set up and decompose this run; ./Allrun solve then runs it on NPROCS ranks.
 cd "${0%/*}" || exit 1
@@ -729,6 +1138,12 @@ runParallel -n NPROCS buoyantPimpleFoam
 # the outdoor faces' p0 for the hydrostatic boundary, from the final mesh's face centres
 ALLRUN_HYDROSTATIC = """    runApplication postProcess -func writeCellCentres -time 0
     python3 hydrostatic_p0.py > log.hydrostaticP0 2>&1
+    rm -f 0/C 0/Cx 0/Cy 0/Cz
+"""
+
+# the barometric boundary: each cell's p and p_rgh and the outdoor faces' p0, on the final mesh
+ALLRUN_BAROMETRIC = """    runApplication postProcess -func writeCellCentres -time 0
+    python3 barometric_p.py > log.barometricP 2>&1
     rm -f 0/C 0/Cx 0/Cy 0/Cz
 """
 
@@ -763,20 +1178,38 @@ print(f"{n} outside faces, y {min(y):.3f} to {max(y):.3f} m, p0 {1e5 / (1 + G * 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("run", choices=["open", "tilted", "tilted-thin"])
+    ap.add_argument("run", choices=["open", "tilted", "tilted-thin"] + list(DH_RUNS))
     ap.add_argument("dir")
     ap.add_argument("--tend", type=float, default=300)
-    ap.add_argument("--write", type=float, default=0.625)
-    ap.add_argument("--fields", type=float, default=25)
-    ap.add_argument("--nprocs", type=int, default=7)
-    # the outdoor boundary: hydrostatic (the solved runs') or fixed (the superseded first build's
-    # open and tilted-thin, and the fixed-boundary tilted control)
-    ap.add_argument("--outdoor", choices=["hydrostatic", "fixed"], default="hydrostatic")
+    ap.add_argument("--write", type=float, default=None,
+                    help="plane interval, s: 0.625 (open, tilted), 1.25 (the double-hung runs)")
+    ap.add_argument("--fields", type=float, default=None,
+                    help="field-write interval, s: 25 (open, tilted), 60 (the double-hung runs)")
+    ap.add_argument("--nprocs", type=int, default=None, help="7 (open, tilted), 16 (double-hung)")
+    # the outdoor boundary: hydrostatic (open's and tilted's), fixed (the superseded first build's
+    # open and tilted-thin, and the fixed-boundary tilted control) or barometric (the double-hung
+    # runs', which always use it)
+    ap.add_argument("--outdoor", choices=["hydrostatic", "fixed", "barometric"], default=None)
     a = ap.parse_args()
     case = a.dir
+    dh = a.run in DH_RUNS
+    outdoor = "barometric" if dh else (a.outdoor or "hydrostatic")
+    if dh and a.outdoor not in (None, "barometric"):
+        ap.error("the double-hung runs use the barometric outdoor boundary")
+    if outdoor == "barometric" and not dh:
+        ap.error("--outdoor barometric is written for the double-hung runs only")
+    write_int = a.write if a.write is not None else (1.25 if dh else 0.625)
+    field_int = a.fields if a.fields is not None else (60 if dh else 25)
+    nprocs = a.nprocs if a.nprocs is not None else (16 if dh else 7)
+    if dh:
+        use_double_hung_window()
     n = block_mesh(case)
-    topo_dicts(case, a.run)
-    fields(case, a.run, a.outdoor)
+    if dh:
+        double_hung_dicts(case, a.run)
+    else:
+        topo_dicts(case, a.run)
+    # the double-hung runs' 0.orig is open's: no sash patch (the sashes' faces are outerWalls)
+    fields(case, "open" if dh else a.run, "hydrostatic" if outdoor == "barometric" else outdoor)
     if a.run == "tilted":
         # one sash patch, not a baffle's two sides
         for root, _, files in os.walk(f"{case}/0.orig"):
@@ -785,14 +1218,22 @@ def main():
                 t = open(fp).read().replace("sashA|sashB", "sash")
                 open(fp, "w").write(t)
     constant(case)
-    system(case, a.run, f"{a.tend:g}", f"{a.write:g}", a.nprocs, f"{a.fields:g}")
-    allrun = ALLRUN.replace("NPROCS", str(a.nprocs))
-    allrun = allrun.replace("HYDROSTATIC", ALLRUN_HYDROSTATIC if a.outdoor == "hydrostatic" else "")
-    if a.outdoor == "hydrostatic":
+    if dh:
+        barometric_system(case, a.run, f"{a.tend:g}", f"{write_int:g}", nprocs, f"{field_int:g}",
+                          extra=double_hung_monitors(a.run))
+    else:
+        system(case, a.run, f"{a.tend:g}", f"{write_int:g}", nprocs, f"{field_int:g}")
+    allrun = ALLRUN.replace("NPROCS", str(nprocs))
+    allrun = allrun.replace("HYDROSTATIC", {"hydrostatic": ALLRUN_HYDROSTATIC, "fixed": "",
+                                            "barometric": ALLRUN_BAROMETRIC}[outdoor])
+    if outdoor == "hydrostatic":
         with open(f"{case}/hydrostatic_p0.py", "w") as f:
             f.write(HYDROSTATIC_P0.replace("TOUT", f"{TOUT}"))
-    if a.run == "tilted":
-        # no baffle: the solid sash went with subsetMesh
+    if outdoor == "barometric":
+        with open(f"{case}/barometric_p.py", "w") as f:
+            f.write(BAROMETRIC_P.replace("TOUT", f"{TOUT}"))
+    if a.run == "tilted" or dh:
+        # no baffle: the solid sashes went with subsetMesh
         allrun = allrun.replace("    runApplication -s sash topoSet -dict system/topoSetDict.sash\n", "")
         allrun = allrun.replace("    runApplication createBaffles -overwrite\n", "")
     with open(f"{case}/Allrun", "w") as f:

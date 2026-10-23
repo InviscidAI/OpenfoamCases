@@ -1,20 +1,25 @@
 #!/bin/bash
 # Airing a heated room: the window above radiatorUnderWindow's radiator turned wide open, or on
-# tilt, in a 3-D room on a still 0 C day, 0-300 s.
+# tilt, in a 3-D room on a still 0 C day, 0-300 s; or a US double-hung window in its place.
 #
-#   ./Allrun open|tilted [nProcs]
-#   ./Allrun --setup-only open|tilted [nProcs]
+#   ./Allrun open|tilted|doubleHungTop|doubleHungSplit [nProcs]
+#   ./Allrun --setup-only open|tilted|doubleHungTop|doubleHungSplit [nProcs]
 #
-# open     the sash turned wide open, standing at 90 degrees on its hinge side (a baffle).
-# tilted   the sash on tilt, a solid profile 80 mm deep whose top has swung 140 mm into the room.
-# nProcs   MPI ranks, default 7 (both solved runs used 7).
+# open             the sash turned wide open, standing at 90 degrees on its hinge side (a baffle).
+# tilted           the sash on tilt, a solid profile 80 mm deep whose top has swung 140 mm into
+#                  the room.
+# doubleHungTop    a double-hung window, 0.86 x 1.24 m clear, its top sash lowered 10 cm.
+# doubleHungSplit  the same window, its top sash lowered 5 cm and its bottom sash raised 5 cm.
+# nProcs   MPI ranks, default 7 for open and tilted (both solved runs used 7) and 16 for the
+#          double-hung runs (their solves ran on 8 to 30 s and on 16 after).
 # --setup-only writes the run, meshes it, sets its zones and fields, checks and decomposes it,
 #          and stops before the solve.
 #
 # scripts/make_case.py writes every dictionary, the initial fields and an Allrun into
 # runs/<run>/; that Allrun meshes (blockMesh, then subsetMesh to the room, the reveal and the
 # outdoor air), sets the zones and fields, writes the outdoor faces' hydrostatic pressure
-# (hydrostatic_p0.py), checks and decomposes the run, and, given `solve`, runs
+# (hydrostatic_p0.py; for the double-hung runs each cell's and face's barometric pressure,
+# barometric_p.py), checks and decomposes the run, and, given `solve`, runs
 # buoyantPimpleFoam. The planes at t = 0 come from the initial fields (system/planesT0).
 cd "${0%/*}" || exit 1
 set -euo pipefail
@@ -22,10 +27,11 @@ command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (
 
 setupOnly=false
 if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
-run=${1:-}; nproc=${2:-7}
+run=${1:-}
 case "$run" in
-  open|tilted) ;;
-  *) echo "usage: $0 [--setup-only] open|tilted [nProcs]" >&2; exit 2 ;;
+  open|tilted) nproc=${2:-7} ;;
+  doubleHungTop|doubleHungSplit) nproc=${2:-16} ;;
+  *) echo "usage: $0 [--setup-only] open|tilted|doubleHungTop|doubleHungSplit [nProcs]" >&2; exit 2 ;;
 esac
 
 r=runs/$run
