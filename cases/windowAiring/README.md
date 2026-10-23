@@ -31,6 +31,10 @@ cauldron's CO2 off a living-room floor in [`dryIceCauldron`](../dryIceCauldron).
 The same room with its window shut, heated with the radiator's 60 W either from the radiator or
 through the whole floor, is [`underfloorVsRadiator`](../underfloorVsRadiator).
 
+An attic room of the same floor, aired through a roof window turned wide open, against this
+room's wide-open window rebuilt with the barometric outdoor boundary, is
+[`roofWindowAiring`](../roofWindowAiring).
+
 ## The room
 
 | | value | from |
@@ -333,7 +337,11 @@ open area. Keeping the open area the same makes the arrangement the only differe
   a uniform p_rgh. The two forms differ by about 0.01 Pa at the top of the box, but the second
   is not rest for a compressible gas: in another case's still outdoor box, which nothing drove,
   it moved the air at up to 0.06 m/s ([`dryIceCauldron`](../dryIceCauldron), "How the case got
-  here").
+  here"). For `open` it makes no
+  difference that matters here: [`roofWindowAiring`](../roofWindowAiring)'s `wall` run is
+  `open` rebuilt with the barometric boundary on a finer mesh across the window, and it takes
+  in the same 0.235 kg/s on average over the five minutes and replaces 92.0% of the room's air
+  at 300 s against `open`'s 91.3%.
 - **The mesh** is `open`'s box with a uniform 10 mm band from 0.90 to 2.24 m up, indoors and
   out, for the slots (a 5 cm slot is five cells tall), and `open`'s cells across the room's
   width split so that a cell face falls on the window's edges at ±0.43 m: 1,422,720 cells in

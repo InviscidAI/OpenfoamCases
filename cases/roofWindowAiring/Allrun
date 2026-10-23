@@ -1,0 +1,47 @@
+#!/bin/bash
+# Airing an attic room through a centre-pivot roof window turned wide open, against
+# windowAiring's room through its wall window turned wide open, on a still 0 C day, 0-300 s.
+#
+#   ./Allrun roof|wall [nProcs]
+#   ./Allrun --setup-only roof|wall [nProcs]
+#
+# roof     the attic room (45-degree roof, 1.0 m knee wall, 33.5 m3) with a VELUX GGL PK08
+#          centre-pivot roof window, its sash turned 45 degrees top edge into the room, so that
+#          it lies horizontal across the opening.
+# wall     windowAiring's room (33.6 m3) and window, the sash turned wide open at 90 degrees.
+# nProcs   MPI ranks, default 16 (both solved runs used 16).
+# --setup-only writes the run, meshes it, sets its zones and fields, checks and decomposes it,
+#          and stops before the solve.
+#
+# scripts/make_case.py writes every dictionary, the initial fields and an Allrun into
+# runs/<run>/, with ../windowAiring/scripts/make_case.py's model; that Allrun meshes the run
+# (roof: build_roof.py, gmsh's section swept across the room; wall: blockMesh, subsetMesh to the
+# air and the sash as a baffle), sets the zones and fields, writes each cell's and the outdoor
+# faces' barometric pressure (barometric_p.py), checks and decomposes the run, and, given
+# `solve`, runs buoyantPimpleFoam. The planes at t = 0 come from the initial fields
+# (system/planesT0). For roof, $PYTHON (default python3) needs gmsh 4.15.2 and NumPy.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-16}
+case "$run" in
+  roof) "${PYTHON:-python3}" -c "import gmsh, numpy" 2> /dev/null \
+          || { echo "roof needs gmsh (pip install gmsh==4.15.2) and NumPy in \$PYTHON or python3" >&2; exit 1; } ;;
+  wall) ;;
+  *) echo "usage: $0 [--setup-only] roof|wall [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+rm -rf "$r"; mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(cd "$r" && ./Allrun)
+grep -E '^ +cells:|Mesh OK|Failed' "$r/log.checkMesh"
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+cd "$r"
+postProcess -dict system/planesT0 -fields '(T U s)' -time 0 > log.postProcess.planesT0 2>&1
+./Allrun solve
+echo "solved: $r"

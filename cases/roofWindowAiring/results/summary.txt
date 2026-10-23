@@ -1,0 +1,39 @@
+Outdoor air at 0 C: rho 1.2752 kg/m3; m3/h and room volumes an hour are volume flows of
+outdoor air, over each room's own volume (its room zone's).
+
+== roof: 25233 steps to t = 300 s, monitors in pieces from 0, 30 s; radiator 60-60 W
+   room zone 410050 cells, 33.5025 m3; opening 2816 faces, 1.0873 m2 of air
+   eaves side: 1848 faces, 0.7211 m2
+   ridge side: 968 faces, 0.3662 m2
+   room mass 39.8000 kg at the first step, 40.9388 kg at 300 s
+   t  60 s: share replaced 22.95%; inflow 0.1716 kg/s =  484 m3/h, mean over 0-t 0.1821 kg/s = 15.35/h; room 16.39 C; budget error +0.30% of what left
+   t 120 s: share replaced 43.72%; inflow 0.1624 kg/s =  458 m3/h, mean over 0-t 0.1762 kg/s = 14.85/h; room 13.91 C; budget error +0.30% of what left
+   t 300 s: share replaced 72.74%; inflow 0.1444 kg/s =  408 m3/h, mean over 0-t 0.1596 kg/s = 13.45/h; room 11.85 C; budget error +0.30% of what left
+   means, kg/s:        0-300 s   240-300 s
+     opening1In     0.15964   0.14405
+     opening1Out    0.15585   0.14339
+     eavesIn        0.15708   0.14180
+     eavesOut       0.02034   0.01702
+     ridgeIn        0.00256   0.00225
+     ridgeOut       0.13551   0.12638
+   over the last minute the room's mean T fell 0.274 K and the share rose 5.97 points
+   0-60 s: mean s of the air leaving 0.869, the room's mean s 0.878, ratio 0.99
+   60-300 s: mean s of the air leaving 0.544, the room's mean s 0.445, ratio 1.22
+   0-300 s: mean s of the air leaving 0.616, the room's mean s 0.532, ratio 1.16
+
+== wall: 14808 steps to t = 300 s, monitors in pieces from 0 s; radiator 60-60 W
+   room zone 656696 cells, 33.6000 m3; opening 2080 faces, 1.2000 m2 of air
+   room mass 39.9161 kg at the first step, 41.5719 kg at 300 s
+   t  60 s: share replaced 41.61%; inflow 0.2767 kg/s =  781 m3/h, mean over 0-t 0.3063 kg/s = 25.73/h; room 13.37 C; budget error +0.45% of what left
+   t 120 s: share replaced 67.72%; inflow 0.2283 kg/s =  645 m3/h, mean over 0-t 0.2762 kg/s = 23.21/h; room 10.21 C; budget error +0.50% of what left
+   t 300 s: share replaced 91.96%; inflow 0.2019 kg/s =  570 m3/h, mean over 0-t 0.2351 kg/s = 19.75/h; room  8.32 C; budget error +0.63% of what left
+   means, kg/s:        0-300 s   240-300 s
+     opening1In     0.23511   0.20369
+     opening1Out    0.22959   0.20310
+   over the last minute the room's mean T fell 0.240 K and the share rose 4.46 points
+   0-60 s: mean s of the air leaving 0.944, the room's mean s 0.777, ratio 1.21
+   60-300 s: mean s of the air leaving 0.387, the room's mean s 0.229, ratio 1.69
+   0-300 s: mean s of the air leaving 0.528, the room's mean s 0.339, ratio 1.56
+
+roof / wall: mean inflow over 0-300 s 0.679; share replaced at 300 s 0.791; at 60 s 0.551
+the single-opening formula, 0.887 x 0.947^1.5 / (1.0 x 1.2^1.5): 0.622

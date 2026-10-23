@@ -1,0 +1,21 @@
+{
+  "cells": 819902,
+  "points": 855448,
+  "cross_section_cells": 7173,
+  "z_layers": 130,
+  "room_air_volume_m3": 33.50253848,
+  "initial_scalar_inventory_kg": 39.80000454580184,
+  "clear_lining_area_m2": 1.187693,
+  "opening_inner_area_m2": {
+    "opening1": 1.08734040561401,
+    "eaves": 0.7211186472722265,
+    "ridge": 0.36622175834178083
+  },
+  "opening_outer_area_m2": {
+    "opening_outer": 1.087340405614044,
+    "outer_eaves": 0.5082386472722183,
+    "outer_ridge": 0.5791017583417712
+  },
+  "radiator_cell_count": 1100,
+  "z_opening_cell_width_m": 0.02015909090909096
+}

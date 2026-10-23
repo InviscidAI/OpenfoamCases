@@ -1,0 +1,8 @@
+t s: drawn-in air T mean / max (cells) | pocket T mean / max (cells) | open faces: T max, |U| max
+ 1.25: -0.000 /  0.001 C (318) |  0.00 /  0.26 C (223) | lower  0.00 C, 0.026 m/s; outer  0.00 C, 0.010 m/s; upper  0.00 C, 0.010 m/s
+   30:  0.002 /  0.474 C (318) | 10.59 / 20.00 C (223) | lower  0.00 C, 0.041 m/s; outer 15.18 C, 1.418 m/s; upper  0.58 C, 0.116 m/s
+   60:  0.001 /  0.473 C (318) | 10.58 / 19.87 C (223) | lower  0.00 C, 0.042 m/s; outer 15.29 C, 1.420 m/s; upper  1.04 C, 0.219 m/s
+  120: -0.002 /  0.160 C (318) |  7.04 / 15.96 C (223) | lower  0.00 C, 0.037 m/s; outer 15.19 C, 1.402 m/s; upper  0.86 C, 0.203 m/s
+  180: -0.001 /  0.229 C (318) |  6.27 / 13.26 C (223) | lower  0.00 C, 0.035 m/s; outer 12.20 C, 1.236 m/s; upper  0.81 C, 0.185 m/s
+  240: -0.001 /  0.229 C (318) |  6.08 / 12.43 C (223) | lower  0.00 C, 0.033 m/s; outer 11.81 C, 1.230 m/s; upper  0.62 C, 0.137 m/s
+  300: -0.002 /  0.126 C (318) |  5.96 / 11.95 C (223) | lower  0.00 C, 0.033 m/s; outer  8.97 C, 1.026 m/s; upper  0.67 C, 0.167 m/s
