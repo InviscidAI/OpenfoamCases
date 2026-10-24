@@ -3,9 +3,12 @@
 
     python3 make_case.py <run> <dir> [--tend 600] [--write 1.25] [--fields 50] [--nprocs 8]
 
-run is `shut` (the front door and the room's other door shut) or `open` (the front door open
-to the cold evening outside). The two runs differ only in the door: `shut` puts a baffle
-across the doorway at the wall's inside face; everything else is written identically.
+run is `shut` (the front door and the room's other door shut), `open` (the front door open
+to the cold evening outside) or `raised` (shut, with the cauldron on a counter-height table).
+`shut` and `open` differ only in the door: `shut` puts a baffle across the doorway at the
+wall's inside face; everything else is written identically. `raised` is `shut` with the table's
+top and the cauldron 0.46 m higher and the mesh's y bands above 0.75 m re-spaced round them;
+everything else, the bands below 0.75 m included, is written as `shut`'s.
 
 Coordinates: x from the inside face of the front wall into the room, y up from the floor,
 z across the room. The model is the half of the room on one side of the vertical plane
@@ -34,6 +37,10 @@ DOOR_HZ = 0.457         # front door 36 in (0.914 m) wide (the usual US slab)
 DOOR_Y1 = 2.032         # and 80 in tall
 TABLE = dict(x0=2.25, x1=2.75, y0=0.42, y1=0.45, hz=0.50)   # coffee table top, 1.0 x 0.5 m
 CAUL = dict(x0=2.32, x1=2.68, y0=0.45, y1=0.75, hz=0.18)    # cauldron, 0.36 m square (16 in round), 12 in tall
+# raised: the same table top at counter height, 0.91 m (a US counter's 36 in, the UK's "around
+# 900mm"; README), and the same cauldron on it, its water surface at 1.21 m
+TABLE_RAISED = dict(TABLE, y0=0.88, y1=0.91)
+CAUL_RAISED = dict(CAUL, y0=0.91, y1=1.21)
 NOSE_Y = 0.60           # a toddler's nose: a younger toddler, a child sitting or a dog (README)
 LEAK = dict(x0=4.95, hz0=1.95)   # one 5 cm ceiling face in the back corner (the half model's)
 OUT_X = 2.0             # outdoor air beyond the wall's outer face
@@ -79,6 +86,12 @@ XS = [(X0, -WALL_T, 16, 0.3), (-WALL_T, 0.0, 3, 1.0), (0.0, 1.0, 25, 1.0),
 YS = [(0.0, 0.2, 12, 2.5), (0.2, TABLE["y0"], 8, 1.0), (TABLE["y0"], TABLE["y1"], 1, 1.0),
       (TABLE["y1"], CAUL["y1"], 10, 1.0), (CAUL["y1"], DOOR_Y1, 24, 1.0), (DOOR_Y1, ROOM_Y, 7, 1.0),
       (ROOM_Y, OUT_YHI, 8, 3.0)]
+# raised: YS's bands up to 0.75 m kept as they are, so the floor layer and the nose height are
+# meshed as in shut; above them 4 cells to the table, 1 across its top, 10 up the cauldron and
+# 15 (55 mm, against shut's 53 mm) to the door's head
+YS_RAISED = [(0.0, 0.2, 12, 2.5), (0.2, 0.42, 8, 1.0), (0.42, 0.45, 1, 1.0), (0.45, 0.75, 10, 1.0),
+             (0.75, 0.88, 4, 1.0), (0.88, 0.91, 1, 1.0), (0.91, 1.21, 10, 1.0), (1.21, DOOR_Y1, 15, 1.0),
+             (DOOR_Y1, ROOM_Y, 7, 1.0), (ROOM_Y, OUT_YHI, 8, 3.0)]
 ZS = [(0.0, CAUL["hz"], 6, 1.0), (CAUL["hz"], DOOR_HZ, 9, 1.0), (DOOR_HZ, TABLE["hz"], 1, 1.0),
       (TABLE["hz"], ROOM_HZ, 30, 1.0), (ROOM_HZ, OUT_HZ, 6, 3.0)]
 
@@ -186,7 +199,7 @@ def topo_dicts(case, run):
         { name outerWalls; patchInfo { type wall; }  constructFrom set; set outerFaces; }
     );
     """)
-    if run == "shut":
+    if run in ("shut", "raised"):
         # the front door, shut: a baffle across the doorway at the wall's inside face
         write(f"{case}/system/topoSetDict.door", "dictionary", "topoSetDict", f"""
         actions
@@ -726,13 +739,16 @@ print(f"cells: {len(p)}, p {min(p):.3f} to {max(p):.3f} Pa")
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("run", choices=["shut", "open"])
+    ap.add_argument("run", choices=["shut", "open", "raised"])
     ap.add_argument("dir")
     ap.add_argument("--tend", type=float, default=600)
     ap.add_argument("--write", type=float, default=1.25)
     ap.add_argument("--fields", type=float, default=50)
     ap.add_argument("--nprocs", type=int, default=8)
     a = ap.parse_args()
+    global TABLE, CAUL, YS
+    if a.run == "raised":
+        TABLE, CAUL, YS = TABLE_RAISED, CAUL_RAISED, YS_RAISED
     case = a.dir
     n = block_mesh(case)
     topo_dicts(case, a.run)
@@ -740,7 +756,7 @@ def main():
     constant(case)
     system(case, a.run, f"{a.tend:g}", f"{a.write:g}", a.nprocs, f"{a.fields:g}")
     allrun = ALLRUN.replace("NPROCS", str(a.nprocs))
-    allrun = allrun.replace("DOOR", ALLRUN_DOOR if a.run == "shut" else "")
+    allrun = allrun.replace("DOOR", ALLRUN_DOOR if a.run != "open" else "")
     with open(f"{case}/Allrun", "w") as f:
         f.write(allrun)
     os.chmod(f"{case}/Allrun", 0o755)

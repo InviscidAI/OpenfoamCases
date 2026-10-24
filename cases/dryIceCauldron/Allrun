@@ -2,19 +2,22 @@
 # A dry-ice cauldron in a living room, the front door shut or open to a still 10 C evening,
 # 0-600 s from the moment the dry ice goes in.
 #
-#   ./Allrun shut|open [nProcs]
-#   ./Allrun --setup-only shut|open [nProcs]
+#   ./Allrun shut|open|raised [nProcs]
+#   ./Allrun --setup-only shut|open|raised [nProcs]
 #
 # shut     the front door shut: a baffle across the doorway at the wall's inside face.
 # open     the front door open, its leaf left out as if swung back against the wall.
-# nProcs   MPI ranks, default 8 (both solved runs used 8).
+# raised   shut, with the cauldron on a 36 in (0.91 m) counter-height table in place of the
+#          18 in coffee table; nothing else changes.
+# nProcs   MPI ranks, default 8 (shut and open were solved on 8; raised, and shut again beside
+#          it, on 2).
 # --setup-only writes the run, meshes it, sets its zones and fields, checks and decomposes it,
 #          and stops before the solve.
 #
 # scripts/make_case.py writes every dictionary, the initial fields and an Allrun into
 # runs/<run>/; that Allrun meshes (blockMesh, then subsetMesh to the room, the doorway and the
-# outdoor air), adds the cauldron's water surface, the ceiling leak, the furniture and, shut,
-# the door as patches, sets the zones and fields, writes the barometric pressure into the
+# outdoor air), adds the cauldron's water surface, the ceiling leak, the furniture and, shut
+# or raised, the door as patches, sets the zones and fields, writes the barometric pressure into the
 # cells and the open faces (hydrostatic.py), checks and decomposes the run, and, given `solve`,
 # runs rhoReactingBuoyantFoam. The planes at t = 0 come from the initial fields
 # (system/planesT0).
@@ -26,8 +29,8 @@ setupOnly=false
 if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
 run=${1:-}; nproc=${2:-8}
 case "$run" in
-  shut|open) ;;
-  *) echo "usage: $0 [--setup-only] shut|open [nProcs]" >&2; exit 2 ;;
+  shut|open|raised) ;;
+  *) echo "usage: $0 [--setup-only] shut|open|raised [nProcs]" >&2; exit 2 ;;
 esac
 
 r=runs/$run

@@ -9,10 +9,15 @@ number it reports is **the CO2 at a toddler's nose, 0.6 m up, as a multiple of n
 (425 ppm), set beside published exposure limits. It is not a verdict that a cauldron is safe or
 dangerous.
 
-One OpenFOAM case, two runs that differ only in the front door:
+One OpenFOAM case, two runs that differ only in the front door, and a third that answers a
+viewer's question under the clip, whether it helps to stand the cauldron higher:
 
     ./Allrun shut       # the front door (and the room's other door) shut, 0-600 s
     ./Allrun open       # the front door open to the evening, 0-600 s
+    ./Allrun raised     # shut, the cauldron on a 36 in counter-height table, 0-600 s
+
+**Raising the cauldron does not keep the gas from the toddler; it changes when it arrives.**
+See [Raised to counter height](#raised-to-counter-height).
 
 **Nobody is in the room, the dry ice never slows, and the open door stays open.** The toddler
 is a place in the solved air, not a body in it, and the source is held at a steady rate for the
@@ -120,6 +125,14 @@ The first build's runs are not kept.
   8 ranks is scotch's, which splits the mesh differently from one call to the next, so the
   processor directories differ and a re-solve will not match the committed histories to the
   last digit.
+- **The raised run's generator.** From a clean copy, `./Allrun --setup-only raised 2` wrote
+  the solved raised run's mesh (points, faces, owner, neighbour, boundary, cell, face and point
+  zones and every set) and every initial field, the barometric p and p_rgh included, byte for
+  byte, `checkMesh` OK at 421,593 cells in two regions; its other dictionaries, its Allrun,
+  `hydrostatic.py` and `system/planesT0` are byte for byte too, but for the run's name in a
+  comment in `controlDict`. `--setup-only shut 2` wrote the repeat's mesh and initial fields byte
+  for byte, and `--setup-only shut` and `open` write every file the generator wrote before
+  `raised` was added, byte for byte. The processor directories differ, as above.
 - **The CO2 budget closes once diffusion through the source is counted.** At ten minutes the
   shut room holds 1,570 g more CO2 than at the start (whole room), against 1,500 g convected in
   at the cauldron. The open room holds 672 g more, after 1,500 g in, 876 g out through the
@@ -220,6 +233,120 @@ particular moment.
 0.6 m stands for a younger toddler, about a year old, a child sitting on the floor or a dog. A
 two-year-old's nose is nearer 0.75 m (CDC's median standing height at 24 months is 85-87 cm).
 
+## Raised to counter height
+
+A viewer asked whether it helps to keep the door shut and stand the cauldron higher. `raised`
+is `shut` with one thing changed: the table's top and the cauldron on it are 0.46 m higher.
+
+| | coffee table (`shut`) | counter-height table (`raised`) |
+|---|---|---|
+| table top | 0.42-0.45 m (18 in) | 0.88-0.91 m (36 in) |
+| cauldron | 0.45-0.75 m, its water surface 0.75 m up | 0.91-1.21 m, its water surface 1.21 m up |
+
+**The height.** A US kitchen counter is finished at 36 in (0.914 m), a 34.5 in base cabinet
+under a 1.5 in top; that is the trade's convention, found here only in secondary sources
+(cabinet makers on woodweb.com: "36 inches is the standard height the finished product should
+come to"). In the UK "the most common height is around 900mm" (EGGER's kitchen worktop height
+guide). The case takes 0.91 m, between the two. The table keeps its 1.0 × 0.5 m top, its place
+and its lack of legs, so it is a counter-height table standing where the coffee table stood, not
+a kitchen counter. The door is shut because the shut room was the worse one at the toddler's
+nose for most of the ten minutes (above).
+
+**What else changes: only the mesh round the new height.** `scripts/make_case.py raised`
+writes `shut`'s dictionaries with the table's and the cauldron's boxes moved and the y bands
+above 0.75 m re-spaced round them. The bands up to 0.75 m are `shut`'s exactly, so the floor
+layer and the toddler's nose height are meshed cell for cell alike; above them come 4 cells to
+the table (32.5 mm), 1 across its top, 10 up the cauldron (30 mm) and 15 to the door's head
+(55 mm, against `shut`'s 53 mm), then `shut`'s 7 to the ceiling and 8 above it outdoors. The
+background box has 525,616 cells against 484,120, and the room and outdoor air 421,593 against
+384,867. The physics, the source, the boundaries, the toddler's spot and every other input are
+`shut`'s; no other model change was needed, so this is a run of the same case and not a case
+of its own.
+
+**The coffee table, solved again beside it.** The solved `shut` and `open` runs behind the
+sections above were not kept, so `shut` was solved again side by side with `raised`, on the same
+machine at the same time, 2 ranks each, and the comparison below is between those two. The
+repeat comes back to the first solve: at the toddler's nose 2.3, 43.1 and 103.3 times normal air
+at 2, 5 and 10 minutes against 2.2, 43.3 and 103.0, ten-minute means 43.2 and 43.3. Its 10 s
+number differs from the first solve's by at most 2.6 (80.3 against 82.9 at 7 min 59 s), by up to
+13% before four minutes, while the number is still small (3.5 against 3.1 at 2 min 45 s), and
+within 6% from four minutes on, because it ran on 2 ranks where the first ran on 8, scotch
+splits the mesh differently on every call, and round-off differences grow in the falling gas's
+unsteady eddies; the room average at 0.6 m agrees to 0.5% from two minutes. That spread is the
+yardstick for the differences below. Its history is `results/shutAgain/history.csv`;
+`results/shut/` is still the first solve.
+
+| at the toddler's nose, × normal air | 1 min | 2 min | 3 min | 4 min | 5 min | 6 min | 7 min | 8 min | 9 min | 10 min | ten-minute average |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| coffee table (shut, solved again) | 1 | 2 | 11 | 24 | 43 | 57 | 70 | 80 | 93 | **103** | 43 |
+| counter-height table | 1 | 18 | 30 | 39 | 49 | 56 | 63 | 70 | 77 | **85** | 45 |
+
+From the higher rim the gas falls 1.2 m instead of 0.75 m before it reaches the floor, past the
+toddler's nose height on the way and mixing with room air as it goes, so the layer it builds is
+deeper and weaker. At two minutes its top already stands above 0.6 m at about 18 times normal
+air, while the coffee table's denser layer is still below the nose (2 times). The raised room
+stays higher at the nose until 5 min 48 s; then the coffee table's layer, richer at the floor,
+climbs past it, and at ten minutes the raised room is 18% lower (85 against 103). Averaged over
+the ten minutes the two are close, 45 raised and 43 on the coffee table. The cross-over is in the
+solved fields, not made by the 10 s mean: single writes first fall below at 333.75 s and stay
+below from 346.25 s. Near it the two numbers differ by less than the repeat's spread, so
+5 min 48 s is good to about ten seconds.
+
+The room's layers on the mid plane (`results/summary_raised.txt`, the room's cells in each height
+band away from the table) show the same thing:
+
+| on the mid plane, × normal air | floor to 0.1 m | 0.55-0.65 m | 0.7-0.8 m | 0.8-1.0 m | 1.0-1.4 m |
+|---|---:|---:|---:|---:|---:|
+| coffee table, 2 min | 61 | 3 | 1 | 1 | 1 |
+| counter-height table, 2 min | 38 | 21 | 10 | 3 | 1 |
+| coffee table, 10 min | 154 | 104 | 77 | 25 | 2 |
+| counter-height table, 10 min | 99 | 90 | 85 | 73 | 44 |
+
+So raising it moves the CO2 up the room rather than away from it. Near the floor, where the
+poison centres say the gas pools, the raised room is about two thirds of the coffee table's at ten
+minutes; from 0.7 to 1.4 m it is higher at two, five and ten minutes
+(`results/summary_raised.txt`).
+For a two-year-old, whose nose is nearer 0.75 m, raising the cauldron does not lower these band
+averages at any of those times; the toddler's own number was taken only at 0.6 m.
+
+Against the workplace limits above, at the toddler's nose (10 s mean):
+
+| limit | × normal air | coffee table: first reached | counter-height table: first reached |
+|---|---:|---:|---:|
+| OSHA PEL and NIOSH REL, 8-hour average | 12 | 3 min 18 s | 1 min 44 s |
+| UK HSE workplace limit, 15-minute average | 35 | 4 min 39 s | 3 min 26 s |
+| NIOSH short-term limit, 15 minutes | 71 | 7 min 3 s | 8 min 8 s |
+| NIOSH immediately dangerous to life or health | 94 | 9 min 8 s | not in ten minutes |
+
+The same caveats hold: these are workplace limits for healthy adults, set beside values at one
+spot in a model of one shut room with a steady source and nobody in it. Either way a cauldron of
+dry ice bubbling in a small shut room puts a lot of CO2 at a small child's height within minutes,
+and the same 1.5 kg goes into the same room. Raising it changes when and where the gas arrives,
+not how much there is; the poison centres' advice, never to use dry ice in an unventilated room,
+stands. The richest cells at 0.6 m, which sit in the gas running down the cauldron's sides on the
+coffee table (226-302 times normal air from two minutes on), are 83-136 times raised, where the
+cauldron stands wholly above 0.6 m.
+
+The repeat and the raised run checked as the first two did: both ended cleanly at 600 s, in
+9,464 and 10,838 steps and 21,133 s and 25,344 s of wall time on 2 ranks each; the whole room
+gained 1,570 and 1,569 g of CO2 against 1,500 g convected in, the rest the inlet's diffusion as
+above (0.059 and 0.058 g/s in the half model at 600 s), 0.6 g left through the leak and none
+through the shut door; and the outdoor air on the mid plane stayed still, a median of 0.00005 m/s
+and a largest of 0.0024 and 0.0023 m/s at 600 s.
+
+**What it cannot show,** beyond everything under [What it cannot](#what-it-cannot):
+
+- **A real counter.** The raised table is a 30 mm slab with nothing under it. A kitchen cabinet
+  solid to the floor would also block the gas's path along the floor beside it, and a counter
+  usually stands against a wall, which changes more than the height.
+- **Other heights and places.** One height, at the coffee table's spot; not the floor, a shelf or
+  a mantel, and the toddler still 0.5 m behind the table's edge.
+- **The door.** Both rooms have the front door shut; the open door was compared only with the
+  cauldron on the coffee table.
+- **Two runs on two meshes.** The meshes differ above 0.75 m; differences between the rooms
+  smaller than the repeat's spread (up to 2.6 times normal air in the 10 s number) are not
+  resolved, which is why the cross-over is given to about ten seconds.
+
 ## What the clip shows, and what it does not
 
 **It shows** the mid plane through the door and the cauldron, shut above and open below, from
@@ -229,6 +356,10 @@ the solved flow in the plane. The wall, the table, a drawn iron cauldron with lu
 in its mouth, the shut door and a toddler standing behind the table are drawn over it. Each
 panel has one number, the CO2 at the toddler's nose from the table above, in whole multiples:
 it ends at 103 shut and 38 open.
+
+A second clip shows `shut` solved again (the coffee table) above `raised` (the counter-height
+table) on the same scale, each panel with its own toddler's number: 103 and 85 at the end. It
+draws legs under both tables, which the model does not have.
 
 **It does not show** fog. Real dry ice makes white fog, water droplets condensed out of the room
 air by the cold gas, which evaporate as the gas warms and mixes while the CO2 goes on spreading
@@ -250,9 +381,9 @@ clip shows no exposure limits, and nothing off the mid plane.
 - **Wind.** The evening is still, at one temperature.
 - **Workplace limits for a child.** The limits are for adults over 15 minutes or 8 hours; the
   case sets its numbers beside them and does not turn them into a risk.
-- **One mesh, unsteady RANS,** k-omega SST with wall functions, a Schmidt number of 1, no mesh
-  or time-step study, one realization of each run. The toddler's number is four cells on one
-  plane, averaged over 10 s.
+- **One mesh for each table height, unsteady RANS,** k-omega SST with wall functions, a Schmidt
+  number of 1, no mesh or time-step study, one realization of each run but `shut`, solved twice.
+  The toddler's number is four cells on one plane, averaged over 10 s.
 
 ## Sources
 
@@ -274,6 +405,10 @@ clip shows no exposure limits, and nothing off the mid plane.
 - LABC Warranty, via Which? (2018), the UK's average new living room; NAHB, Spaces in New Homes
   (2019).
 - Lowe's, Union Products witch's cauldron, 16 in; CDC growth charts, stature for age.
+- Counter height: woodweb.com, standard height for base cabinets,
+  https://woodweb.com/knowledge_base/Standard_Height_for_Base_Cabinets.html; EGGER, kitchen
+  worktop height guide, https://www.egger.com/en/blog/kitchen-worktop-height-guide?country=GB
+  (both read 23 Oct 2026).
 
 ## Running it
 
@@ -284,19 +419,26 @@ You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Pyt
     ./Allrun shut                    # [nProcs], default 8
     ./Allrun open
     python3 scripts/extract_results.py runs results
+    ./Allrun shut 2; ./Allrun raised 2   # side by side, as the raised comparison was solved
+    python3 scripts/extract_results.py runs results raised
 
 `Allrun <run>` writes the run into `runs/<run>/` with `scripts/make_case.py`, then runs the
 Allrun written there: blockMesh, subsetMesh to the air, the cauldron's top, the leak, the
 furniture and the outer walls as patches, shut the door as a baffle, the zones, the initial
 fields, the barometric pressure in the cells and on the open faces, checkMesh and decomposePar.
-It then writes the t = 0 planes from the initial fields and solves 0-600 s, writing the planes
-every 1.25 s and the fields every 50 s (the last two kept). `./Allrun --setup-only <run>` stops
-before the t = 0 planes and the solve, in about 10 s. `./Allclean` removes the runs.
+`raised` is the same with the table and the cauldron moved up and the y bands above 0.75 m
+re-spaced. It then writes the t = 0 planes from the initial fields and solves 0-600 s, writing
+the planes every 1.25 s and the fields every 50 s (the last two kept). `./Allrun --setup-only
+<run>` stops before the t = 0 planes and the solve, in about 10 s. `./Allclean` removes the
+runs.
 
-The runs took 5,656 s (`shut`) and 8,440 s (`open`) of wall time on 8 ranks each, side by side.
-Each writes about 0.7 GB of planes. `results/` holds each run's history at every plane write
-(the budget, the room average and largest cell at 0.6 m, the toddler's number, the open
-doorway's flow and the outdoor air's speed) and the summary; no fields, meshes, planes or logs.
+The runs took 5,656 s (`shut`) and 8,440 s (`open`) of wall time on 8 ranks each, side by side,
+and `shut` again and `raised` 21,133 s and 25,344 s on 2 ranks each, side by side. Each writes
+about 0.7 GB of planes. `results/` holds each run's history at every plane write (the budget,
+the room average and largest cell at 0.6 m, the toddler's number, the open doorway's flow and
+the outdoor air's speed), `results/shutAgain/` and `results/raised/` for the second comparison,
+and the summaries `summary.txt` and `summary_raised.txt`; no fields, meshes, planes or logs.
 
 The case was built, checked and solved by an agent on our own machine, which caught the outdoor
-pressure fault above at packaging and solved both runs again before the clip was made.
+pressure fault above at packaging and solved both runs again before the clip was made. The raised
+run and the repeat of `shut` beside it were built and solved by an agent on the same machine.

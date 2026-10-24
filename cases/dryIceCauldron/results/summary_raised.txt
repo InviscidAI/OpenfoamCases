@@ -1,0 +1,60 @@
+dryIceCauldron: the cauldron raised against the coffee table, door shut (scripts/extract_results.py)
+shutAgain is ./Allrun shut solved again beside raised; shut is the committed results/shut
+
+CO2 as a multiple of normal air (425 ppm), at each whole minute
+  minute                                         1      2      3      4      5      6      7      8      9     10   ten-minute mean
+  shut (committed) at the toddler's nose, 10 s    1.0    2.2   11.8   23.5   43.3   57.1   70.2   83.0   92.5  103.0      43.3
+  shutAgain        at the toddler's nose, 10 s    1.0    2.3   11.0   23.7   43.1   57.2   70.1   80.5   92.7  103.3      43.2
+  raised           at the toddler's nose, 10 s    1.2   18.0   30.1   38.7   48.5   56.1   62.6   70.2   77.3   84.9      44.8
+  shut (committed) toddler, one write             1.0    2.7   10.0   27.3   43.3   57.6   70.6   82.6   92.8  104.0      44.1
+  shutAgain        toddler, one write             1.0    2.6    9.7   25.8   43.2   58.3   71.9   81.3   93.5  103.9      43.9
+  raised           toddler, one write             2.1   17.3   30.4   40.3   49.1   56.3   63.2   70.7   78.0   85.0      45.4
+  shut (committed) room average at 0.6 m          1.7    3.5   11.5   29.1   46.6   60.5   72.9   84.2   94.7  105.3      45.8
+  shutAgain        room average at 0.6 m          1.7    3.5   11.5   29.1   46.6   60.7   73.0   83.8   94.7  105.3      45.8
+  raised           room average at 0.6 m          5.6   19.6   32.3   41.2   49.8   58.0   65.5   72.5   79.7   87.1      46.8
+  raised - shutAgain (toddler, 10 s) changes sign after 30 s between: 347.50-348.75 s (raised below)
+  raised - shutAgain (toddler, one write) changes sign after 30 s between: 332.50-333.75 s (raised below), 336.25-337.50 s (raised above), 345.00-346.25 s (raised below)
+  raised - shutAgain (room average) changes sign after 30 s between: 332.50-333.75 s (raised below)
+  shutAgain toddler, 10 s: 12x (OSHA PEL and NIOSH REL, 8 h) first at 197.50 s = 3 min 17.50 s, 35x (UK HSE EH40, 15 min) first at 278.75 s = 4 min 38.75 s, 71x (NIOSH STEL, 15 min) first at 422.50 s = 7 min 2.50 s, 94x (NIOSH IDLH) first at 547.50 s = 9 min 7.50 s
+  shutAgain room average: 12x (OSHA PEL and NIOSH REL, 8 h) first at 182.50 s = 3 min 2.50 s, 35x (UK HSE EH40, 15 min) first at 260.00 s = 4 min 20.00 s, 71x (NIOSH STEL, 15 min) first at 410.00 s = 6 min 50.00 s, 94x (NIOSH IDLH) first at 537.50 s = 8 min 57.50 s
+  shutAgain: toddler (10 s) / room average over 60-600 s, median 0.94, range 0.36-1.41
+  shutAgain: largest cell at 0.6 m 226-302x over 120-600 s
+  raised toddler, 10 s: 12x (OSHA PEL and NIOSH REL, 8 h) first at 103.75 s = 1 min 43.75 s, 35x (UK HSE EH40, 15 min) first at 206.25 s = 3 min 26.25 s, 71x (NIOSH STEL, 15 min) first at 487.50 s = 8 min 7.50 s, 94x (NIOSH IDLH) never
+  raised room average: 12x (OSHA PEL and NIOSH REL, 8 h) first at 91.25 s = 1 min 31.25 s, 35x (UK HSE EH40, 15 min) first at 200.00 s = 3 min 20.00 s, 71x (NIOSH STEL, 15 min) first at 467.50 s = 7 min 47.50 s, 94x (NIOSH IDLH) never
+  raised: toddler (10 s) / room average over 60-600 s, median 0.96, range 0.21-1.22
+  raised: largest cell at 0.6 m 83-136x over 120-600 s
+  at 600 s raised/shutAgain (toddler, 10 s) 0.821; ten-minute means 44.80 and 43.16
+
+The room's layers on the mid plane: CO2 as a multiple of normal air, area-weighted over the
+room's cells in each height band, leaving out x 2.2-2.8 m round the table and the cauldron
+  y, m                 0-0.1   0.1-0.3   0.3-0.5 0.55-0.65   0.7-0.8     0.8-1     1-1.4     1.4-2     2-2.4
+  t 120 shutAgain        60.6      48.4      30.5       3.1       1.1       1.0       1.0       1.0       1.0
+  t 120 raised           38.1      32.2      28.9      20.9      10.4       3.4       1.0       1.0       1.0
+  t 300 shutAgain        98.5      87.9      78.4      44.1      13.7       1.7       1.0       1.0       1.0
+  t 300 raised           62.6      57.5      56.3      53.1      48.4      34.1       8.8       1.0       1.0
+  t 600 shutAgain       153.5     142.2     132.6     104.2      77.0      25.0       1.5       1.0       1.0
+  t 600 raised           99.4      94.2      92.4      89.8      85.4      73.4      43.8       1.9       1.0
+
+The shut run solved again against the committed shut run
+  toddler, 10 s: largest difference 2.63x; from 120 s largest relative 12.9%, at 600 s 103.35 against 103.01
+  room average at 0.6 m: largest difference 0.47x; from 120 s largest relative 0.5%, at 600 s 105.35 against 105.34
+
+The whole room's CO2 budget, g, twice the half model's (residual = gain - in - door - leak)
+  shutAgain t   60  gain   157.29  in   150.00  door  -0.00  leak  -0.06  residual   7.35 = 0.0612 g/s in the half model
+  shutAgain t  120  gain   314.27  in   300.00  door  -0.00  leak  -0.12  residual  14.39 = 0.0599 g/s in the half model
+  shutAgain t  300  gain   785.32  in   750.00  door  -0.00  leak  -0.30  residual  35.62 = 0.0594 g/s in the half model
+  shutAgain t  600  gain  1570.48  in  1500.00  door  -0.00  leak  -0.60  residual  71.09 = 0.0592 g/s in the half model
+  raised    t   60  gain   157.19  in   150.00  door  -0.00  leak  -0.06  residual   7.24 = 0.0604 g/s in the half model
+  raised    t  120  gain   314.02  in   300.00  door  -0.00  leak  -0.12  residual  14.14 = 0.0589 g/s in the half model
+  raised    t  300  gain   784.58  in   750.00  door  -0.00  leak  -0.30  residual  34.88 = 0.0581 g/s in the half model
+  raised    t  600  gain  1568.98  in  1500.00  door  -0.00  leak  -0.60  residual  69.58 = 0.0580 g/s in the half model
+
+The outdoor air on the mid plane (x < -0.15 m), speed, m/s
+  shutAgain t   30  median 0.000002  largest 0.0007
+  shutAgain t  120  median 0.000006  largest 0.0018
+  shutAgain t  300  median 0.000017  largest 0.0023
+  shutAgain t  600  median 0.000049  largest 0.0024
+  raised    t   30  median 0.000004  largest 0.0007
+  raised    t  120  median 0.000016  largest 0.0018
+  raised    t  300  median 0.000031  largest 0.0023
+  raised    t  600  median 0.000046  largest 0.0023

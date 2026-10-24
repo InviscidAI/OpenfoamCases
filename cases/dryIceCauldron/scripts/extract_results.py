@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
-"""Histories and the summary from the two solved runs: results/<run>/history.csv, summary.txt.
+"""Histories and the summaries from the solved runs: results/<run>/history.csv, summary*.txt.
 
-    python3 scripts/extract_results.py runs results
+    python3 scripts/extract_results.py runs results            # shut and open: summary.txt
+    python3 scripts/extract_results.py runs results raised     # raised and shut solved again
+                                                               # beside it: summary_raised.txt
+
+The second form reads runs/shut and runs/raised, solved side by side, writes their histories to
+results/shutAgain/ and results/raised/, and sets the shut run solved again beside the committed
+results/shut/history.csv, so it must be run after the first form's results are in place.
 
 Reads each run's per-step monitors (postProcessing/<name>/0/*.dat) and its mid plane
 (postProcessing/planes/<t>/mid.vtp, every 1.25 s from 0 to 600 s; the t = 0 plane is written
@@ -131,8 +137,103 @@ def write_csv(path, rows):
             f.write(",".join(f"{r[k]:.6g}" for k in keys) + "\n")
 
 
+def read_csv(path):
+    with open(path) as f:
+        keys = f.readline().strip().split(",")
+        a = np.loadtxt(f, delimiter=",", ndmin=2)
+    return {k: a[:, i] for i, k in enumerate(keys)}
+
+
+def mmss(s):
+    return f"{int(s // 60)} min {s % 60:.2f} s"
+
+
+def raised(runs, out):
+    """The cauldron on the coffee table (shut, solved again) against raised, both door shut."""
+    H = {"shutAgain": history(runs / "shut", "shut"), "raised": history(runs / "raised", "raised")}
+    for n in H:
+        write_csv(out / n / "history.csv", H[n])
+    col = {n: {k: np.array([r[k] for r in H[n]]) for k in H[n][0]} for n in H}
+    t = col["raised"]["t_s"]
+    first = read_csv(out / "shut" / "history.csv")
+    L = []
+    say = L.append
+    say("dryIceCauldron: the cauldron raised against the coffee table, door shut (scripts/extract_results.py)")
+    say("shutAgain is ./Allrun shut solved again beside raised; shut is the committed results/shut")
+    say("")
+    say("CO2 as a multiple of normal air (425 ppm), at each whole minute")
+    say("  minute                                   " + "".join(f"{m:7d}" for m in range(1, 11)) + "   ten-minute mean")
+    for what, key in (("at the toddler's nose, 10 s", "toddler_10s_x"), ("toddler, one write", "toddler_x"),
+                      ("room average at 0.6 m", "nose_zone_x")):
+        for n, c in (("shut (committed)", first), ("shutAgain", col["shutAgain"]), ("raised", col["raised"])):
+            v = c[key]
+            say(f"  {n:16s} {what:27s}" + "".join(f"{v[m * 48]:7.1f}" for m in range(1, 11)) + f"   {v.mean():7.1f}")
+    for what, key in (("toddler, 10 s", "toddler_10s_x"), ("toddler, one write", "toddler_x"),
+                      ("room average", "nose_zone_x")):
+        a, b = col["raised"][key], col["shutAgain"][key]
+        d = np.sign(a - b)
+        flips = [k for k in range(1, len(t)) if t[k] > 30 and d[k] != d[k - 1] and d[k] != 0]
+        say(f"  raised - shutAgain ({what}) changes sign after 30 s between: "
+            + ", ".join(f"{t[k - 1]:.2f}-{t[k]:.2f} s ({'raised above' if d[k] > 0 else 'raised below'})"
+                        for k in flips))
+    for n in ("shutAgain", "raised"):
+        for what, key in (("toddler, 10 s", "toddler_10s_x"), ("room average", "nose_zone_x")):
+            v = col[n][key]
+            say(f"  {n} {what}: " + ", ".join(
+                f"{lim}x ({lab}) first at {t[np.argmax(v >= lim)]:.2f} s = {mmss(t[np.argmax(v >= lim)])}"
+                if (v >= lim).any() else f"{lim}x ({lab}) never" for lab, lim in LIMITS))
+        r = col[n]["toddler_10s_x"][48:] / col[n]["nose_zone_x"][48:]
+        say(f"  {n}: toddler (10 s) / room average over 60-600 s, median {np.median(r):.2f}, "
+            f"range {r.min():.2f}-{r.max():.2f}")
+        say(f"  {n}: largest cell at 0.6 m {col[n]['nose_zone_max_x'][96:].min():.0f}-"
+            f"{col[n]['nose_zone_max_x'][96:].max():.0f}x over 120-600 s")
+    a, b = col["raised"]["toddler_10s_x"], col["shutAgain"]["toddler_10s_x"]
+    say(f"  at 600 s raised/shutAgain (toddler, 10 s) {a[-1] / b[-1]:.3f}; ten-minute means {a.mean():.2f} "
+        f"and {b.mean():.2f}")
+    say("")
+    say("The room's layers on the mid plane: CO2 as a multiple of normal air, area-weighted over the")
+    say("room's cells in each height band, leaving out x 2.2-2.8 m round the table and the cauldron")
+    bands = ((0, 0.1), (0.1, 0.3), (0.3, 0.5), (0.55, 0.65), (0.7, 0.8), (0.8, 1.0), (1.0, 1.4), (1.4, 2.0), (2.0, 2.4))
+    say("  y, m            " + "".join(f"{f'{y0:g}-{y1:g}':>10s}" for y0, y1 in bands))
+    for s in (120, 300, 600):
+        for n, run in (("shutAgain", "shut"), ("raised", "raised")):
+            mp = pv.read(runs / run / f"postProcessing/planes/{s:g}/mid.vtp")
+            cc = mp.cell_centers().points
+            X = plane_multiple(mp)
+            a = np.asarray(mp.compute_cell_sizes().cell_data["Area"])
+            room = (cc[:, 0] > 0) & (cc[:, 1] < 2.4) & ((cc[:, 0] < 2.2) | (cc[:, 0] > 2.8))
+            v = [np.average(X[k], weights=a[k]) for k in
+                 (room & (cc[:, 1] >= y0) & (cc[:, 1] < y1) for y0, y1 in bands)]
+            say(f"  t {s:3d} {n:9s}  " + "".join(f"{x:10.1f}" for x in v))
+    say("")
+    say("The shut run solved again against the committed shut run")
+    for what, key in (("toddler, 10 s", "toddler_10s_x"), ("room average at 0.6 m", "nose_zone_x")):
+        a, b = col["shutAgain"][key], first[key]
+        late = t >= 120
+        say(f"  {what}: largest difference {np.abs(a - b).max():.2f}x; from 120 s largest relative "
+            f"{100 * (np.abs(a - b)[late] / b[late]).max():.1f}%, at 600 s {a[-1]:.2f} against {b[-1]:.2f}")
+    say("")
+    say("The whole room's CO2 budget, g, twice the half model's (residual = gain - in - door - leak)")
+    for n in ("shutAgain", "raised"):
+        for s in (60, 120, 300, 600):
+            r = H[n][int(s * 0.8)]
+            say(f"  {n:9s} t {s:4d}  gain {2 * r['gain_g']:8.2f}  in {2 * r['in_g']:8.2f}  door {2 * r['door_g']:6.2f}  "
+                f"leak {2 * r['leak_g']:6.2f}  residual {2 * r['residual_g']:6.2f} = {r['residual_g'] / s:.4f} g/s "
+                f"in the half model")
+    say("")
+    say("The outdoor air on the mid plane (x < -0.15 m), speed, m/s")
+    for n in ("shutAgain", "raised"):
+        for s in (30, 120, 300, 600):
+            r = H[n][int(s * 0.8)]
+            say(f"  {n:9s} t {s:4d}  median {r['outdoor_speed_median_m_s']:.6f}  largest {r['outdoor_speed_max_m_s']:.4f}")
+    (out / "summary_raised.txt").write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+
+
 def main():
     runs, out = Path(sys.argv[1]), Path(sys.argv[2])
+    if sys.argv[3:] == ["raised"]:
+        return raised(runs, out)
     H = {}
     for name in ("shut", "open"):
         H[name] = history(runs / name, name)
