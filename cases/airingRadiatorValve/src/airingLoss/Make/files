@@ -1,0 +1,7 @@
+wallLayer.C
+airingBudget.C
+trvRadiator.C
+infiltration.C
+windowRadiation.C
+
+LIB = $(FOAM_USER_LIBBIN)/libairingLoss

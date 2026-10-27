@@ -1,0 +1,5 @@
+#!/bin/bash
+# Remove every run and the library's build files; the committed inputs and results stay.
+# The compiled library in $FOAM_USER_LIBBIN stays.
+cd "${0%/*}" || exit 1
+rm -rf runs scripts/__pycache__ src/*/lnInclude src/*/Make/linux* src/*/Make/darwin*

@@ -1,0 +1,47 @@
+airingRadiatorValve: figures from the two runs (scripts/extract_results.py)
+
+off: 38854 steps to t = 900 s, largest step 0.0428 s; history.csv 360 rows every 2.5 s
+  heat budget from 30 s: heat lost against the boundary's loss within 0.073% at every step (at 900 s +0.052%)
+     t  room air  radiator  water  valve  head   body  opening  glass  wall back  leaks  radiation   heat lost  boundary  walls stored  radiator
+     s       C        W       W   /nominal   C      C       W      W       W       W       W         Wh        Wh       Wh          Wh
+  30.0    16.29    611.4     0.0  0.000  19.76  50.98   4257.9    0.0     365.8   91.9     246.4      40.47     40.46      -7.76       4.84
+  60.0    13.50    655.8     0.0  0.000  19.42  50.13   3659.0    0.0     365.8   77.0     246.5      78.25     78.21     -18.85      10.13
+ 150.0     9.74    680.1     0.0  0.000  18.04  47.41   2284.2    0.0     365.8   56.3     248.3     161.04    160.93     -55.11      27.10
+ 300.0     8.51    608.9     0.0  0.000  16.04  43.09   1897.2    0.0     365.8   49.4     250.0     263.33    263.16    -120.61      54.07
+ 450.0    13.74    513.2   648.3  1.233  14.73  44.02      0.0   49.7     365.8   79.6     250.3     283.27    283.09    -160.80      77.07
+ 600.0    16.09    480.9   605.2  1.233  14.42  44.89      0.0   56.4     365.8   93.3     250.1     304.36    304.18    -180.82      97.66
+ 900.0    17.88    474.9   577.3  1.233  14.89  46.40      0.0   56.5     365.8  103.7     249.8     348.12    347.94    -199.85     137.21
+  room's air replaced by 300 s: 92.4%; gross inflow 0-300 s 0.233 kg/s on average
+  room's mean air: lowest 8.51 C at 300 s; over the last 225 s rising +0.293 K a minute
+  radiator: 54.1 Wh by 300 s, 137.2 Wh by 900 s; water 0.0 and 103.8 Wh; body 51.75 C at 0 s, 43.09 C at 300 s, 46.40 C at 900 s
+  radiator's output, W: 0.006 s 546, 30 s 611, 60 s 656, 120 s 685, 150 s 680, 200 s 661, 300 s 609; least over 0-300 s 545, most 685
+  valve: 0 changes of direction; at its stop (1.233) from 300.0 s; head 16.04 C at 300 s, 14.89 C at 900 s
+  over 0-900 s: window wall's back 91.44 Wh (mean 365.8 W, 365.8-365.8), leaks 20.02 Wh, opening 227.37 Wh, glass 9.11 Wh, rooms next door +0.0009 Wh
+  drawn out of the walls, ceiling and floor: 120.6 Wh by 300 s, 199.8 Wh by 900 s
+
+on: 41675 steps to t = 900 s, largest step 0.0428 s; history.csv 360 rows every 2.5 s
+  heat budget from 30 s: heat lost against the boundary's loss within 0.073% at every step (at 900 s +0.047%)
+     t  room air  radiator  water  valve  head   body  opening  glass  wall back  leaks  radiation   heat lost  boundary  walls stored  radiator
+     s       C        W       W   /nominal   C      C       W      W       W       W       W         Wh        Wh       Wh          Wh
+  30.0    16.29    628.9   626.7  1.118  19.76  51.75   4262.8    0.0     365.8   92.0     246.4      40.49     40.48      -7.74       4.91
+  60.0    13.53    692.9   691.1  1.233  19.43  51.75   3660.8    0.0     365.8   77.1     246.5      78.30     78.26     -18.78      10.43
+ 150.0     9.84    779.6   767.2  1.233  18.06  51.71   2267.8    0.0     365.8   56.8     248.4     161.70    161.58     -54.51      29.11
+ 300.0     8.80    802.4   788.5  1.233  16.08  51.62   2108.8    0.0     365.8   51.0     249.8     265.82    265.67    -117.25      62.22
+ 450.0    14.46    667.7   671.4  1.233  14.84  51.60      0.0   48.5     365.8   83.8     249.8     286.21    286.04    -154.32      92.37
+ 600.0    16.96    611.5   621.1  1.233  14.61  51.65      0.0   64.9     365.8   98.2     249.4     307.82    307.65    -170.11     118.87
+ 900.0    18.74    574.6   586.3  1.233  15.20  51.80      0.0   60.7     365.8  108.6     248.9     352.51    352.34    -180.51     167.90
+  room's air replaced by 300 s: 92.5%; gross inflow 0-300 s 0.232 kg/s on average
+  room's mean air: lowest 8.80 C at 300 s; over the last 225 s rising +0.282 K a minute
+  radiator: 62.2 Wh by 300 s, 167.9 Wh by 900 s; water 61.4 and 168.2 Wh; body 51.75 C at 0 s, 51.62 C at 300 s, 51.80 C at 900 s
+  radiator's output, W: 0.006 s 546, 30 s 629, 60 s 693, 120 s 764, 150 s 780, 200 s 792, 300 s 802; least over 0-300 s 546, most 802
+  valve: 4 changes of direction; at its stop (1.233) from 52.4 s; head 16.08 C at 300 s, 15.20 C at 900 s
+  over 0-900 s: window wall's back 91.44 Wh (mean 365.8 W, 365.8-365.8), leaks 20.83 Wh, opening 229.82 Wh, glass 10.25 Wh, rooms next door +0.0008 Wh
+  drawn out of the walls, ceiling and floor: 117.2 Wh by 300 s, 180.5 Wh by 900 s
+
+on less off
+    30 s: heat lost +0.02 Wh (40.49 against 40.47, +0.04%); radiator +0.07 Wh; water +4.88 Wh; room air +0.01 K
+   150 s: heat lost +0.66 Wh (161.70 against 161.04, +0.41%); radiator +2.01 Wh; water +28.86 Wh; room air +0.10 K
+   300 s: heat lost +2.49 Wh (265.82 against 263.33, +0.95%); radiator +8.15 Wh; water +61.41 Wh; room air +0.29 K
+   600 s: heat lost +3.46 Wh (307.82 against 304.36, +1.14%); radiator +21.21 Wh; water +63.40 Wh; room air +0.87 K
+   900 s: heat lost +4.38 Wh (352.51 against 348.12, +1.26%); radiator +30.69 Wh; water +64.39 Wh; room air +0.86 K
+  where the water's extra heat by 900 s is (Wh): water +64.39 = lost +4.38 + room's air +6.97 + walls +19.34 + radiator body +33.70 (sum +64.39; the rest is the rooms next door's)

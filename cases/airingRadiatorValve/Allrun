@@ -1,0 +1,75 @@
+#!/bin/bash
+# Airing a heated room in winter with the radiator's thermostatic valve turned off while the
+# window is open, or left on: windowAiring's room, its window wide open for 5 min and then shut
+# for 10, on a still 0 C morning, 0-900 s.
+#
+#   ./Allrun off|on [nProcs]
+#   ./Allrun --setup-only off|on [nProcs]
+#
+# off      the valve held shut from 0 to 300 s, while the window is open, and set back to its
+#          setting (3, 20 C) as the window shuts.
+# on       the valve left at its setting throughout.
+# nProcs   MPI ranks, default 16 (both solved runs used 16).
+# --setup-only compiles the library if needed, writes the run, meshes it, sets its zones and
+#          fields, checks it, writes the t = 0 planes and decomposes it, and stops before the solve.
+#
+# The radiator behind its valve, the leaks, the radiation onto the window wall, the wall layers
+# and the heat budget are src/airingLoss, compiled into $FOAM_USER_LIBBIN as libairingLoss.so.
+# scripts/make_case.py writes the run into runs/<run>/ with ../windowAiring/scripts/make_case.py's
+# open run underneath; the Allrun it writes there meshes and sets up the run. The solve has two
+# stages: the window open, 0-300 s, then, after scripts/close_window.py has cut the mesh down to
+# the room with the glass in the opening, the window shut, 300-900 s. scripts/extract_results.py
+# then writes results/<run>/history.csv and results/summary.txt from both runs' monitors.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v blockMesh > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/airingLoss" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-16}
+case "$run" in
+  off|on) ;;
+  *) echo "usage: $0 [--setup-only] off|on [nProcs]" >&2; exit 2 ;;
+esac
+
+# the library (wmake does nothing if it is up to date)
+wmake libso src/airingLoss > log.wmake 2>&1 || { echo "src/airingLoss did not compile: log.wmake" >&2; exit 1; }
+test -f "$FOAM_USER_LIBBIN/libairingLoss.so"
+
+r=runs/$run
+rm -rf "$r"; mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(cd "$r" && ./Allrun)
+grep -E '^ +cells:|Mesh OK|Failed' "$r/log.checkMesh"
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+here=$PWD
+solve() {  # solve <stage>: buoyantPimpleFoam on nProcs ranks, rank 0's output to log.buoyantPimpleFoam.<stage>
+  (cd "$r" && mpirun -np "$nproc" "$here/scripts/rank0log.sh" ".$1" > "log.mpirun.$1" 2>&1)
+  grep -q '^End' "$r/log.buoyantPimpleFoam.$1" || { echo "$r: the $1 stage did not end" >&2; exit 1; }
+}
+
+# ---- the window open, 0-300 s
+solve open
+test -f "$r/postProcessing/radiator/state_300"
+
+# ---- the window shut at 300 s: the room alone, the glass in the opening
+(
+  cd "$r"
+  reconstructPar -time 300 -fileHandler collated > log.reconstructPar.switch 2>&1
+  python3 "$here/scripts/close_window.py" . > log.python.switch 2>&1
+  rm -rf processors*
+  sed -i -E 's/^endTime[[:space:]]+[^;]+;/endTime 900;/' system/controlDict
+  decomposePar -time 300 -fileHandler collated > log.decomposePar.switch 2>&1
+  for d in [0-9]*; do
+    if [ -d "$d" ] && [ "$d" != 0 ] && [ "$d" != 300 ]; then rm -rf "$d"; fi
+  done
+)
+
+# ---- the window shut, 300-900 s
+solve shut
+echo "solved: $r"
+[ -d runs/off/postProcessing/budget ] && [ -d runs/on/postProcessing/budget ] \
+  && python3 scripts/extract_results.py runs results || true

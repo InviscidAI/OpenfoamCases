@@ -35,6 +35,11 @@ An attic room of the same floor, aired through a roof window turned wide open, a
 room's wide-open window rebuilt with the barometric outdoor boundary, is
 [`roofWindowAiring`](../roofWindowAiring).
 
+The same room aired wide open for five minutes and then shut, its radiator sized for the room and
+behind a thermostatic valve that is turned off while the window is open or left on, with walls
+that store heat, is [`airingRadiatorValve`](../airingRadiatorValve). It asks what leaving the
+valve on costs.
+
 ## The room
 
 | | value | from |

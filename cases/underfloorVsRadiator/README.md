@@ -188,7 +188,8 @@ head-to-ankle numbers are means over the 3-D occupied zone, not over the section
   watts, as a real radiator does at normal water temperatures, may stratify more: a hotter
   plume makes a warmer layer under the ceiling, and cold walls add their own cold air along
   the floor. The 0.3 °C here is for this load and these walls, not a measure of the two
-  systems in general.
+  systems in general. [`airingRadiatorValve`](../airingRadiatorValve) has a radiator sized for
+  this room, with the window wall's conduction to outside and the leaks it is sized for.
 - **Radiation.** A warm floor gives about half its heat as radiation, and a radiator some. Here
   every watt leaves by convection: the glass loses 35-37 W instead of the 57 W
   radiatorUnderWindow's section loses at 20 °C, and the floor runs about 2 K above the air
