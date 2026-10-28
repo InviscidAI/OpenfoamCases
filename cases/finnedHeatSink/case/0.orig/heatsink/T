@@ -1,0 +1,22 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object T; }
+dimensions [0 0 0 1 0 0 0];
+internalField uniform 298.15;
+boundaryField
+{
+    #includeEtc "caseDicts/setConstraintTypes"
+    bottom { type zeroGradient; }
+    cpu
+    {
+        // 15 W over the 30 x 30 mm CPU contact, 16667 W/m2; the half model carries 7.5 W.
+        type externalWallHeatFluxTemperature;
+        mode flux;
+        q uniform 16666.667;
+        kappaMethod solidThermo;
+        value $internalField;
+    }
+    heatsink_to_air
+    {
+        type compressible::turbulentTemperatureCoupledBaffleMixed;
+        Tnbr T; kappaMethod solidThermo; value $internalField;
+    }
+}

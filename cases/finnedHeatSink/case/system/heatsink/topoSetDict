@@ -1,0 +1,10 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+// The CPU contact: a 30 x 30 mm square centred under the base (15 mm of it in the half model).
+actions
+(
+    {
+        name cpuSet; type faceSet; action new;
+        source boxToFace;
+        sourceInfo { box (0.0099 -0.001 -0.0001) (0.0401 0.0151 0.0001); }
+    }
+);

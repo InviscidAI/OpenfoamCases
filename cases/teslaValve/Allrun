@@ -1,0 +1,42 @@
+#!/bin/bash
+# ./Allrun forward|reverse [nProcs]
+#
+# forward  the easy direction: water comes in at the right end and leaves at the left
+# reverse  the blocking direction: in at the left, out at the right, into the loops
+# nProcs   MPI ranks, default 2 (the mesh is 32k cells)
+#
+# Writes runs/<direction>/, meshes it, solves 0-0.5 s from rest and prints the
+# pressure drop of every direction solved so far, and the diodicity once both are.
+set -euo pipefail
+cd "$(dirname "$0")"
+dir=${1:-}
+np=${2:-2}
+case "$dir" in
+  forward) up=right; down=left;  Uin="(-0.5 0 0)" ;;
+  reverse) up=left;  down=right; Uin="(0.5 0 0)" ;;
+  *) echo "usage: ./Allrun forward|reverse [nProcs]" >&2; exit 2 ;;
+esac
+
+run=runs/$dir
+rm -rf "$run"; mkdir -p "$run"
+cp -r template/constant template/system "$run"/
+cp -r template/0.orig "$run"/0
+sed -i -e "s/@UPSTREAM@/$up/" -e "s/@DOWNSTREAM@/$down/" -e "s/@UIN@/$Uin/" "$run"/0/U "$run"/0/p
+./Allmesh "$run"
+
+cd "$run"
+start=$(date +%s)
+if [ "$np" -gt 1 ]; then
+    foamDictionary system/decomposeParDict -entry numberOfSubdomains -set "$np" > /dev/null 2>&1
+    decomposePar > log.decomposePar 2>&1
+    mpirun -np "$np" ${FOAM_MPIRUN_FLAGS:-} pimpleFoam -parallel > log.pimpleFoam 2>&1
+    reconstructPar > log.reconstructPar 2>&1
+    rm -rf processor*
+else
+    pimpleFoam > log.pimpleFoam 2>&1
+fi
+end=$(date +%s)
+grep -q '^End' log.pimpleFoam || { echo "pimpleFoam did not finish: $run/log.pimpleFoam" >&2; exit 1; }
+echo "$dir: solved to $(foamListTimes -latestTime 2>/dev/null | tail -1) s in $((end - start)) s on $np rank(s)"
+cd ../..
+python3 postprocess.py

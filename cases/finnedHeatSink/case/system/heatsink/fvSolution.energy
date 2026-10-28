@@ -1,0 +1,8 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvSolution; }
+// Stage 2: the sink's conduction solved to convergence every iteration.
+solvers
+{
+    h { solver PCG; preconditioner DIC; tolerance 1e-12; relTol 0; }
+}
+SIMPLE { nNonOrthogonalCorrectors 0; }
+relaxationFactors { equations { h 1; } }

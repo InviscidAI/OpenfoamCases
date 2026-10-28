@@ -1,0 +1,6 @@
+run/
+log.*
+__pycache__/
+*.pyc
+# Built by scripts/build_airframe.py and scripts/hand_estimate.py
+geometry/

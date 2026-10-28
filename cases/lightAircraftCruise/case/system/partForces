@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| lightAircraftCruise: half model, steady incompressible RANS                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      partForces;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+force_wing
+{
+    type            forces;
+    libs            (forces);
+    writeControl    timeStep;
+    writeInterval   1;
+    log             false;
+    patches         (wing);
+    rho             rhoInf;
+    rhoInf          1.225;
+    CofR            (3.2 0 0);
+}
+
+force_fuselage
+{
+    type            forces;
+    libs            (forces);
+    writeControl    timeStep;
+    writeInterval   1;
+    log             false;
+    patches         (fuselage);
+    rho             rhoInf;
+    rhoInf          1.225;
+    CofR            (3.2 0 0);
+}
+
+force_tailplane
+{
+    type            forces;
+    libs            (forces);
+    writeControl    timeStep;
+    writeInterval   1;
+    log             false;
+    patches         (tailplane);
+    rho             rhoInf;
+    rhoInf          1.225;
+    CofR            (3.2 0 0);
+}
+
+force_fin
+{
+    type            forces;
+    libs            (forces);
+    writeControl    timeStep;
+    writeInterval   1;
+    log             false;
+    patches         (fin);
+    rho             rhoInf;
+    rhoInf          1.225;
+    CofR            (3.2 0 0);
+}
+

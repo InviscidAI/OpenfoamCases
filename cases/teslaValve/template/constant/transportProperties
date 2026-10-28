@@ -1,0 +1,9 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM                                        |
+\*---------------------------------------------------------------------------*/
+FoamFile { version 2.0; format ascii; class dictionary; object transportProperties; }
+
+// water at about 20 C
+transportModel  Newtonian;
+nu              1e-06;

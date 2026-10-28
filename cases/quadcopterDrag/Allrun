@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# The quadcopter airframe in forward flight: mesh, solve, and print the drag per part.
+#
+#   ./Allrun             # one rank per physical core, unless NPROCS says otherwise
+#   NPROCS=8 ./Allrun
+#
+# ./Allmesh builds the airframe and meshes run/; then 2000 SIMPLE iterations of
+# simpleFoam on NPROCS ranks, and scripts/forces.py averages the forces over the last 1000.
+# Wall times go to run/wallclock.txt.
+set -euo pipefail
+cd "$(dirname "$0")"
+# One rank per physical core: Open MPI refuses more ranks than cores, and nproc counts
+# hardware threads.
+cores=$(lscpu -p=SOCKET,CORE 2>/dev/null | grep -v '^#' | sort -u | wc -l)
+(( cores >= 1 && cores <= $(nproc) )) || cores=$(nproc)
+export NPROCS=${NPROCS:-$cores}
+./Allmesh
+python3 scripts/hand_estimate.py > log.hand_estimate
+cd run
+decomposePar -force > log.decomposePar 2>&1
+start=$(date +%s)
+mpirun -np "$NPROCS" simpleFoam -parallel > log.simpleFoam 2>&1
+end=$(date +%s)
+printf 'solve %s s on %s ranks\n' "$((end-start))" "$NPROCS" >> wallclock.txt
+reconstructPar -latestTime > log.reconstructPar 2>&1
+rm -rf processor*
+grep -E 'patch .* y\+' log.simpleFoam | tail -5 || true
+cat wallclock.txt
+cd ..
+python3 scripts/forces.py run
+echo
+cat log.hand_estimate

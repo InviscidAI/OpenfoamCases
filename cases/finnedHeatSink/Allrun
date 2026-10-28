@@ -1,0 +1,38 @@
+#!/bin/bash
+# ./Allrun [base|fine|tight]       NP=<cores> ./Allrun to change the default of 4
+# base is the run of record. fine and tight are the checks the README reports.
+# Meshes runs/<variant>/, then solves it steady with chtMultiRegionSimpleFoam in two stages:
+#   1. flow and heat together, to the first number in runs/<variant>/stages;
+#   2. the flow frozen and the heat alone solved to convergence, to the second.
+# Then prints the numbers with scripts/postprocess.py and the hand estimate.
+set -euo pipefail
+cd "$(dirname "$0")"
+variant=${1:-base}
+np=${NP:-4}
+./Allmesh "$variant"
+cd "runs/$variant"
+read -r flow_end energy_end < stages
+solve() {
+    if [ "$np" -gt 1 ]; then
+        mpirun -np "$np" chtMultiRegionSimpleFoam -parallel > "$1" 2>&1
+    else
+        chtMultiRegionSimpleFoam > "$1" 2>&1
+    fi
+}
+start=$(date +%s)
+[ "$np" -gt 1 ] && decomposePar -allRegions > log.decomposePar 2>&1
+solve log.chtMultiRegionSimpleFoam.flow
+mid=$(date +%s)
+cp system/air/fvSolution.energy system/air/fvSolution
+cp system/heatsink/fvSolution.energy system/heatsink/fvSolution
+foamDictionary system/controlDict -entry endTime -set "$energy_end" > /dev/null
+solve log.chtMultiRegionSimpleFoam.energy
+end=$(date +%s)
+if [ "$np" -gt 1 ]; then
+    reconstructPar -allRegions -latestTime > log.reconstructPar 2>&1
+    rm -rf processor*
+fi
+printf "solver wall time %s s on %s cores (flow and heat %s s, heat alone %s s)\n" \
+    "$((end-start))" "$np" "$((mid-start))" "$((end-mid))" | tee wallclock.txt
+python3 ../../scripts/postprocess.py . | tee results.txt
+python3 ../../scripts/hand_estimate.py . | tee hand_estimate.txt

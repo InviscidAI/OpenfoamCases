@@ -1,0 +1,22 @@
+#!/bin/bash
+# ./Allmesh <caseDir> [cell size in mm, default 0.30]
+# Builds the valve with gmsh (build_valve.py), converts it, names the patches and
+# checks the mesh. The mesh is the same for both directions.
+set -euo pipefail
+cd "$(dirname "$0")"
+here=$(pwd)
+caseDir=${1:?usage: ./Allmesh <caseDir> [cell size in mm]}
+h=${2:-0.30}
+rm -rf "$caseDir/constant/polyMesh" "$caseDir/valve.msh"
+python3 build_valve.py "$h" "$caseDir/valve.msh" > "$caseDir/log.build_valve" 2>&1
+cd "$caseDir"
+gmshToFoam valve.msh > log.gmshToFoam 2>&1
+rm -f valve.msh
+b=constant/polyMesh/boundary
+foamDictionary $b -entry entry0/walls/type             -set wall  > /dev/null 2>&1
+foamDictionary $b -entry entry0/walls/inGroups         -set '1(wall)' > /dev/null 2>&1
+foamDictionary $b -entry entry0/frontAndBack/type      -set empty > /dev/null 2>&1
+foamDictionary $b -entry entry0/frontAndBack/inGroups  -set '1(empty)' > /dev/null 2>&1
+checkMesh > log.checkMesh 2>&1
+grep -q '^Mesh OK' log.checkMesh || { echo "checkMesh failed: $caseDir/log.checkMesh" >&2; exit 1; }
+echo "mesh: $(grep -m1 '    cells:' log.checkMesh | awk '{print $2}') cells, checkMesh OK"

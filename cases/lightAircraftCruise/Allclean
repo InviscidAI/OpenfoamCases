@@ -1,0 +1,4 @@
+#!/bin/bash
+# Remove the runs and the generated surfaces; the scripts and the case template stay.
+cd "${0%/*}" || exit 1
+rm -rf runs geometry scripts/__pycache__

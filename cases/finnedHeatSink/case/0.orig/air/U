@@ -1,0 +1,11 @@
+FoamFile { version 2.0; format ascii; class volVectorField; object U; }
+dimensions [0 1 -1 0 0 0 0];
+internalField uniform (2 0 0);
+boundaryField
+{
+    #includeEtc "caseDicts/setConstraintTypes"
+    inlet  { type fixedValue; value uniform (2 0 0); }
+    outlet { type inletOutlet; inletValue uniform (0 0 0); value $internalField; }
+    bottom { type noSlip; }
+    air_to_heatsink { type noSlip; }
+}

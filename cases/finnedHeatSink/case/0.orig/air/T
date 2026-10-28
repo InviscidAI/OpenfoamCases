@@ -1,0 +1,15 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object T; }
+dimensions [0 0 0 1 0 0 0];
+internalField uniform 298.15;
+boundaryField
+{
+    #includeEtc "caseDicts/setConstraintTypes"
+    inlet  { type fixedValue; value uniform 298.15; }
+    outlet { type inletOutlet; inletValue uniform 298.15; value $internalField; }
+    bottom { type zeroGradient; }
+    air_to_heatsink
+    {
+        type compressible::turbulentTemperatureCoupledBaffleMixed;
+        Tnbr T; kappaMethod fluidThermo; value $internalField;
+    }
+}

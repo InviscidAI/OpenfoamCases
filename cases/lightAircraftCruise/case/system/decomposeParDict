@@ -1,0 +1,15 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| lightAircraftCruise: half model, steady incompressible RANS                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      decomposeParDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// numberOfSubdomains is set by Allrun.
+numberOfSubdomains 4;
+method          scotch;

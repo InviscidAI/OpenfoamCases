@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Build the airframe (if geometry/ has none), write run/ and mesh it.
+#
+#   ./Allmesh            # one rank per physical core, unless NPROCS says otherwise
+#   NPROCS=8 ./Allmesh
+#
+# snappyHexMesh runs in parallel and the mesh is put back together, so the fields in run/0,
+# written with regular-expression patch names, decompose cleanly onto the new wall patches.
+set -euo pipefail
+cd "$(dirname "$0")"
+# One rank per physical core: Open MPI refuses more ranks than cores, and nproc counts
+# hardware threads.
+cores=$(lscpu -p=SOCKET,CORE 2>/dev/null | grep -v '^#' | sort -u | wc -l)
+(( cores >= 1 && cores <= $(nproc) )) || cores=$(nproc)
+NPROCS=${NPROCS:-$cores}
+[[ -f geometry/airframe.stl && -f geometry/geometry.json ]] || python3 scripts/build_airframe.py | tee log.build_airframe
+python3 scripts/make_case.py "$NPROCS"
+cd run
+start=$(date +%s)
+blockMesh > log.blockMesh 2>&1
+surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+decomposePar -force > log.decomposePar.mesh 2>&1
+mpirun -np "$NPROCS" snappyHexMesh -parallel -overwrite > log.snappyHexMesh 2>&1
+reconstructParMesh -constant > log.reconstructParMesh 2>&1
+rm -rf processor*
+checkMesh > log.checkMesh 2>&1
+grep -q 'Mesh OK' log.checkMesh || { echo "checkMesh failed: see run/log.checkMesh"; exit 1; }
+end=$(date +%s)
+printf 'mesh %s s on %s ranks\n' "$((end-start))" "$NPROCS" > wallclock.txt
+grep -E '^ *cells:' log.checkMesh | head -1

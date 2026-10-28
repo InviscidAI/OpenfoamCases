@@ -1,0 +1,21 @@
+#!/bin/bash
+# ./Allmesh [base|fine|tight]
+# Writes runs/<variant>/ from case/ with scripts/make_case.py, builds the box with blockMesh,
+# marks the sink's cells with topoSet, splits them into the air and heatsink regions and cuts
+# the CPU contact out of the sink's underside as its own patch.
+set -euo pipefail
+cd "$(dirname "$0")"
+variant=${1:-base}
+python3 scripts/make_case.py "$variant"
+cd "runs/$variant"
+blockMesh > log.blockMesh 2>&1
+topoSet > log.topoSet 2>&1
+splitMeshRegions -cellZonesOnly -overwrite > log.splitMeshRegions 2>&1
+topoSet -region heatsink > log.topoSet.heatsink 2>&1
+createPatch -region heatsink -overwrite > log.createPatch 2>&1
+rm -rf 0 constant/cellToRegion
+cp -r 0.orig 0
+for r in air heatsink; do
+    checkMesh -region $r > log.checkMesh.$r 2>&1
+    echo "$r: $(grep -m1 'cells:' log.checkMesh.$r | awk '{print $2}') cells, $(grep -c 'Mesh OK' log.checkMesh.$r) Mesh OK"
+done

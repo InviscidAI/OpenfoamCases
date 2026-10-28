@@ -1,0 +1,160 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| lightAircraftCruise: half model, steady incompressible RANS                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// The angle of attack, inflow vector and lift and drag directions; written by
+// scripts/flight.py for each run.
+#include "flightCondition"
+
+application     simpleFoam;
+startFrom       latestTime;
+startTime       0;
+stopAt          endTime;
+endTime         500;
+deltaT          1;
+writeControl    timeStep;
+writeInterval   500;
+purgeWrite      0;
+writeFormat     binary;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable false;
+
+functions
+{
+    // The whole half aircraft against the full wing's half area, so the
+    // coefficients are the full aircraft's.
+    coeffs
+    {
+        type            forceCoeffs;
+        libs            (forces);
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+        patches         (wing fuselage tailplane fin);
+        rho             rhoInf;
+        rhoInf          1.225;
+        CofR            (3.2 0 0);
+        liftDir         $liftDir;
+        dragDir         $dragDir;
+        pitchAxis       (0 1 0);
+        magUInf         $magUInf;
+        lRef            $mac;
+        Aref            $AhalfRef;
+    }
+
+    // Forces on each part, split into pressure and viscous, in newtons on the half.
+    #include "partForces"
+
+    yPlus
+    {
+        type            yPlus;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+    }
+
+    // Area-mean y+ on the wing, and its wetted area on the half model.
+    yPlus_wing
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        log             false;
+        writeFields     false;
+        regionType      patch;
+        name            wing;
+        operation       areaAverage;
+        fields          (yPlus);
+        writeArea       true;
+    }
+
+    // Area-mean y+ on the fuselage, and its wetted area on the half model.
+    yPlus_fuselage
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        log             false;
+        writeFields     false;
+        regionType      patch;
+        name            fuselage;
+        operation       areaAverage;
+        fields          (yPlus);
+        writeArea       true;
+    }
+
+    // Area-mean y+ on the tailplane, and its wetted area on the half model.
+    yPlus_tailplane
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        log             false;
+        writeFields     false;
+        regionType      patch;
+        name            tailplane;
+        operation       areaAverage;
+        fields          (yPlus);
+        writeArea       true;
+    }
+
+    // Area-mean y+ on the fin, and its wetted area on the half model.
+    yPlus_fin
+    {
+        type            surfaceFieldValue;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        log             false;
+        writeFields     false;
+        regionType      patch;
+        name            fin;
+        operation       areaAverage;
+        fields          (yPlus);
+        writeArea       true;
+    }
+
+    // For pictures: the airframe's surface and two crossflow planes, one between the
+    // wing and the tailplane and one behind the aircraft, written once at the end.
+    vorticity
+    {
+        type            vorticity;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+    }
+
+    surfaces
+    {
+        type            surfaces;
+        libs            (sampling);
+        writeControl    writeTime;
+        surfaceFormat   vtk;
+        formatOptions   { vtk { format binary; } }
+        fields          (p U vorticity);
+        interpolationScheme cellPoint;
+        surfaces
+        {
+            airframe { type patch; patches (wing fuselage tailplane fin); interpolate false; }
+            x6  { type cuttingPlane; point (6 0 0);  normal (1 0 0); interpolate true; }
+            x10 { type cuttingPlane; point (10 0 0); normal (1 0 0); interpolate true; }
+        }
+    }
+
+    residuals
+    {
+        type            solverInfo;
+        libs            (utilityFunctionObjects);
+        fields          (U p k omega);
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+}

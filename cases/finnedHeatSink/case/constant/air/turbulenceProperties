@@ -1,0 +1,3 @@
+FoamFile { version 2.0; format ascii; class dictionary; object turbulenceProperties; }
+// The Reynolds number between the fins is a few hundred: laminar.
+simulationType laminar;

@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| lightAircraftCruise: half model, steady incompressible RANS                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      surfaceFeatureExtractDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+wing.stl
+{
+    extractionMethod    extractFromSurface;
+    extractFromSurfaceCoeffs { includedAngle 150; }
+    subsetFeatures { nonManifoldEdges no; openEdges yes; }
+    writeObj            no;
+}
+
+fuselage.stl
+{
+    extractionMethod    extractFromSurface;
+    extractFromSurfaceCoeffs { includedAngle 150; }
+    subsetFeatures { nonManifoldEdges no; openEdges yes; }
+    writeObj            no;
+}
+
+tailplane.stl
+{
+    extractionMethod    extractFromSurface;
+    extractFromSurfaceCoeffs { includedAngle 150; }
+    subsetFeatures { nonManifoldEdges no; openEdges yes; }
+    writeObj            no;
+}
+
+fin.stl
+{
+    extractionMethod    extractFromSurface;
+    extractFromSurfaceCoeffs { includedAngle 150; }
+    subsetFeatures { nonManifoldEdges no; openEdges yes; }
+    writeObj            no;
+}
+

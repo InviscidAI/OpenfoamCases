@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Remove the run and the built geometry; the scripts and results/ stay.
+cd "$(dirname "$0")" || exit 1
+rm -rf run log.* scripts/__pycache__
+rm -f geometry/airframe.stl geometry/geometry.json geometry/hand_estimate.json
+rmdir geometry 2>/dev/null || true

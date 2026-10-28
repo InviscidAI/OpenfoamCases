@@ -1,0 +1,24 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvSolution; }
+// Stage 2: the flow from stage 1 frozen, the heat alone solved to convergence.
+// The wake behind the sink is unsteady, so stage 1 never settles. In the run of
+// record its air carried out 92.2% of the heat at iteration 1500, and between
+// 87.7% and 99.3% over the 1000 iterations before. With the flow held still the
+// heat has one answer, and the air's balance closes.
+solvers
+{
+    rho { solver PCG; preconditioner DIC; tolerance 1e-7; relTol 0; }
+    p_rgh { solver GAMG; smoother GaussSeidel; tolerance 1e-7; relTol 0.01; }
+    U { solver PBiCGStab; preconditioner DILU; tolerance 1e-8; relTol 0.05; }
+    h { solver PBiCGStab; preconditioner DILU; tolerance 1e-12; relTol 0; }
+}
+SIMPLE
+{
+    momentumPredictor yes;
+    nNonOrthogonalCorrectors 0;
+    frozenFlow yes;
+}
+relaxationFactors
+{
+    fields { p_rgh 0.7; rho 1; }
+    equations { U 0.5; h 1; }
+}

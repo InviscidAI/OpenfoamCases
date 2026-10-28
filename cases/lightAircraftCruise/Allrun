@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# A light aircraft in cruise at 45 m/s: lift and drag at two angles of attack.
+#
+#   ./Allrun           mesh once, then solve 4 deg and 0 deg on that mesh
+#   ./Allrun 4 2 6     mesh once, then solve the angles given
+#
+# Builds the four surfaces into geometry/ (scripts/build_aircraft.py), meshes the half
+# model in runs/mesh/ with snappyHexMesh, checks it, then for each angle copies the mesh
+# into runs/aoa<angle>/, writes the inflow (scripts/flight.py), initialises with
+# potentialFoam and solves 500 simpleFoam iterations. scripts/forces.py prints the
+# lift and drag of every run into runs/forces.txt. NPROCS ranks (default: one per
+# physical core).
+set -euo pipefail
+cd "$(dirname "$0")"
+angles=("$@")
+[[ ${#angles[@]} -gt 0 ]] || angles=(4 0)
+# Physical cores, not hardware threads: Open MPI gives one slot per core.
+cores=$( (lscpu -p=Core,Socket 2>/dev/null || true) | (grep -v '^#' || true) | sort -u | wc -l)
+[[ "$cores" -gt 0 && "$cores" -le "$(nproc)" ]] || cores=$(nproc)
+NPROCS=${NPROCS:-$cores}
+for a in "${angles[@]}"; do
+  [[ "$a" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "usage: ./Allrun [angle in degrees ...]"; exit 2; }
+done
+setRanks() { sed -i "s/^numberOfSubdomains .*/numberOfSubdomains $NPROCS;/" system/decomposeParDict; }
+clock() { date +%s; }
+
+t0=$(clock)
+mkdir -p runs
+python3 scripts/build_aircraft.py > runs/log.geometry 2>&1
+
+if [[ ! -f runs/mesh/constant/polyMesh/faces ]]; then
+  rm -rf runs/mesh
+  mkdir -p runs/mesh/constant/triSurface
+  cp -r case/system runs/mesh/
+  cp -r case/constant/* runs/mesh/constant/
+  cp geometry/{wing,fuselage,tailplane,fin}.stl runs/mesh/constant/triSurface/
+  python3 scripts/flight.py "${angles[0]}" runs/mesh
+  (
+    cd runs/mesh
+    setRanks
+    blockMesh > log.blockMesh 2>&1
+    surfaceFeatureExtract > log.surfaceFeatureExtract 2>&1
+    decomposePar -force > log.decomposePar 2>&1
+    mpirun -np "$NPROCS" snappyHexMesh -parallel -overwrite > log.snappyHexMesh 2>&1
+    reconstructParMesh -constant > log.reconstructParMesh 2>&1
+    rm -rf processor*
+    # The gate is snappyHexMesh's own quality criteria (system/meshQualityDict): every
+    # count under "Checking faces in error" must be zero. checkMesh's plain skewness
+    # check fails on about 450 faces where the symmetry plane cuts the fin (README).
+    checkMesh -meshQuality > log.checkMesh 2>&1 || true
+    grep -q 'Checking faces in error' log.checkMesh
+    if sed -n '/Checking faces in error/,/^$/p' log.checkMesh | grep -q ': *[1-9]'; then
+      echo "mesh fails its quality criteria: runs/mesh/log.checkMesh"; exit 1
+    fi
+  )
+fi
+t1=$(clock)
+echo "mesh: $((t1 - t0)) s, $(sed -n 's/^ *cells: *//p' runs/mesh/log.checkMesh) cells, $NPROCS ranks" | tee runs/wallclock.txt
+
+for a in "${angles[@]}"; do
+  r="runs/aoa$a"
+  rm -rf "$r"
+  mkdir -p "$r/constant"
+  cp -r case/system case/0 "$r/"
+  cp -r case/constant/* "$r/constant/"
+  cp -r runs/mesh/constant/polyMesh "$r/constant/"
+  python3 scripts/flight.py "$a" "$r"
+  ts=$(clock)
+  (
+    cd "$r"
+    setRanks
+    decomposePar -force > log.decomposePar 2>&1
+    mpirun -np "$NPROCS" potentialFoam -parallel -writephi > log.potentialFoam 2>&1
+    mpirun -np "$NPROCS" simpleFoam -parallel > log.simpleFoam 2>&1
+    reconstructPar -latestTime > log.reconstructPar 2>&1
+    rm -rf processor*
+  )
+  te=$(clock)
+  echo "aoa $a: $((te - ts)) s" | tee -a runs/wallclock.txt
+done
+
+python3 scripts/forces.py "${angles[@]/#/runs/aoa}" | tee runs/forces.txt
+echo "total: $(( $(clock) - t0 )) s" | tee -a runs/wallclock.txt

@@ -1,0 +1,19 @@
+FoamFile { version 2.0; format ascii; class dictionary; object thermophysicalProperties; }
+// Extruded aluminium (6063-T5 is 200-209 W/m K).
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIso;
+    thermo          hConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+mixture
+{
+    specie { molWeight 26.98; }
+    thermodynamics { Hf 0; Sf 0; Cp 900; }
+    transport { kappa 200; }
+    equationOfState { rho 2700; }
+}

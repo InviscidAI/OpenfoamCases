@@ -1,0 +1,46 @@
+solids after fuse : 1
+volume            : 1137.7 cm3
+bbox              : x -0.2073 +0.2073  y -0.2073 +0.2073  z -0.0850 +0.0280
+body  triangles  69992   wetted   538.8 cm2   silhouette along the wind   75.9 cm2
+arms  triangles   1861   wetted   435.5 cm2   silhouette along the wind  103.6 cm2
+cans  triangles   2437   wetted   106.6 cm2   silhouette along the wind   36.2 cm2
+hubs  triangles   3152   wetted   231.7 cm2   silhouette along the wind   29.5 cm2
+legs  triangles   1888   wetted    62.3 cm2   silhouette along the wind   14.0 cm2
+whole airframe silhouette along the wind 238.1 cm2
+wrote geometry/airframe.stl and geometry/geometry.json
+wrote run for 4 ranks
+  wind in the airframe's frame U = (14.7721 0 -2.6047) m/s, |U| = 15.0
+  Re on the body length 0.16 m = 1.6e+05
+    cells:            1470365
+    patch body y+ : min = 0.89705929, max = 55.209453, average = 9.4734352
+    patch arms y+ : min = 0.77616148, max = 56.403384, average = 13.611017
+    patch cans y+ : min = 0.3911152, max = 77.842731, average = 9.9258214
+    patch hubs y+ : min = 0.56399841, max = 75.485514, average = 11.421155
+    patch legs y+ : min = 0.52330669, max = 24.096494, average = 10.741708
+mesh 163 s on 4 ranks
+solve 11239 s on 4 ranks
+
+run: 2000 iterations, drag averaged over iterations 1001 to 2000
+wind 15.0 m/s at 10.0 deg nose-down, q = 137.81 Pa
+
+part     drag N      +-   drift  share   vert N  CdA cm2  pressure
+body      0.584   0.003  +0.001  26.4%   -0.260     42.4     98.5%
+arms      0.990   0.010  +0.000  44.7%   -0.210     71.8     95.7%
+cans      0.288   0.002  +0.000  13.0%   -0.127     20.9     98.3%
+hubs      0.186   0.001  -0.000   8.4%   -0.240     13.5     91.8%
+legs      0.165   0.004  +0.000   7.5%   +0.009     12.0     98.1%
+total     2.213   0.015  +0.001 100.0%   -0.829    160.6     96.6%
+
+sum of the parts 2.213 N against the total 2.213 N
+vertical force is at right angles to the wind, positive up; negative is a download
+initial residuals at the last iteration: Ux 4.2e-04  Uy 1.4e-02  Uz 2.0e-03  k 2.7e-04  omega 3.2e-05  p 6.1e-03
+wrote run/forces_summary.json
+
+hand estimate, isolated parts, q = 137.81 Pa
+  body  CdA   68.3 cm2    0.94 N
+  arms  CdA   63.9 cm2    0.88 N
+  cans  CdA   38.5 cm2    0.53 N
+  hubs  CdA   12.0 cm2    0.17 N
+  legs  CdA   22.0 cm2    0.30 N
+  total CdA  204.8 cm2    2.82 N
+Reynolds numbers: body length 1.6e+05, arm 2e+04, can 2.8e+04, leg 8e+03

@@ -1,0 +1,24 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM                                        |
+\*---------------------------------------------------------------------------*/
+FoamFile { version 2.0; format ascii; class volVectorField; location "0"; object U; }
+
+// Allrun replaces @UPSTREAM@, @DOWNSTREAM@ and @UIN@ for the direction it runs
+dimensions      [0 1 -1 0 0 0 0];
+internalField   uniform (0 0 0);
+boundaryField
+{
+    @UPSTREAM@
+    {
+        type            fixedValue;
+        value           uniform @UIN@;      // 0.5 m/s, Re = 2500 on the 5 mm channel
+    }
+    @DOWNSTREAM@
+    {
+        type            pressureInletOutletVelocity;
+        value           uniform (0 0 0);
+    }
+    walls           { type noSlip; }
+    frontAndBack    { type empty; }
+}

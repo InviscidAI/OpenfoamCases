@@ -1,0 +1,60 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM                                        |
+\*---------------------------------------------------------------------------*/
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+
+application     pimpleFoam;
+startFrom       latestTime;
+startTime       0;
+stopAt          endTime;
+endTime         0.5;            // about two flow-throughs of the 130 mm valve at 0.5 m/s
+deltaT          1e-5;
+adjustTimeStep  yes;
+maxCo           2.0;
+maxDeltaT       1e-3;
+writeControl    adjustableRunTime;
+writeInterval   0.1;
+purgeWrite      0;
+writeFormat     binary;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable true;
+
+// the end-to-end pressure drop: each end's mean pressure and the flow out of each
+// end, every time step (postprocess.py averages them over 0.3-0.5 s)
+endP
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    writeControl    timeStep;
+    writeInterval   1;
+    log             false;
+    writeFields     false;
+    regionType      patch;
+    operation       areaAverage;
+    fields          (p);
+}
+endFlux
+{
+    $endP;
+    operation       sum;
+    fields          (phi);
+}
+
+functions
+{
+    pLeft     { $endP;    name left;  }
+    pRight    { $endP;    name right; }
+    fluxLeft  { $endFlux; name left;  }
+    fluxRight { $endFlux; name right; }
+    yPlus
+    {
+        type            yPlus;
+        libs            (fieldFunctionObjects);
+        writeControl    writeTime;
+        log             false;
+    }
+}
