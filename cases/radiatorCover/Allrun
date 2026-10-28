@@ -1,0 +1,54 @@
+#!/bin/bash
+# A radiator under a cold window, bare or inside a wooden radiator cover, held at 55 C from
+# switch-on to 300 s, in radiatorUnderWindow's room section with radiation.
+#
+#   ./Allrun bare|cover [nProcs]
+#   ./Allrun --setup-only bare|cover [nProcs]
+#
+# bare     the Stelrad K1's steel front panel and its convector, nothing round them.
+# cover    the same radiator inside a B&Q horizontal-grill MDF cover: a solid top, a front
+#          frame with a slotted grille, a 4 cm gap under it to the floor, no back.
+# nProcs   MPI ranks, default 16 (both solved runs used 16).
+# --setup-only writes the run, checks the mesh, writes the t = 0 plane and decomposes the
+#          run, and stops before the solve.
+#
+# scripts/make_case.py writes the run into runs/<run>/: the mesh (written directly, not by
+# blockMesh), 0/T with the cover's baffles, and template/'s other fields and dictionaries.
+# Every dictionary #includes ../../../config/caseSettings. When both runs have solved,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-16}
+case "$run" in
+  bare|cover) ;;
+  *) echo "usage: $0 [--setup-only] bare|cover [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(
+  cd "$r"
+  checkMesh -constant > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+  # the section at t = 0, before the solve writes its first
+  buoyantPimpleFoam -postProcess -time 0 -dict system/planeFunctions > log.postProcess0 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+if [ -f runs/bare/postProcessing/heatAccounting/heat.csv ] && [ -f runs/cover/postProcessing/heatAccounting/heat.csv ]; then
+  python3 scripts/extract_results.py runs results
+fi

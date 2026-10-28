@@ -29,6 +29,10 @@ room made 3-D and 3.5 m wide: [`windowAiring`](../windowAiring). That 3-D room w
 shut, its radiator against a warm floor giving the same 60 W, is
 [`underfloorVsRadiator`](../underfloorVsRadiator).
 
+The same radiator held at 55 C instead of giving 60 W/m, bare and inside a wooden radiator
+cover, with radiation, is [`radiatorCover`](../radiatorCover): it uses this room on a finer
+mesh of its own.
+
 ## The room
 
 | | value | from |
@@ -318,6 +322,10 @@ UK) is to tuck long curtains behind it, Germany's (the Verbraucherzentrale, co2o
 them above it. These three runs take the window run's room and radiator from switch-on and add
 one curtain, in three shapes. Where does the radiator's plume go, and how much of its heat has
 crossed into the room after five minutes?
+
+A wooden radiator cover over the same radiator is a case of its own,
+[`radiatorCover`](../radiatorCover), with the radiator held at 55 C instead of a fixed 60 W/m
+so that what surrounds it can change its output, and with radiation.
 
 - **hanging.** The curtain hangs straight down in front of the radiator and the window, from
   the rail to just above the floor.

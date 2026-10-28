@@ -1,0 +1,323 @@
+// -------------------------------------------------------------------------
+// caseSettings - the one settings file both runs, bare and cover, read.
+// Every dictionary #includes it as ../../../config/caseSettings from
+// runs/<run>/<dir>/. Nothing in it differs between the runs; the cover is in
+// the mesh and in 0/T, which scripts/make_case.py writes.
+// -------------------------------------------------------------------------
+
+// ---- temperatures ---------------------------------------------------------
+Tamb            293.15;     // 20 C : initial air, ceiling and inner wall
+Tout            273.15;     // 0 C  : outside air on the far side of the glass
+
+// ---- glass ----------------------------------------------------------------
+// Overall U = 2.8 W/m2K including the inside surface film (Rsi = 0.13 m2K/W).
+// Resistance left for the external BC: 1/2.8 - 0.13 = 0.2271 m2K/W
+// -> external coefficient h = 4.403 W/m2K. The inside film, convection and
+// radiation, is the solver's.
+hGlassExt       4.403;
+
+// ---- time -----------------------------------------------------------------
+tEnd            300;        // from switch-on to 300 s
+maxCoNum        1;
+maxDt           0.25;
+
+// ---- the convector's fin channels -------------------------------------------
+// The upward Darcy resistance (1/m2) of the convector zone, constant/fvOptions:
+// d = (1e8 dy 1e8). The one fitted setting: bare pilots, 0-40 s, matched to
+// Stelrad's 980 W at dT50 scaled by EN 442's exponent 1.3 at the room's mean
+// temperature over 25-40 s (README.md, "The one fitted setting"). Frozen for
+// both runs.
+dy 16308374.6705;
+
+// ---- SHARED NUMERICS ----
+sharedSolution
+{
+
+solvers
+{
+ "(Ii|ILambda.*)" { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-7; relTol 0; maxIter 100; }
+    "rho.*"
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       0;
+        relTol          0;
+    }
+    p_rgh
+    {
+        solver          GAMG;
+        smoother        DICGaussSeidel;
+        tolerance       1e-8;
+        relTol          0.01;
+    }
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0;
+        // Kept from radiatorUnderWindow, where the final pressure solve stalled at
+        // its round-off floor just above the 1e-8 tolerance and spent 1000
+        // iterations a step there.
+        maxIter         100;
+    }
+    "(U|h|e|k|omega)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-7;
+        relTol          0.1;
+    }
+    "(U|h|e|k|omega)Final"
+    {
+        $U;
+        relTol          0;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor           yes;
+    nOuterCorrectors            2;
+    nCorrectors                 2;
+    nNonOrthogonalCorrectors    0;
+    // Kept from radiatorUnderWindow: the pressure reference in the middle of
+    // the room, not at a corner cell, whose continuity imbalance acted there
+    // as a heat source with the floor adiabatic.
+    pRefPoint                   (1.503 1.174 0.5);
+    pRefValue                   1e5;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        ".*"    1;
+    }
+}
+
+}
+
+// ---- SHARED NUMERICS ----
+sharedSchemes
+{
+
+ddtSchemes      { default Euler; }
+gradSchemes     { default Gauss linear; }
+
+divSchemes
+{
+ div(Ji,Ii_h) Gauss upwind;
+    default         none;
+    div(phi,U)      Gauss limitedLinearV 1;
+    energy          Gauss limitedLinear 1;
+    div(phi,h)      $energy;
+    div(phi,e)      $energy;
+    div(phi,K)      Gauss linear;
+    div(phi,Ekp)    Gauss linear;
+    turbulence      Gauss limitedLinear 1;
+    div(phi,k)      $turbulence;
+    div(phi,omega)  $turbulence;
+    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+}
+
+laplacianSchemes    { default Gauss linear corrected; }
+interpolationSchemes{ default linear; }
+snGradSchemes       { default corrected; }
+
+wallDist
+{
+    method meshWave;
+}
+
+}
+
+// ---- SHARED NUMERICS ----
+sharedControl
+{
+
+application buoyantPimpleFoam;
+startFrom startTime;
+startTime 0;
+stopAt endTime;
+endTime $tEnd;
+deltaT 0.001;
+adjustTimeStep yes;
+maxCo $maxCoNum;
+maxDeltaT $maxDt;
+writeControl adjustableRunTime;
+writeInterval $tEnd;        // the fields once, at the end
+purgeWrite 1;
+writeFormat binary;
+writePrecision 10;
+writeCompression on;
+timeFormat general;
+timePrecision 10;
+runTimeModifiable false;
+functions
+{
+ energyCheck
+ {
+  type volFieldValue; libs (fieldFunctionObjects);
+  fields (p rho); operation volIntegrate; regionType all;
+  writeFields false; writeControl timeStep; writeInterval 1; log false;
+ }
+ wallHeatFlux
+ {
+  type wallHeatFlux; libs (fieldFunctionObjects);
+  executeControl writeTime;
+  writeControl writeTime; patches (glass floor ceiling innerWall outerWall radiatorPanel ".*A" ".*B");
+ }
+ clip
+ {
+  type surfaces; libs (sampling);
+  executeControl timeStep; executeInterval 1;
+  writeControl adjustableRunTime; writeInterval 0.625;
+  surfaceFormat vtk;
+  formatOptions { vtk { format binary; compression true; } }
+  interpolate false; fields (T U G qr);
+  surfaces
+  {
+   clip { type cuttingPlane; point (2 1.2 0.5); normal (0 0 1); interpolate false; }
+  }
+ }
+ heatAccounting
+{
+ type coded;
+ libs (utilityFunctionObjects);
+ name heatAccounting;
+ executeControl timeStep; executeInterval 1;
+ writeControl none;
+ codeInclude
+ #{
+  #include "fvCFD.H"
+  #include "turbulentFluidThermoModel.H"
+  #include "fvDOM.H"
+  #include <fstream>
+  #include <iomanip>
+ #};
+ codeOptions
+ #{
+  -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude -I$(LIB_SRC)/transportModels/compressible/lnInclude -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude -I$(LIB_SRC)/thermophysicalModels/radiation/lnInclude -I$(LIB_SRC)/surfMesh/lnInclude -I$(LIB_SRC)/parallel/distributed/lnInclude -I$(LIB_SRC)/triSurface/lnInclude
+ #};
+ codeLibs
+ #{
+  -lfluidThermophysicalModels -lcompressibleTurbulenceModels -lradiationModels
+ #};
+ codeExecute
+ #{
+  const fvMesh& m=mesh();
+  if (!m.foundObject<volScalarField>("h")) return true;
+  const auto& T=m.lookupObject<volScalarField>("T");
+  const auto& p=m.lookupObject<volScalarField>("p");
+  const auto& rho=m.lookupObject<volScalarField>("rho");
+  const auto& h=m.lookupObject<volScalarField>("h");
+  const auto& U=m.lookupObject<volVectorField>("U");
+  const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+  const auto& turb=m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+  const auto alpha=turb.alphaEff();
+  surfaceScalarField hf(fvc::flux(phi,h,"div(phi,h)"));
+  surfaceScalarField df(-fvc::interpolate(alpha())*fvc::snGrad(h)*m.magSf());
+  surfaceScalarField rad(IOobject("monitorRad",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar(dimPower,Zero));
+  const auto* dom=m.cfindObject<radiation::fvDOM>("radiationProperties");
+  if(dom)
+  {
+   for(label r=0;r<dom->nRay();r++)
+   {
+    surfaceScalarField Ji(IOobject("monitorJi",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),dom->IRay(r).dAve() & m.Sf());
+    rad+=fvc::flux(Ji,dom->IRayLambda(r,0),"div(Ji,Ii_h)");
+   }
+  }
+  const auto* qr=m.cfindObject<volScalarField>("qr");
+  // masks are geometrical, ensuring the same definition after decomposition.
+  wordList maskTypes(m.boundary().size(),"zeroGradient");
+  forAll(m.boundary(),b) if(m.boundary()[b].coupled() || m.boundary()[b].type()=="empty") maskTypes[b]=m.boundary()[b].type();
+  volScalarField z(IOobject("zoneMask",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar(dimless,Zero),maskTypes);
+  volScalarField c(IOobject("coverMask",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar(dimless,Zero),maskTypes);
+  scalar mass=0,mt=0,energy=0,ez=0,ec=0,kez=0,mz=0,mc=0;
+  const scalar R=8314.46261815324/28.96, cv=1005-R;
+  forAll(T,i)
+  {
+   const vector a=m.C()[i];
+   z[i]=(a.x()>.04 && a.x()<.103 && a.y()>.15 && a.y()<.75)?1:0;
+   c[i]=(a.x()<.165 && a.y()<.8)?1:0;
+   mass+=rho[i]*m.V()[i]; mt+=rho[i]*m.V()[i]*T[i];
+   scalar e=cv/R*p[i]*m.V()[i];
+   energy+=e; ez+=z[i]*e; ec+=c[i]*e;
+   kez+=z[i]*.5*rho[i]*magSqr(U[i])*m.V()[i];
+   mz+=z[i]*rho[i]*m.V()[i];mc+=c[i]*rho[i]*m.V()[i];
+  }
+  z.correctBoundaryConditions(); c.correctBoundaryConditions();
+  auto gz=fvc::snGrad(z); auto gc=fvc::snGrad(c);
+  scalar za=0,zd=0,co=0,ci=0,cd=0,cr=0;
+  forAll(m.neighbour(),f)
+  {
+   scalar dz=z[m.owner()[f]]-z[m.neighbour()[f]], dc=c[m.owner()[f]]-c[m.neighbour()[f]];
+   za+=dz*hf[f]; zd+=dz*df[f];
+   scalar a=dc*hf[f], flux=dc*phi[f];
+   if(flux>0)co+=a;else ci-=a;
+   cd+=dc*df[f]; cr+=dc*rad[f];
+  }
+  scalar panelC=0,panelR=0,mdf=0,coverRad=0;
+  scalarList w(10,0);
+  const wordList walls({"glass","ceiling","innerWall","floor","outerWall"});
+  forAll(m.boundary(),b)
+  {
+   const auto& patch=m.boundary()[b];
+   if(patch.type()=="empty")continue;
+   if(patch.coupled())
+   {
+    const auto zn=z.boundaryField()[b].patchNeighbourField();
+    const auto cn=c.boundaryField()[b].patchNeighbourField();
+    forAll(patch,j)
+    {
+     const label cell=patch.faceCells()[j];
+     scalar dz=.5*(z[cell]-zn()[j]),dc=.5*(c[cell]-cn()[j]);
+     za+=dz*hf.boundaryField()[b][j];zd+=dz*df.boundaryField()[b][j];
+     scalar a=dc*hf.boundaryField()[b][j], flux=dc*phi.boundaryField()[b][j];
+     if(flux>0)co+=a;else ci-=a;
+     cd+=dc*df.boundaryField()[b][j];cr+=dc*rad.boundaryField()[b][j];
+    }
+    continue;
+   }
+   scalarField conv(alpha().boundaryField()[b]*h.boundaryField()[b].snGrad()*m.magSf().boundaryField()[b]);
+   forAll(patch,j)
+   {
+    const label cell=patch.faceCells()[j];
+    za+=z[cell]*hf.boundaryField()[b][j]; zd-=z[cell]*conv[j];
+    scalar radIn=qr ? -qr->boundaryField()[b][j]*m.magSf().boundaryField()[b][j] : 0;
+    if(patch.name()=="radiatorPanel"){panelC+=conv[j];panelR+=radIn;}
+    forAll(walls,k)if(patch.name()==walls[k]){w[2*k]+=conv[j];w[2*k+1]+=radIn;}
+    if(patch.name().ends_with("B")) {mdf+=conv[j];coverRad+=radIn;}
+    // On overhang lower face A, both sides are in the room.
+    if(patch.name()=="topA" && m.Cf().boundaryField()[b][j].x()>.165){mdf+=conv[j];coverRad+=radIn;}
+   }
+  }
+  const auto fluxSum=fvc::surfaceSum(mag(phi));
+  scalar coMax=0,uMax=0;vector coAt(Zero),uAt(Zero);
+  forAll(T,i)
+  {
+   scalar ca=.5*m.time().deltaTValue()*fluxSum()[i]/(rho[i]*m.V()[i]);
+   if(ca>coMax){coMax=ca;coAt=m.C()[i];}
+   if(mag(U[i])>uMax){uMax=mag(U[i]);uAt=m.C()[i];}
+  }
+  scalar globalCo=coMax,globalU=uMax;reduce(globalCo,maxOp<scalar>());reduce(globalU,maxOp<scalar>());
+  if(coMax<globalCo)coAt=Zero;if(uMax<globalU)uAt=Zero;
+  reduce(coAt,sumOp<vector>());reduce(uAt,sumOp<vector>());
+  scalarList v({mass,mt,energy,ez,ec,kez,za,zd,panelC,panelR,co,ci,cd,cr,mdf,coverRad});
+  forAll(v,i)reduce(v[i],sumOp<scalar>());forAll(w,i)reduce(w[i],sumOp<scalar>());
+  reduce(mz,sumOp<scalar>());reduce(mc,sumOp<scalar>());
+  if(Pstream::master())
+  {
+   fileName dir=m.time().globalPath()/"postProcessing/heatAccounting";mkDir(dir);
+   static bool first=true;
+   std::ofstream out((dir/"heat.csv").c_str(),first?std::ios::out:std::ios::app);
+   out<<std::setprecision(14);
+   if(first)out<<"time,mass,massT,Uroom,Uzone,Ucover,KEzone,zoneEnthalpy,zoneDiffusion,panelConvection,panelRadiation,coverGrossOut,coverGrossIn,coverDiffusion,coverOpeningRadiation,mdfConvection,mdfRadiation,glassConv,glassRad,ceilingConv,ceilingRad,innerWallConv,innerWallRad,floorConv,floorRad,outerWallConv,outerWallRad,zoneMass,coverMass,maxCo,maxCoX,maxCoY,maxU,maxUX,maxUY\n";
+   out<<m.time().value();forAll(v,i)out<<','<<v[i];forAll(w,i)out<<','<<w[i];out<<','<<mz<<','<<mc<<','<<globalCo<<','<<coAt.x()<<','<<coAt.y()<<','<<globalU<<','<<uAt.x()<<','<<uAt.y()<<'\n';
+   first=false;
+  }
+ #};
+}
+
+}
+
+}

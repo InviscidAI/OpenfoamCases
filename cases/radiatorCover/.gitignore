@@ -1,0 +1,6 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+# initial conditions are input; the root .gitignore only exempts cases/*/0.orig/
+!template/0.orig/
