@@ -1,0 +1,118 @@
+// The per-step vapour monitor of every run, #included by system/functions. It writes one row a
+// time step to postProcessing/moistureBudget/budget.dat (header in the file): the room zone's
+// vapour (kg), mass, mass times temperature and volume; its volume and vapour above saturation
+// with 7 g per kg of dry air added to every cell (a reading that holds for the fan run, whose air
+// all came from the room or the 20 C hall, and not for the window run: README, "Relative
+// humidity"); the shower's source (kg/s) from the solver's own fvOptions; the cell that sets the
+// Courant number; and for the fan, the undercut, the window's opening (the faceZone at x = 0) and
+// its three gaps (faceZones), the outdoor box's open faces: gross mass flow in and out (kg/s),
+// the vapour carried out by convection and by diffusion (kg/s, rebuilt with the solver's own
+// multivariate convection scheme and mu_eff), the volume flow out and the area.
+budget
+{
+ type coded; libs (utilityFunctionObjects); name moistureBudget;
+ executeControl timeStep; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include "turbulentFluidThermoModel.H"
+ #include "coupledPolyPatch.H"
+ #include "multivariateScheme.H"
+ #include "fvOptions.H"
+ #include <fstream>
+ #};
+ codeOptions
+ #{
+ -I$(LIB_SRC)/finiteVolume/lnInclude -I$(LIB_SRC)/meshTools/lnInclude -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude -I$(LIB_SRC)/transportModels/compressible/lnInclude -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude -I$(LIB_SRC)/fvOptions/lnInclude
+ #};
+ codeLibs
+ #{
+ -lfiniteVolume -lmeshTools -lcompressibleTurbulenceModels -lfvOptions
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ if (!m.foundObject<surfaceScalarField>("phi")) return true;
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ const auto& rho=m.lookupObject<volScalarField>("rho");
+ const auto& T=m.lookupObject<volScalarField>("T");
+ const auto& p=m.lookupObject<volScalarField>("p");
+ const auto& U=m.lookupObject<volVectorField>("U");
+ auto& Y=const_cast<volScalarField&>(m.lookupObject<volScalarField>("H2O"));
+ const auto& turb=m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+ multivariateSurfaceInterpolationScheme<scalar>::fieldTable ft;
+ ft.add(m.lookupObject<volScalarField>("O2"));
+ ft.add(m.lookupObject<volScalarField>("N2")); ft.add(Y); ft.add(m.lookupObject<volScalarField>("h"));
+ auto conv=fv::convectionScheme<scalar>::New(m,ft,phi,m.divScheme("div(phi,Yi_h)"));
+ fvScalarMatrix adv(conv->fvmDiv(phi,Y));
+ fvScalarMatrix diff(fvm::laplacian(turb.muEff(),Y));
+ surfaceScalarField ac("waterAdvection",adv.flux());
+ surfaceScalarField dc("waterDiffusion",-diff.flux());
+ scalarField vals(10+7*6,0);
+ // room water, room mass, rho*T integral, volume, saturated volume, saturated water,
+ // source kg/s, max directional Courant, location encoded separately below
+ const auto& cells=m.cellZones()[m.cellZones().findZoneID("room")];
+ scalar maxRate=0;vector maxC(Zero);
+ for (label c:cells)
+ {
+  const scalar v=m.V()[c], mass=rho[c]*v, water=mass*Y[c];
+  vals[0]+=water;vals[1]+=mass;vals[2]+=mass*T[c];vals[3]+=v;
+  const scalar tc=T[c]-273.15, ps=610.94*exp(17.625*tc/(tc+243.04));
+  // Add 7 g per kg dry air to shower-specific mixing ratio; use real dry-air molar mass.
+  const scalar wdry=1/(.2314/31.9988+.7686/28.0134);
+  const scalar ratio=Y[c]/max(1-Y[c],SMALL)+.007;
+  const scalar pv=p[c]*ratio/(ratio+18.0153/wdry);
+  if(pv>ps){vals[4]+=v;vals[5]+=water;}
+ }
+ fvScalarMatrix source(fv::options::New(m)(rho,Y));
+ vals[6]=-sum(source.source());
+ // Max local Co and its cell: every cell including outdoor, not only room.
+ tmp<volScalarField> tr=fvc::surfaceSum(mag(phi));
+ forAll(m.V(),c){scalar rate=.5*tr()[c]/(rho[c]*m.V()[c]); if(rate>maxRate){maxRate=rate;maxC=m.C()[c];}}
+ scalar maxGlobal=returnReduce(maxRate,maxOp<scalar>());
+ if(maxRate==maxGlobal){vals[7]=maxC.x();vals[8]=maxC.y();vals[9]=maxC.z();}
+ const wordList names({"fan","undercut","opening","gapTop","gapLeft","gapRight","outside"});
+ // Each: gross in/out kg/s, convective/diffusive H2O out kg/s, volume out, area.
+ forAll(names,ni)
+ {
+  label patch=m.boundaryMesh().findPatchID(names[ni]);
+  if(patch>=0)
+  {
+   const auto& pp=m.boundaryMesh()[patch];
+   forAll(pp,j)
+   {
+    scalar f=phi.boundaryField()[patch][j];label i=10+ni*6;
+    vals[i]+=max(-f,scalar(0));vals[i+1]+=max(f,scalar(0));
+    vals[i+2]+=ac.boundaryField()[patch][j];vals[i+3]+=dc.boundaryField()[patch][j];
+    vals[i+4]+= (U.boundaryField()[patch][j]&m.Sf().boundaryField()[patch][j]);vals[i+5]+=m.magSf().boundaryField()[patch][j];
+   }
+  }
+  label zi=m.faceZones().findZoneID(names[ni]);
+  if(zi<0)continue;
+  const faceZone& z=m.faceZones()[zi];
+  forAll(z,j)
+  {
+   label f=z[j];scalar q,qa,qd,area;
+   if(f<m.nInternalFaces()){q=phi[f];qa=ac[f];qd=dc[f];area=m.magSf()[f];}
+   else
+   {
+    label pi=m.boundaryMesh().whichPatch(f);const polyPatch& pp=m.boundaryMesh()[pi];
+    const auto* cpp=isA<coupledPolyPatch>(pp);if(cpp&&!cpp->owner())continue;
+    label k=pp.whichFace(f);q=phi.boundaryField()[pi][k];qa=ac.boundaryField()[pi][k];qd=dc.boundaryField()[pi][k];area=m.magSf().boundaryField()[pi][k];
+   }
+   // setsToFaceZone is outward from outside/wedge cells, i.e. into room. Reverse.
+   scalar sign=z.flipMap()[j]?1:-1;q*=sign;qa*=sign;qd*=sign;
+   label i=10+ni*6;vals[i]+=max(-q,scalar(0));vals[i+1]+=max(q,scalar(0));vals[i+2]+=qa;vals[i+3]+=qd;vals[i+5]+=area;
+  }
+ }
+ forAll(vals,i)reduce(vals[i],sumOp<scalar>());
+ if(Pstream::master())
+ {
+  fileName dir=m.time().globalPath()/"postProcessing"/"moistureBudget";mkDir(dir);
+  fileName path=dir/"budget.dat";bool first=!isFile(path);
+  std::ofstream os(path.c_str(),std::ios_base::app);os.precision(14);
+  if(first){os<<"# time dt water mass rhoT volume satVolume satWater source Co_x Co_y Co_z";for(auto n:names)os<<" "<<n<<"_in "<<n<<"_out "<<n<<"_conv "<<n<<"_diff "<<n<<"_vol "<<n<<"_area";os<<"\n";}
+  os<<m.time().value()<<" "<<m.time().deltaTValue();for(auto v:vals)os<<" "<<v;os<<"\n";
+ }
+ #};
+}

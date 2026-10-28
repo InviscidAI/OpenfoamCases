@@ -40,6 +40,10 @@ behind a thermostatic valve that is turned off while the window is open or left 
 that store heat, is [`airingRadiatorValve`](../airingRadiatorValve). It asks what leaving the
 valve on costs.
 
+The tilted sash, unchanged, in a small bathroom after a ten-minute shower, against a ceiling
+extractor fan at 15 l/s with the window shut, is [`showerFanVsWindow`](../showerFanVsWindow). It
+asks what share of the shower's water vapour each takes out in fifteen minutes.
+
 ## The room
 
 | | value | from |

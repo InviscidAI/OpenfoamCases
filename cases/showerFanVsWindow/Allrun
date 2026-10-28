@@ -1,0 +1,116 @@
+#!/bin/bash
+# A small bathroom on a still 0 C morning after a ten-minute shower, cleared for fifteen minutes
+# by a ceiling extractor fan or by the window on tilt.
+#
+#   ./Allrun shower [nProcs]     0-600 s from rest: the shower on, everything shut; then reconstructs 600 s
+#   ./Allrun fan [nProcs]        600-1500 s from the shower's 600 s: the fan at 15 l/s, the window shut
+#   ./Allrun window [nProcs]     600-1500 s from the shower's 600 s: the window on tilt, the fan off,
+#                                with a tracer of the outdoor air
+#   ./Allrun fanCo1 [nProcs]     the fan run at Courant number 1, 600-615 s: the check of fan's step
+#   ./Allrun --setup-only <run> [nProcs]
+#
+# nProcs   MPI ranks, default 16 (every solved run used 16, but fanCo1's 600-615 s used 8).
+# --setup-only writes the run, meshes it, writes its first fields and planes, decomposes it and
+#          stops before the solve. fan, fanCo1 and window start from runs/shower/600, so the shower
+#          must have been solved first, even to set them up.
+#
+# scripts/make_case.py writes every dictionary and field (see its docstring). The shower and window
+# meshes are one graded blockMesh box cut down with subsetMesh, as in ../windowAiring; the fan runs
+# use the shower's mesh. When shower, fan and window have solved, scripts/extract_results.py writes
+# results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v rhoReactingBuoyantFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-16}
+case "$run" in
+  shower|fan|fanCo1|window) ;;
+  *) echo "usage: $0 [--setup-only] shower|fan|window|fanCo1 [nProcs]" >&2; exit 2 ;;
+esac
+if [ "$run" != shower ] && [ ! -d runs/shower/600 ]; then
+  echo "runs/shower/600 is missing: run ./Allrun shower first" >&2; exit 1
+fi
+
+log() { local name=$1; shift; "$@" > "log.$name" 2>&1 || { echo "$PWD: $name failed, see log.$name" >&2; exit 1; }; }
+
+mesh() {
+  # the air of the box: subsetMesh would cut the fields in 0/ too, so they wait in 0.initial.
+  # The mesh is written binary and uncompressed, as the solved runs' was; the fields ascii.
+  mv 0 0.initial
+  cp system/controlDict system/controlDict.run
+  sed -i 's/^writeFormat .*/writeFormat     binary;/; s/^writeCompression .*/writeCompression off;/' system/controlDict
+  log blockMesh blockMesh
+  log topoSet.keep topoSet -dict system/topoSetDict.keep
+  log subsetMesh subsetMesh keep -patch walls -overwrite
+  log topoSet.split topoSet -dict system/topoSetDict.split
+  log createPatch createPatch -overwrite
+  log topoSet.zones topoSet -dict system/topoSetDict.zones
+  mv system/controlDict.run system/controlDict
+  rm -rf constant/polyMesh/sets
+  mv 0.initial 0
+}
+
+r=runs/$run
+rm -rf "$r"; mkdir -p runs
+python3 scripts/make_case.py write "$run" "$r" --nprocs "$nproc"
+case "$run" in
+  shower)
+    (
+      cd "$r"
+      mesh
+      log writeCellCentres postProcess -func writeCellCentres -time 0
+      python3 ../../scripts/make_case.py init .
+      log planesT0 postProcess -dict system/planesT0 -fields '(T U H2O)' -time 0
+    )
+    start=0 ;;
+  fan|fanCo1)
+    python3 scripts/make_case.py branch "$run" "$r" runs/shower
+    start=600 ;;
+  window)
+    (
+      cd "$r"
+      mesh
+      log writeCellCentres postProcess -func writeCellCentres -time 0
+      python3 ../../scripts/make_case.py init .
+      # the shower's 600 s mapped onto the window mesh, whose room has the same cells but the sash's
+      cp -r 0 600
+      log mapFields mapFields ../shower -sourceTime 600 -mapMethod mapNearest
+    )
+    (cd runs/shower && log writeCellCentres.window postProcess -func writeCellCentres -time 0)
+    (cd "$r" && log writeCellCentres.branch postProcess -func writeCellCentres -time 0)
+    python3 scripts/make_case.py branch window "$r" runs/shower
+    python3 scripts/make_case.py tracer "$r"
+    start=600 ;;
+esac
+(
+  cd "$r"
+  log checkMesh checkMesh -constant
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  if [ "$start" = 600 ]; then
+    # the 600 s planes and the monitor's first row, from the 600 s fields without a step. In
+    # window it also runs the tracer's transport once and writes it over 600/outdoorAir, which
+    # moves it by at most 1e-5; the solved run started from that field, and so does this one.
+    log postProcess.600 rhoReactingBuoyantFoam -postProcess -time 600
+  fi
+  log decomposePar decomposePar -fileHandler collated -time "$start"
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" rhoReactingBuoyantFoam -parallel -fileHandler collated > log.rhoReactingBuoyantFoam 2>&1
+  grep -q '^End' log.rhoReactingBuoyantFoam || { echo "$r: the solve did not end, see log.rhoReactingBuoyantFoam" >&2; exit 1; }
+  # the branches start from the shower's reconstructed 600 s
+  [ "$run" = shower ] && log reconstructPar reconstructPar -fileHandler collated -latestTime
+  true
+)
+echo "solved: $r"
+if [ -f runs/shower/postProcessing/moistureBudget/budget.dat ] && [ -f runs/fan/log.rhoReactingBuoyantFoam ] \
+   && grep -q '^End' runs/fan/log.rhoReactingBuoyantFoam && [ -f runs/window/log.rhoReactingBuoyantFoam ] \
+   && grep -q '^End' runs/window/log.rhoReactingBuoyantFoam; then
+  python3 scripts/extract_results.py runs results
+fi
