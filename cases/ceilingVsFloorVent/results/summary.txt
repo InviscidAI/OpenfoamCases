@@ -1,0 +1,45 @@
+Ceiling vent against floor register, 0-300 s from switch-on (per metre of section)
+
+steps: floor 389126, ceiling 549076; last monitored time 300 and 300 s
+wall time: floor 15379 s (4.27 h), ceiling 20174 s (5.60 h), 8 ranks each, side by side
+
+Air at the ankles, 0.1 m, occupied zone x = 1.0-3.7 m (F, C)
+  time s     floor            ceiling
+       0    68.00 F  20.00 C    68.00 F  20.00 C
+      30    68.03 F  20.02 C    65.33 F  18.52 C
+      60    69.70 F  20.94 C    64.87 F  18.26 C
+     120    70.91 F  21.62 C    63.79 F  17.66 C
+     180    71.79 F  22.10 C    63.41 F  17.45 C
+     240    72.68 F  22.60 C    63.27 F  17.37 C
+     300    74.00 F  23.33 C    63.35 F  17.42 C
+
+At 300 s, occupied zone (C)
+  run       ankle  knee  seated  standing  room   heat below 1.8 m
+  floor     23.33 24.07  24.56   24.70   24.48   73.2%
+  ceiling   17.42 19.61  20.23   27.60   23.66   16.3%
+
+Where the supplied heat is at 300 s (kJ/m, and share of the supplied)
+  run       supplied   air     glass   floor   ceiling  inner wall  under the door
+  floor      114.76   50.58   31.90    8.20   11.74     3.89        8.47
+                      44.1%   27.8%    7.1%   10.2%     3.4%        7.4%
+  ceiling    114.73   40.21   32.15   -6.36   52.85     2.95       -6.65
+                      35.0%   28.0%   -5.5%   46.1%     2.6%       -5.8%
+  air: the rise of the air's internal energy above 20 C plus the flow work of the air the room
+  pushes out as it warms (-R T0 dM); under the door: the enthalpy above 20 C carried out through
+  the undercut less what came in (negative: the air leaving is colder than 20 C); a wall's
+  figure is the heat its layer has taken in (negative: given up to the air). The rest is the
+  closure below and the air's kinetic energy.
+
+The heat budget, residual over 0-300 s
+  floor         -2.76 J  = -0.0024% of the supplied 114760.1 J (reference flow work 14447.2 J)
+  ceiling     -312.41 J  = -0.2723% of the supplied 114727.3 J (reference flow work 11485.6 J)
+
+Air through the openings over 0-300 s (m3/m)
+  floor     in at the supply 3.8580; out under the door 3.6989, in under the door 0.0000
+  ceiling   in at the supply 3.8580; out under the door 3.6251, in under the door 0.0000
+
+Coldest air in the room (C, cell centre x, y in m)
+  floor     60 s   -4.85 at 0.0025, 0.918
+  floor    300 s    6.06 at 0.0025, 0.906
+  ceiling   60 s    5.64 at 0.0025, 0.906
+  ceiling  300 s    7.06 at 0.0025, 0.906

@@ -1,0 +1,73 @@
+#!/bin/bash
+# Warm air from a furnace into a bedroom on a 0 F night, through a floor register under the
+# window or a ceiling register near the inner wall, from switch-on to 300 s, in
+# radiatorUnderWindow's room section with walls that store heat.
+#
+#   ./Allrun floor|ceiling [nProcs]
+#   ./Allrun --setup-only floor|ceiling [nProcs]
+#
+# floor    100 CFM (0.012903 m3/s per metre) at 117 F through a 4.2 mm slot in the floor,
+#          0.15 m from the window wall, straight up.
+# ceiling  the same air through a 7.2 mm slot in the ceiling, 0.45 m from the inner wall,
+#          45 degrees down towards the window.
+# nProcs   MPI ranks, default 8 (both solved runs used 8, side by side).
+# --setup-only compiles the library and the tool if needed, meshes, writes the run, sets its
+#          fields and its hydrostatic pressure, decomposes it, writes the t = 0 plane, and
+#          stops before the solve.
+#
+# The wall layers (bedroomLayer) and the heat budget (bedroomMonitor) are src/bedroomLayer,
+# compiled into $FOAM_USER_LIBBIN as libbedroomLayer.so; src/bedroomTools is the tool that
+# sets the hydrostatic pressure at t = 0. scripts/make_mesh.py writes the shared blockMesh
+# case into runs/mesh; scripts/make_case.py writes the run into runs/<run>/. When both runs
+# have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  floor|ceiling) ;;
+  *) echo "usage: $0 [--setup-only] floor|ceiling [nProcs]" >&2; exit 2 ;;
+esac
+
+# the library and the tool (wmake does nothing if they are up to date)
+wmake libso src/bedroomLayer > log.wmake.bedroomLayer 2>&1 || { echo "src/bedroomLayer did not compile: log.wmake.bedroomLayer" >&2; exit 1; }
+wmake src/bedroomTools > log.wmake.bedroomTools 2>&1 || { echo "src/bedroomTools did not compile: log.wmake.bedroomTools" >&2; exit 1; }
+
+# the mesh both runs share
+mkdir -p runs
+if [ ! -f runs/mesh/constant/polyMesh/owner ]; then
+  python3 scripts/make_mesh.py runs/mesh
+  blockMesh -case runs/mesh > runs/mesh/log.blockMesh 2>&1
+  checkMesh -case runs/mesh -allGeometry -allTopology > runs/mesh/log.checkMesh 2>&1
+  grep -q 'Mesh OK' runs/mesh/log.checkMesh || { echo "runs/mesh: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+fi
+grep -E '^ +cells:' runs/mesh/log.checkMesh
+
+r=runs/$run
+rm -rf "$r"
+python3 scripts/make_case.py "$run" "$r" runs/mesh --nprocs "$nproc"
+(
+  cd "$r"
+  setFields > log.setFields 2>&1
+  # hydrostatic pressure at 20 C, 1e5 Pa at y = 1.174 m, and the hall's p0 at the undercut
+  bedroomTools -prepare > log.prepare 2>&1
+  grep -E '^INITIAL_MASS|^PATCH_MEASURE' log.prepare
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+  # the section at t = 0, before the solve writes its first
+  postProcess -dict system/plane0Dict -fields '(T U)' -time 0 > log.plane0 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+if ls runs/floor/postProcessing/monitor/*/budget.csv > /dev/null 2>&1 && ls runs/ceiling/postProcessing/monitor/*/budget.csv > /dev/null 2>&1; then
+  python3 scripts/extract_results.py runs results
+fi

@@ -33,6 +33,11 @@ The same radiator held at 55 C instead of giving 60 W/m, bare and inside a woode
 cover, with radiation, is [`radiatorCover`](../radiatorCover): it uses this room on a finer
 mesh of its own.
 
+This room with the radiator taken out, heated instead by warm air from a furnace through a
+floor register under the window or a ceiling register, is
+[`ceilingVsFloorVent`](../ceilingVsFloorVent): its floor, ceiling and inner wall store heat,
+it has a door undercut, and it uses a mesh of its own.
+
 ## The room
 
 | | value | from |
