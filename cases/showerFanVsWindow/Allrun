@@ -1,23 +1,26 @@
 #!/bin/bash
 # A small bathroom on a still 0 C morning after a ten-minute shower, cleared for fifteen minutes
-# by a ceiling extractor fan or by the window on tilt.
+# by a ceiling extractor fan, by the window on tilt, or by both together.
 #
 #   ./Allrun shower [nProcs]     0-600 s from rest: the shower on, everything shut; then reconstructs 600 s
 #   ./Allrun fan [nProcs]        600-1500 s from the shower's 600 s: the fan at 15 l/s, the window shut
 #   ./Allrun window [nProcs]     600-1500 s from the shower's 600 s: the window on tilt, the fan off,
 #                                with a tracer of the outdoor air
 #   ./Allrun fanCo1 [nProcs]     the fan run at Courant number 1, 600-615 s: the check of fan's step
+#   ./Allrun fanwindow [nProcs]  600-1500 s from the shower's 600 s: the window on tilt and the fan at
+#                                15 l/s together, at Courant number 2, with the tracer
+#   ./Allrun fanwindowCo1 [nProcs]  fanwindow at Courant number 1, 600-615 s: the check of its step
 #   ./Allrun --setup-only <run> [nProcs]
 #
 # nProcs   MPI ranks, default 16 (every solved run used 16, but fanCo1's 600-615 s used 8).
 # --setup-only writes the run, meshes it, writes its first fields and planes, decomposes it and
-#          stops before the solve. fan, fanCo1 and window start from runs/shower/600, so the shower
-#          must have been solved first, even to set them up.
+#          stops before the solve. Every run but the shower starts from runs/shower/600, so the
+#          shower must have been solved first, even to set them up.
 #
 # scripts/make_case.py writes every dictionary and field (see its docstring). The shower and window
 # meshes are one graded blockMesh box cut down with subsetMesh, as in ../windowAiring; the fan runs
-# use the shower's mesh. When shower, fan and window have solved, scripts/extract_results.py writes
-# results/.
+# use the shower's mesh, fanwindow the window's. When shower, fan and window have solved,
+# scripts/extract_results.py writes results/ (and results/fanwindow/ once fanwindow has solved too).
 cd "${0%/*}" || exit 1
 set -euo pipefail
 command -v rhoReactingBuoyantFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
@@ -27,8 +30,8 @@ setupOnly=false
 if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
 run=${1:-}; nproc=${2:-16}
 case "$run" in
-  shower|fan|fanCo1|window) ;;
-  *) echo "usage: $0 [--setup-only] shower|fan|window|fanCo1 [nProcs]" >&2; exit 2 ;;
+  shower|fan|fanCo1|window|fanwindow|fanwindowCo1) ;;
+  *) echo "usage: $0 [--setup-only] shower|fan|window|fanCo1|fanwindow|fanwindowCo1 [nProcs]" >&2; exit 2 ;;
 esac
 if [ "$run" != shower ] && [ ! -d runs/shower/600 ]; then
   echo "runs/shower/600 is missing: run ./Allrun shower first" >&2; exit 1
@@ -69,7 +72,7 @@ case "$run" in
   fan|fanCo1)
     python3 scripts/make_case.py branch "$run" "$r" runs/shower
     start=600 ;;
-  window)
+  window|fanwindow|fanwindowCo1)
     (
       cd "$r"
       mesh
@@ -83,6 +86,18 @@ case "$run" in
     (cd "$r" && log writeCellCentres.branch postProcess -func writeCellCentres -time 0)
     python3 scripts/make_case.py branch window "$r" runs/shower
     python3 scripts/make_case.py tracer "$r"
+    if [ "$run" != window ]; then
+      # the solved fanwindow run was made from the window run's 600/ as it was left after the window
+      # run's two 600 s post-processings, before and after it was decomposed, each moving the tracer
+      # one transport step with the grille shut; then the grille is opened
+      (
+        cd "$r"
+        log postProcess.window600 rhoReactingBuoyantFoam -postProcess -time 600
+        log postProcess.window600again rhoReactingBuoyantFoam -postProcess -time 600
+        rm -rf postProcessing
+      )
+      python3 scripts/make_case.py fanOn "$r"
+    fi
     start=600 ;;
 esac
 (
@@ -90,13 +105,21 @@ esac
   log checkMesh checkMesh -constant
   grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
   grep -E '^ +cells:' log.checkMesh
-  if [ "$start" = 600 ]; then
-    # the 600 s planes and the monitor's first row, from the 600 s fields without a step. In
-    # window it also runs the tracer's transport once and writes it over 600/outdoorAir, which
-    # moves it by at most 1e-5; the solved run started from that field, and so does this one.
-    log postProcess.600 rhoReactingBuoyantFoam -postProcess -time 600
-  fi
-  log decomposePar decomposePar -fileHandler collated -time "$start"
+  case "$run" in
+    fanwindow|fanwindowCo1)
+      # decomposed before the 600 s planes, as the solved run was: the post-processing's tracer
+      # step goes to 600/outdoorAir only, not into the run
+      log decomposePar decomposePar -fileHandler collated -time "$start"
+      log postProcess.600 rhoReactingBuoyantFoam -postProcess -time 600 ;;
+    *)
+      if [ "$start" = 600 ]; then
+        # the 600 s planes and the monitor's first row, from the 600 s fields without a step. In
+        # window it also runs the tracer's transport once and writes it over 600/outdoorAir, which
+        # moves it by at most 1e-5; the solved run started from that field, and so does this one.
+        log postProcess.600 rhoReactingBuoyantFoam -postProcess -time 600
+      fi
+      log decomposePar decomposePar -fileHandler collated -time "$start" ;;
+  esac
 )
 $setupOnly && { echo "set up, not solved: $r"; exit 0; }
 

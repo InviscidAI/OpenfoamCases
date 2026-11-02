@@ -6,13 +6,17 @@ ceiling extractor fan or by the window on tilt.
     python3 make_case.py init <dir>
     python3 make_case.py branch <run> <dir> <showerDir>
     python3 make_case.py tracer <dir>
+    python3 make_case.py fanOn <dir>
 
 run is
   shower   0-600 s from rest: the shower on, the door shut, the window shut, the fan off;
   fan      600-1500 s from the shower's 600 s state: the fan extracting 15 l/s, the window shut;
   fanCo1   the fan run at Courant number 1 instead of 2, 600-615 s, the check of its time step;
   window   600-1500 s from the shower's 600 s state: the window on tilt, the fan off, with a
-           passive tracer of the outdoor air.
+           passive tracer of the outdoor air;
+  fanwindow     600-1500 s from the same state: the window on tilt and the fan extracting 15 l/s
+           together, at Courant number 2, with the tracer and the tracer's share in the fan's air;
+  fanwindowCo1  fanwindow at Courant number 1, 600-615 s, the check of its time step.
 
 `write` writes the dictionaries and the t = 0 fields (shower, window) or the 600 s field
 template (fan, fanCo1). `init` puts the barometric pressure and the outdoor 0 C into the t = 0
@@ -21,7 +25,9 @@ a branch's 600 s fields from the shower's: fan and fanCo1 copy the shower's mesh
 grille made an outlet) and its 600 s fields cell for cell; window, after mapFields has mapped the
 shower's 600 s fields onto the window mesh's 600, puts the outdoor box and the reveal back to their
 rest and checks the room's cells against the shower's. `tracer` writes window's 600/outdoorAir.
-../Allrun runs these and OpenFOAM's utilities in order.
+fanwindow and fanwindowCo1 are set up as window, the grille a wall, and then `fanOn` makes the
+grille an outlet in the mesh and in the 600 s fields with the fan run's conditions, as the solved
+run was made from the window run's 600 s. ../Allrun runs these and OpenFOAM's utilities in order.
 
 Coordinates as ../windowAiring: x into the room from the inside face of the window wall, y up
 from the floor, z across the room. The bathroom is x = 0 to 2.5, y = 0 to 2.4, z = -1 to 1.
@@ -77,7 +83,10 @@ RUNS = {
     "fan": dict(tend=1500, maxco=2, fields=60, planes=1.25),
     "fanCo1": dict(tend=615, maxco=1, fields=15, planes=1.25),
     "window": dict(tend=1500, maxco=1, fields=60, planes=1.25),
+    "fanwindow": dict(tend=1500, maxco=2, fields=45, planes=1.25),
+    "fanwindowCo1": dict(tend=615, maxco=1, fields=15, planes=1.25),
 }
+WINDOW_RUNS = ("window", "fanwindow", "fanwindowCo1")     # the window mesh, the sash on tilt
 SPECIES_FIELDS = ["U", "T", "p", "p_rgh", "O2", "N2", "H2O", "k", "omega", "nut", "alphat"]
 
 HDR = "FoamFile {{ version 2.0; format ascii; class {cls}; object {obj}; }}\n"
@@ -153,7 +162,7 @@ def _fs(n, a, lo, hi):
 
 def topo(case, run):
     """topoSetDict.keep (the air), .split and createPatchDict (the patches), .zones."""
-    window = run == "window"
+    window = run in WINDOW_RUNS
     if window:
         # the outdoor box, the reveal and the room, less the tilted sash: its 80 mm profile
         # turned about its bottom edge until its top is 140 mm into the room (windowAiring)
@@ -217,7 +226,8 @@ def topo(case, run):
 
 # ---------------------------------------------------------------- fields
 def fields(case, run, tdir):
-    window = run == "window"
+    # fanwindow's grille is a wall here, as in window; fanOn makes it an outlet at 600 s
+    window = run in WINDOW_RUNS
     fan = run in ("fan", "fanCo1")
     walls = ["walls", "bath"] + (["outerWalls", "sash"] if window else []) + ([] if fan else ["fan"])
     wall = '"(' + "|".join(walls) + ')"'
@@ -414,9 +424,30 @@ outdoorAirRange
 """
 
 
+FAN_EXHAUST = """
+// fanwindow: the outdoor air's share, the vapour and the temperature of the air the grille takes
+// out, weighted by its mass flux, every ten steps: how much of the fan's air comes straight from the
+// window
+fanExhaust
+{
+    type            surfaceFieldValue;
+    libs            ( fieldFunctionObjects );
+    regionType      patch;
+    name            fan;
+    operation       weightedAverage;
+    weightField     phi;
+    fields          ( outdoorAir H2O T );
+    writeFields     false;
+    executeControl  timeStep;
+    writeControl    timeStep;
+    writeInterval   10;
+}
+"""
+
+
 def system(case, run, nprocs):
     s = RUNS[run]
-    window = run == "window"
+    window = run in WINDOW_RUNS
     write(case, "system/controlDict", f"""
     // showerFanVsWindow, run {run}
     application     rhoReactingBuoyantFoam;
@@ -449,6 +480,8 @@ def system(case, run, nprocs):
     body = (HERE / "moistureBudget").read_text() + "\n"
     if window:
         body += TRACER
+    if run in ("fanwindow", "fanwindowCo1"):
+        body += FAN_EXHAUST
     body += planes(s["planes"], flds)
     if window:
         body += EARLY_STILLNESS
@@ -583,7 +616,7 @@ def centres(case):
 def cmd_write(run, case, nprocs):
     case = Path(case)
     case.mkdir(parents=True, exist_ok=True)
-    if run in ("shower", "window"):
+    if run in ("shower",) + WINDOW_RUNS:
         n = block_mesh(case)
         topo(case, run)
         fields(case, run, "0")
@@ -709,6 +742,39 @@ boundaryField
     print(f"window: outdoorAir 1 in {int(s.sum())} of {len(s)} cells")
 
 
+# The grille's conditions in fanwindow's 600 s fields, as the solved run had them: the fan run's
+# (15 l/s out, everything else carried out of the room), with the grille's p_rgh value at the one its
+# solved fields held. The value of fixedFluxPressure and flowRateOutletVelocity is set again by the
+# solver before it is used.
+FAN_ON = {
+    "U": "type flowRateOutletVelocity; volumetricFlowRate constant 0.015; value uniform (0 0 0);",
+    "p_rgh": "type fixedFluxPressure; gradient uniform 0; value uniform 99998.72111365;",
+    "p": "type calculated; value uniform 100000;",
+    "T": "type zeroGradient;", "H2O": "type zeroGradient;", "O2": "type zeroGradient;", "N2": "type zeroGradient;",
+    "k": "type zeroGradient;", "omega": "type zeroGradient;", "outdoorAir": "type zeroGradient;",
+    "nut": "type calculated; value uniform 0;", "alphat": "type calculated; value uniform 0;",
+}
+
+
+def cmd_fan_on(case):
+    """fanwindow: the window run's mesh and 600 s fields with the grille made an outlet."""
+    case = Path(case)
+    p = case / "constant/polyMesh/boundary"
+    b, n = re.subn(rb"(\bfan\s*\{\s*type\s+)wall;", rb"\1patch;", p.read_bytes())
+    assert n == 1
+    p.write_bytes(b)
+    for name in SPECIES_FIELDS + ["outdoorAir"]:
+        f = case / "600" / (name + ".gz")
+        body = gzip.open(f, "rt").read()
+        head, bf = body.split("boundaryField", 1)
+        bf, n = re.subn(r"(\n    fan\s*\n    \{)[^}]*(\})",
+                        lambda m: m[1] + "\n        " + FAN_ON[name] + "\n    " + m[2], bf, count=1)
+        assert n == 1, name
+        with open(f, "wb") as o, gzip.GzipFile(filename="", mode="wb", compresslevel=3, fileobj=o, mtime=0) as z:
+            z.write((head + "boundaryField" + bf).encode())
+    print(f"{case.name}: the grille an outlet at 15 l/s in the mesh and the 600 s fields")
+
+
 def main():
     a = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = a.add_subparsers(dest="step", required=True)
@@ -724,6 +790,8 @@ def main():
     b.add_argument("shower")
     t = sub.add_parser("tracer")
     t.add_argument("dir")
+    f = sub.add_parser("fanOn")
+    f.add_argument("dir")
     a = a.parse_args()
     if a.step == "write":
         cmd_write(a.run, a.dir, a.nprocs)
@@ -731,8 +799,10 @@ def main():
         cmd_init(a.dir)
     elif a.step == "branch":
         cmd_branch(a.run, a.dir, a.shower)
-    else:
+    elif a.step == "tracer":
         cmd_tracer(a.dir)
+    else:
+        cmd_fan_on(a.dir)
 
 
 if __name__ == "__main__":

@@ -7,11 +7,13 @@ the fifteen minutes after the shower twice: once with a ceiling extractor at the
 Regulations bathroom rate and the window shut, and once with the window on tilt and the fan
 off. It asks **what share of the shower's water vapour has left the room**, where the moist air
 goes, and how humid the air the two rooms leave behind is. It does not model condensation or
-mould, and its number is the vapour removed, not the water.
+mould, and its number is the vapour removed, not the water. A third branch, added later, runs the
+fan and the tilted window together after the same shower.
 
-    ./Allrun shower    # 0-600 s from rest: the shower on, everything shut
-    ./Allrun fan       # 600-1500 s: the fan at 15 l/s, the window shut
-    ./Allrun window    # 600-1500 s: the window on tilt, the fan off
+    ./Allrun shower      # 0-600 s from rest: the shower on, everything shut
+    ./Allrun fan         # 600-1500 s: the fan at 15 l/s, the window shut
+    ./Allrun window      # 600-1500 s: the window on tilt, the fan off
+    ./Allrun fanwindow   # 600-1500 s: the window on tilt and the fan at 15 l/s together
 
 **The result.** Of the vapour in the room when the shower stops, **the fan has taken out 76%
 fifteen minutes later and the tilted window 86%**. The two move about the same air, 4.8 room
@@ -23,10 +25,17 @@ average on the section, though for some minutes in the middle it keeps a thin sa
 under its ceiling that the fan room has lost. [What it cannot](#what-it-cannot) says which of
 those assumptions favour which.
 
+**With both at once**, the window on tilt and the fan running, **91% is out fifteen minutes later**,
+against the window's 86% alone: 9% of the vapour is still in the room against 14%. The fan takes
+two thirds of what leaves, and the window keeps working beside it: the fan draws its air from the
+moist layer under the ceiling, and in the first five minutes only 5% of the air it takes out has
+come in through the window. The room ends a little colder than with the window alone, 13.7 °C
+against 15.0 °C ([The fan and the window together](#the-fan-and-the-window-together)).
+
 The window is [`windowAiring`](../windowAiring)'s tilted sash, unchanged, and the gas model is
 [`dryIceCauldron`](../dryIceCauldron)'s with its CO2 replaced by water vapour, but this is a case
 of its own and not a third run of either: the room is a 2.5 × 2.0 m bathroom with a bath, a
-shower, a ceiling fan grille and a door with an undercut, both branches start from one solved
+shower, a ceiling fan grille and a door with an undercut, all the branches start from one solved
 shower, and the question is about vapour, not the room's own air. None of `windowAiring`'s or
 `dryIceCauldron`'s runs changes, and none of their scripts is used.
 
@@ -61,7 +70,7 @@ the floor, z across the room.
   undercut, and what passes under the door depends on the house's neutral pressure plane. It is
   put at the window's mid-height: the hall's pressure equals the still outdoor air's at y =
   1.5 m. In the fan run the hall's pressure only sets the room's pressure level, since the fan's
-  flow is fixed.
+  flow is fixed. The fan-and-window run has the window run's hall, at the same pressure.
 - **Surfaces:** the floor, walls, ceiling, the shut window, the shut grille and the door held at
   20 °C; the bath, the reveal, the sash and the wall's outer face adiabatic.
 
@@ -85,8 +94,8 @@ air is left out, and there is no shower curtain and no person.
   **24.0 °C**, the room's mass-weighted mean at 600 s.
 
 The stages share one shower. **shower** runs 0-600 s from rest with the door, the window and the
-fan shut. **fan** and **window** both start from its 600 s state and run to 1500 s: fifteen
-minutes after the shower stops.
+fan shut. **fan**, **window** and **fanwindow** all start from its 600 s state and run to 1500 s:
+fifteen minutes after the shower stops.
 
 ## The model
 
@@ -112,24 +121,30 @@ minutes after the shower stops.
   cells**; the window run's mesh adds the reveal and the outdoor box and takes out the tilted
   sash, **634,768 cells**, 437,892 of them at x ≥ 0. Its room cells are the room mesh's, cell for
   cell, but for the 7,852 the sash takes; its room holds 11.2589 m³ of air against 11.3455.
-  `checkMesh`: Mesh OK for both.
+  `checkMesh`: Mesh OK for both. The fan-and-window run is the window run's mesh with the grille
+  made an outlet.
 - **The time step:** Courant number 1 in the shower and window runs and **2 in the fan run**. The
   fan's grille draws air at 1.5 m/s on average through 20 × 30 mm cells, and at Courant 1 those
   cells held the step to about 0.007 s; the fan run was projected at 14 h alone on 16 ranks. A
   15 s run at Courant 2 from the same 600 s fields, set against `fanCo1` (Courant 1) over 600-615 s,
   took the same vapour out to 0.006% and the same fan mass flow to 0.002% (Checks), and the fan
-  run is that run continued.
+  run is that run continued. The fan-and-window run is at **Courant 2** too, its step again set by
+  the grille's cells, after a 15 s run at Courant 1 (`fanwindowCo1`), against which it took out
+  0.97% more vapour by 615 s (Checks).
 - **Output:** a coded function object, `scripts/moistureBudget`, writes at every step the room's
   vapour, mass and temperature, the shower's source as the solver applies it, and for the grille,
   the undercut, the window's opening at x = 0 and each of the sash's three gaps the gross mass
   flow each way and the vapour carried out by convection (with the solver's own convection scheme)
   and by diffusion. The sections z = 0.455 m (the clip's) and z = 0.205 m are written every 1.25 s
-  in the branches and every 5 s in the shower; the fields every 60 s, the last two kept.
+  in the branches and every 5 s in the shower; the fields every 60 s (45 s in fanwindow, as its
+  solve had it), the last two kept. fanwindow also writes, every ten steps, the outdoor-air
+  tracer, the vapour and the temperature of the air the grille takes out, each weighted by its
+  mass flux (`fanExhaust`).
 
 ### The tracer of the outdoor air
 
-The window run carries one more scalar, `outdoorAir`, the share of each cell's air that came in
-from outdoors: 1 in the outdoor box and the reveal at 600 s and on inflow through the outdoor
+The window and fan-and-window runs carry one more scalar, `outdoorAir`, the share of each cell's
+air that came in from outdoors: 1 in the outdoor box and the reveal at 600 s and on inflow through the outdoor
 box's faces, 0 in the room at 600 s and under the door. A `scalarTransport` function object carries
 it with the solver's phi and rho and diffusivity mu + mu_t, the mu_eff the species equation gives
 H2O, with H2O's scheme. It changes nothing the solver solves. It is there for the relative
@@ -144,7 +159,9 @@ each branch over its own 600 s inventory. For the fan that is the shower's 169.9
 run's room starts with 168.403 g: mapping the shower onto the window mesh drops the 1.593 g that sat
 in the cells the tilted sash takes. Over the 169.980 g the shower released instead, the window's
 share at 1500 s is 86.62% rather than 86.49%, and the fan's 76.45% either way; the rounded numbers
-do not change. The undercut let out 0.0025 g of vapour during the shower.
+do not change. The undercut let out 0.0025 g of vapour during the shower. The fan-and-window run
+starts from the window run's 168.403 g; over the release its share at 1500 s is 91.37% rather than
+91.29%.
 
 ## Results
 
@@ -196,6 +213,52 @@ house.
 the walls held at 20 °C throughout. By 1500 s 77% of the window room's air by mass came from
 outdoors (the tracer).
 
+### The fan and the window together
+
+`fanwindow` is the window run with the grille extracting 15 l/s as in the fan run, from the same
+600 s state. `extract_results.py` writes its summary, its history every 5 s and the humidity on its
+section to `results/fanwindow/`, set against the window run's `results/window/history.csv`.
+
+| | window on tilt and fan on | window on tilt, fan off |
+|---|---:|---:|
+| **share of the vapour in the room when the shower stops that has left it**, 1 min later | 18.8% | 15.7% |
+| 3 min | 49.3% | 42.4% |
+| 5 min | 66.6% | 59.2% |
+| 10 min | 83.9% | 77.7% |
+| **15 min** | **91.3%** | **86.5%** |
+| left in the room at 15 min | 8.7% | 13.5% |
+| vapour out by 1500 s | 100.5 g through the grille, 51.9 g through the sash, 1.2 g under the door into the hall | 145.3 g through the sash, 0.42 g under the door |
+| the room's mean air temperature at 900 / 1500 s | 15.1 / 13.7 °C | 16.3 / 15.0 °C |
+
+**The window does not spoil the fan.** The fan takes out its 15.00 l/s, 54.0 m³/h, and with it
+two thirds of the vapour that leaves. One might expect it to draw the cold air from the window
+straight across the room and out. Over the first five minutes only 5.2% of the air it took out
+was outdoor air (the tracer in `fanExhaust`, weighted by the fan's mass flow; 24% at most), while
+the room's air was 27% outdoor air on average over the same minutes and a third by 780 s. The
+cold air from the side gaps falls over the bath to the floor, as in the window run, and the grille
+sits in the warm moist layer under the ceiling: the air it took out held 1.92 times the room's
+mean vapour fraction over 780-900 s and 1.57 times over the fifteen minutes. Later most of the
+fan's air is outdoor air, 77% over the last five minutes, because by then most of the room's is
+(81%).
+
+**The window keeps working beside it.** With the fan on, the sash takes in more and lets out less:
+0.0249 kg/s in over the fifteen minutes, 70.6 m³/h of 0 °C air and 1.31 times the window alone's,
+nearly all through the two side gaps, which take in 1.34 times as much; the top gap still lets
+the room's air out, but at 0.0061 kg/s, 0.39 times the window alone's 0.0155. What the top gap
+lets out is the moist air under the ceiling, 1.89 times the room's mean vapour fraction over the
+fifteen minutes. The two take the vapour out faster than either alone from the first minute, but
+not as fast as the fan's and the window's rates added: the fan run's 76% and the window's 86% would
+leave 3% if each worked on the vapour independently, and the room keeps 8.7%.
+
+**The door.** Hall air came in under the door for the first seven minutes, 9.3 g/s on average in
+the first minute, falling to 0.7 g/s in the seventh; from the eighth minute the flow reversed, the
+room's cold air pressing out at the floor, at about 2 g/s by the end. By 1500 s the undercut had
+carried 1.2 g of vapour into the hall, 0.72% of what the room held at 600 s, which the share counts
+as gone. In the window run the flow reversed in the eleventh minute.
+
+**The room is colder**, 13.7 °C at 1500 s against the window alone's 15.0 °C, with the walls held at
+20 °C; by 1500 s 86% of its air by mass came from outdoors, against 77%.
+
 ### Relative humidity
 
 Colder air holds less water, so the vapour left in the window room sits nearer saturation than its
@@ -233,6 +296,18 @@ about 10 min (9.0% against 4.3% of the section at 6 min). By 15 min neither has 
 and the window room is the drier, 56% against 67% on average. Air at 100% here is air in which
 water would condense on a cool surface or as mist, not air that has.
 
+**With the fan and the window together** (`results/fanwindow/section_rh.csv`), on the same section
+with the same background:
+
+| on the section, minutes after the shower | 0 | 1 | 2 | 3 | 5 | 6 | 8 | 10 | 15 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| fan and window: share at or above saturation | 78% | 56% | 56% | 24% | 1.8% | 0 | 0 | 0 | 0 |
+| fan and window: mean relative humidity | 101% | 105% | 104% | 98% | 85% | 80% | 72% | 64% | **52%** |
+
+Its saturated air goes by 945 s, against just after 8 min for the fan and about 10 min for the
+window alone, and at 15 min it is the driest of the three on average, 52% against the window's 56%
+and the fan's 67%, with 24% of its section below 50% (1.6% of the window room's).
+
 The monitor's own saturated volume (`satVolume`, `satWater`) adds 7 g/kg to every cell, outdoor air
 included. That holds for the fan run and not for the window run, whose incoming 0 °C air cannot hold
 7 g/kg, so it is not used.
@@ -241,7 +316,8 @@ included. That holds for the fan run and not for the window run, whose incoming 
 
 - **The vapour budgets close**: the room's vapour at the end, less at the start, less the source,
   plus what left through the grille, the undercut and the window's opening, is within 0.0105% of
-  the release over the shower, 0.033% of the 600 s inventory for the fan and 0.0275% for the window.
+  the release over the shower, 0.033% of the 600 s inventory for the fan, 0.0275% for the window
+  and 0.0252% for the fan and the window together.
 - **The shower's source** gave 169.980 g over 600 s, 0.2833 g/s, as set.
 - **The fan's flow:** 15.00 l/s at the grille, 0.0176 kg/s; the make-up air under the door 0.0179
   kg/s in and none out over the fifteen minutes (the room's air contracts as it cools).
@@ -249,15 +325,26 @@ included. That holds for the fan run and not for the window run, whose incoming 
   4.29008 g at Courant 2 (-0.006%), the fan's mass flow 0.0172063 against 0.0172065 kg/s, the
   undercut's inflow 0.0184760 against 0.0184747 kg/s, the vapour left in the room 165.7054 against
   165.7047 g; 2,071 steps against 1,094.
+- **The fan-and-window run's Courant number** (`fanwindowCo1`, 600-615 s): the vapour removed
+  8.2962 g at Courant 1 against 8.3763 g at Courant 2 (+0.97%), the sash's inflow over 605-615 s
+  0.027020 against 0.027404 kg/s (+1.42%), the fan's mass flow 0.0172107 against 0.0172104 kg/s,
+  the undercut's inflow 0.010112 against 0.010104 kg/s, the vapour left in the room 160.1065 against
+  160.0264 g (-0.05%); 2,140 steps against 1,130. The run went on at Courant 2 because these were
+  within the 1% and 5% set before it. The check is looser than the fan run's: if the vapour removed
+  were 1% high over the whole run, the 91.3% would be about 90.4%, still four points above the window
+  alone.
+- **The fan in the fan-and-window run** took out 15.00 l/s throughout, 0.0178 kg/s on average.
 - **The window's exchange against `windowAiring`.** The same sash in `windowAiring`'s bigger room
   took in 0.0229 kg/s on average over its five minutes, with that room at 19.2 °C on average
   (its `results/tilted/history.csv`). Buoyant exchange through a fixed opening goes as the square root
   of the temperature difference, which scales that to 0.0213 kg/s at this room's mean 16.5 °C over
   the fifteen minutes; the run's 0.0190 kg/s is 89% of it, and 89% over the first minute too. The
   top gap carries the outflow and the two side gaps the inflow, as there.
-- **The tracer** stayed within -4.2e-11 and 1.0000157 over the run (every tenth step).
+- **The tracer** stayed within -4.2e-11 and 1.0000157 over the window run and -2.1e-12 and
+  1.0000215 over the fan-and-window run (every tenth step).
 - **The still outdoor air:** at 601.25 s, on the plane y = 1.5 m beyond the wall and clear of the
-  window (x < -0.24 m, z < -1.3 or > 1.7 m), median 1.6e-4 m/s and largest 5.7e-4 m/s.
+  window (x < -0.24 m, z < -1.3 or > 1.7 m), median 1.6e-4 m/s and largest 5.7e-4 m/s in the
+  window run; 3.7e-4 and 8.5e-4 m/s with the fan on.
 - **The shower's heat:** the room's mean air temperature is 24.0 °C at 600 s, the estimate's target.
 - All the solves end in `End`. `k` is held at its 1e-15 floor in some steps (`bounding k`), as in
   the other buoyant room cases.
@@ -293,6 +380,17 @@ species model, and checked by us; the runs were solved on our own machine on 16 
   the monitor's first row runs the tracer's transport once and writes it back over
   `600/outdoorAir`, moving it by at most 1e-5 (to -9.4e-6 in the room next to the sash). The
   solved run started from that field, and `Allrun` does the same.
+- **The fan and the window together** were added a few days later, from the window run as solved:
+  its mesh and 600 s fields with the grille made an outlet under the fan run's conditions, and the
+  window run's dictionaries with the Courant limit 2, field writes every 45 s and the `fanExhaust`
+  monitor added. `fanwindowCo1` ran 600-615 s at Courant 1 on 16 ranks (0.37 h), then `fanwindow`
+  600-1500 s at Courant 2 in one run on 16 ranks (68,306 steps, 11.3 h). Both were decomposed from
+  the 600 s fields before the post-processing that writes the first sections, so the tracer they
+  started from is the one the window run's `600/outdoorAir` held by then: the window run's
+  post-processing had been run on it twice, before and after the window run was decomposed, and
+  each time had moved it one transport step with the grille shut. That field differs from the
+  window run's own start by up to 0.0012 in a cell. `Allrun` post-processes twice with the grille
+  shut, then opens it, decomposes, and writes the first sections.
 
 ## What the clip shows, and what it does not
 
@@ -307,6 +405,9 @@ air at 95%. Moving parcels follow the solved velocity in the plane. The number i
 share above, ending at 76% and 86%. The clip's humidity was interpolated from the section to a pixel
 grid, so its shares differ from the area-weighted ones here by up to a point (for instance 0.3%
 against 0.5% saturated in the window room at 10 min).
+
+A second clip draws the fan-and-window run the same way above the window run, with a small arrow at
+the grille showing that the fan draws air out; its number ends at 91% and 86%.
 
 ## What it cannot
 
@@ -326,15 +427,18 @@ against 0.5% saturated in the window room at 10 min).
 - **A fixed 15 l/s.** The guidance's minimum; a real fan against a duct and a 10 mm undercut often
   moves less.
 - **One shower, nothing during it.** A fan wired to the light also runs during the shower, and some
-  people open the window then; both panels share one shower with everything shut. The fan and the
-  window together were not run.
+  people open the window then; every branch shares one shower with everything shut. The fan and the
+  window together were run only after it.
+- **The fan's 15 l/s with the window open.** The fan-and-window run holds the same 15 l/s. With the
+  window open the fan works against less suction and a real one would move somewhat more, which
+  would favour that run.
 - **The shower** is a box of vapour and heat: no spray drag, no person, no curtain. Its 300 W is
   our estimate, checked only by the 24 °C it gives.
 - **The vapour displaces nitrogen** instead of adding to the air's mass (1.3% of it).
 - **The window run's room** is 1.6 g of vapour short at 600 s, the vapour in the sash's cells.
 - **One section, one mesh.** The humidity is read on one vertical section, not over the room's
-  volume. No mesh study; k-omega SST URANS with wall functions; the fan at Courant 2, checked over
-  15 s; one realization each.
+  volume. No mesh study; k-omega SST URANS with wall functions; the fan and the fan-and-window runs
+  at Courant 2, each checked over 15 s, the second to about 1%; one realization each.
 
 ## Sources
 
@@ -367,19 +471,25 @@ You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Pyt
     ./Allrun fan             # needs runs/shower/600
     ./Allrun window          # needs runs/shower/600
     ./Allrun fanCo1          # optional: the fan's Courant check, 600-615 s
+    ./Allrun fanwindow       # needs runs/shower/600
+    ./Allrun fanwindowCo1    # optional: its Courant check, 600-615 s
     python3 scripts/extract_results.py runs results
 
 `Allrun` writes the run into `runs/<run>/` with `scripts/make_case.py`: for shower and window it
 meshes the box with blockMesh, topoSet, subsetMesh and createPatch, writes the barometric starting
 pressure, and (window) maps the shower's 600 s onto the window mesh with mapFields and puts the
-outdoor air back to rest; fan copies the shower's mesh and 600 s fields. It then checks the mesh,
-writes the first sections, decomposes and solves; once shower, fan and window have solved it writes
-`results/`. `./Allrun --setup-only <run> [nProcs]` stops before the solve; `./Allclean` removes the
-runs. The coded function object is compiled by OpenFOAM the first time it runs.
+outdoor air back to rest; fan copies the shower's mesh and 600 s fields. fanwindow is set up as
+window, post-processes its 600 s twice with the grille shut, as the window run's 600 s had been
+when the solved run was made from it, and then makes the grille an outlet (`make_case.py fanOn`).
+It then checks the mesh, writes the first sections, decomposes and solves (fanwindow decomposes
+before writing its first sections); once shower, fan and window have solved it writes `results/`.
+`extract_results.py` writes `results/fanwindow/` whenever `runs/fanwindow` has solved, with or
+without the other runs. `./Allrun --setup-only <run> [nProcs]` stops before the solve; `./Allclean`
+removes the runs. The coded function object is compiled by OpenFOAM the first time it runs.
 
-On 16 ranks the shower took 2.7 h, the fan 12.2 h and the window 6.0 h of wall time. The sections
-are about 0.8 MB (fan) and 1.2 MB (window) a write, 721 writes in each branch; gzip takes them to
-about a quarter.
+On 16 ranks the shower took 2.7 h, the fan 12.2 h, the window 6.0 h and the fan and window together
+11.3 h of wall time. The sections are about 0.8 MB (fan) and 1.2 MB (window, fanwindow) a write,
+721 writes in each branch; gzip takes them to about a quarter.
 
 Checked from a clean clone: `./Allrun --setup-only shower` writes the solved run's mesh (points,
 faces, owner, neighbour, boundary and the cell, face and point zones) and every 0/ field byte for
@@ -393,3 +503,15 @@ holds the solved runs' values but for the interval between field writes, 60 s he
 solved runs changed between restarts (30, 15 and 45 s at the end), and `fanCo1`'s end, 615 s here
 against the 645 s its run went on to. The scotch decomposition is not compared.
 `scripts/extract_results.py` on the solved runs writes `results/` byte for byte.
+
+`--setup-only fanwindow` was checked the same way, but by then the solved shower's 600 s fields were
+no longer on disk, so it was given a stand-in made from the solved fanwindow run's own start: its
+room cells' values, cell for cell, and for the 7,852 cells the sash takes, the nearest room cell's.
+From that it wrote the solved run's mesh byte for byte (points, faces, owner, neighbour, boundary
+and the zones), every 600 s field byte for byte, the tracer included, and the decomposed tracer
+equal to the one the run started from, reconstructed, cell for cell; the 600 s sections, the
+horizontal section and the first rows of the vapour, `fanExhaust` and tracer monitors byte for byte.
+The room's values cannot fail that check, since they came from the run; what it shows is the
+mesh, the boundary conditions, the grille's conversion, the tracer's two transport steps and the
+dictionaries. Expanded, every dictionary of fanwindow and fanwindowCo1 holds the solved runs'
+values. `scripts/extract_results.py` on the solved runs writes `results/fanwindow/` byte for byte.

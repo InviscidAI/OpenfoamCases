@@ -5,7 +5,10 @@ on the clip's section.
 
     python3 extract_results.py <runs_dir> <results_dir>
 
-<runs_dir> holds shower, fan and window (and fanCo1, if it has been run). Needs NumPy only.
+<runs_dir> holds shower, fan and window (and fanCo1, if it has been run), which write
+results/summary.txt, results/section_rh.csv and results/<run>/history.csv; and fanwindow (and
+fanwindowCo1), which write results/fanwindow/. Either set may be there without the other:
+fanwindow is compared with the window run's results/window/history.csv. Needs NumPy only.
 
 The share of the vapour removed is 1 - W(t)/W(600 s), W the room's integral of the shower's
 vapour (the monitor's `water`), each branch over its own 600 s inventory: the fan run's is the
@@ -157,6 +160,14 @@ def main():
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
     runs, res = Path(sys.argv[1]), Path(sys.argv[2])
+    solved = lambda r: (runs / r / "postProcessing/moistureBudget/budget.dat").exists()
+    if all(solved(r) for r in ("shower", "fan", "window")):
+        branches(runs, res)
+    if solved("fanwindow"):
+        fanwindow(runs, res)
+
+
+def branches(runs, res):
     S, F, Wn = (history(runs / r) for r in ("shower", "fan", "window"))
     for h in (S, F, Wn):
         h["mean_T_C"] = h["rhoT"] / h["mass"] - 273.15
@@ -398,6 +409,209 @@ def write_history(path, h, grid, released, base, run, start_row=None, tracer=Non
                     row += [f"{cum('opening'):.4f}", f"{cum('undercut'):.4f}",
                             f"{np.interp(g, tracer[:, 0], tracer[:, 1]) / at(h, 'mass', g):.4f}"]
             w.writerow([x.replace("nan", "") for x in row])
+
+
+# ---------------------------------------------------------------- fanwindow
+def rows_of(paths):
+    """the rows of a function object's .dat files, a restart's rows replacing the earlier ones"""
+    out = {}
+    for f in paths:
+        for line in Path(f).read_text().splitlines():
+            if line.strip() and not line.startswith("#"):
+                r = [float(x) for x in line.split()]
+                out[r[0]] = r
+    return np.array([out[t] for t in sorted(out)])
+
+
+def tracer_range(run_dir):
+    rng = []
+    for fmm in sorted((run_dir / "postProcessing/outdoorAirRange").glob("*/fieldMinMax*.dat")):
+        for line in fmm.read_text().splitlines():
+            if not line.strip() or line.startswith("#"):
+                continue
+            tok = re.sub(r"\([^)]*\)", " ", line).split()
+            if float(tok[0]) > 600:
+                rng.append((float(tok[2]), float(tok[4] if len(tok) == 6 else tok[3])))
+    return np.array(rng)
+
+
+def fanwindow(runs, res):
+    """results/fanwindow/: the window on tilt and the fan together, against the window alone."""
+    run = runs / "fanwindow"
+    out_dir = res / "fanwindow"
+    H = history(run)
+    H["mean_T_C"] = H["rhoT"] / H["mass"] - 273.15
+    H["side_in"] = H["gapLeft_in"] + H["gapRight_in"]
+    H["side_out"] = H["gapLeft_out"] + H["gapRight_out"]
+    # the window alone, from its 5 s history: each row a time-weighted mean over the 5 s before it
+    with open(res / "window/history.csv") as fh:
+        wr = list(csv.DictReader(fh))
+    wt = np.array([float(r["t_s"]) for r in wr])
+    wcol = lambda k: np.array([float(r[k]) if r[k] else np.nan for r in wr])
+    wmean = lambda k, a, b: float(np.mean(wcol(k)[(wt > a + 1e-9) & (wt <= b + 1e-9)]))
+    w_at = lambda k, t: float(np.interp(t, wt, wcol(k)))
+    # the outdoor air's share of the fan's air (every ten steps), weighted by the fan's mass flow
+    ex = rows_of(sorted((run / "postProcessing/fanExhaust").glob("*/surfaceFieldValue*.dat")))
+    H["fan_outdoor"] = np.interp(H["time"], ex[:, 0], ex[:, 1]) * H["fan_out"]
+    room = rows_of(sorted((run / "postProcessing/outdoorAirRoom").glob("*/volFieldValue*.dat")))
+    H["room_outdoor"] = np.interp(H["time"], room[:, 0], room[:, 1]) / H["mass"]
+    vap = lambda p, a, b: integral({"time": H["time"], "dt": H["dt"], "v": out_vapour(H, p)}, "v", a, b)
+
+    lines = []
+    say = lines.append
+    W0 = at(H, "water", 600)
+    say("== fanwindow: the window on tilt and the fan at 15 l/s together, 600-1500 s from the shower's 600 s,")
+    say("   on the window run's mesh; the window alone (window) from results/window/history.csv")
+    say(f"   room air {H['volume'][0]:.4f} m3; grille {H['fan_area'][0]:.4f} m2; the sash's gaps: top "
+        f"{H['gapTop_area'][0]:.4f}, left {H['gapLeft_area'][0]:.4f}, right {H['gapRight_area'][0]:.4f} m2")
+    say(f"   vapour in the room at 600 s {1e3 * W0:.3f} g (window {w_at('vapour_g', 600):.3f} g)")
+    say("   share of that vapour removed since 600 s, %, and the share left:")
+    say("     min after 600 s   fanwindow  window     left: fanwindow  window")
+    for m in (1, 2, 3, 5, 6, 10, 15):
+        t = 600 + 60 * m
+        s = 100 * (1 - at(H, "water", t) / W0)
+        sw = w_at("removed_pct", t)
+        say(f"     {m:>2d} ({t:4d} s)       {s:6.2f}   {sw:6.2f}           {100 - s:6.2f}   {100 - sw:6.2f}")
+    outs = {p: vap(p, 600, 1500) for p in ("fan", "opening", "undercut")}
+    resid = H["water"][-1] - W0 + sum(outs.values())
+    say("   vapour out by 1500 s: " + ", ".join(f"through the {p} {1e3 * v:.3f} g" for p, v in outs.items())
+        + f" (window: through the opening {w_at('vapour_out_sash_g', 1500):.3f} g, the undercut "
+        f"{w_at('vapour_out_undercut_g', 1500):.3f} g)")
+    say(f"   budget closes to {100 * abs(resid) / W0:.4f}% of the 600 s inventory")
+    say("   the room's mean air temperature (mass-weighted), C:")
+    for t in (600, 660, 780, 900, 1200, 1500):
+        say(f"     {t:4d} s   fanwindow {at(H, 'mean_T_C', t):6.2f}   window {w_at('mean_T_C', t):6.2f}")
+    say("")
+
+    say("== flows, kg/s, time-weighted means (in = into the room); window alone in brackets")
+    pairs = [("fan out", "fan_out", None), ("sash in", "opening_in", "sash_in_kg_s"),
+             ("sash out", "opening_out", "sash_out_kg_s"), ("top gap in", "gapTop_in", "top_gap_in_kg_s"),
+             ("top gap out", "gapTop_out", "top_gap_out_kg_s"), ("side gaps in", "side_in", "side_gaps_in_kg_s"),
+             ("side gaps out", "side_out", "side_gaps_out_kg_s"), ("undercut in", "undercut_in", "undercut_in_kg_s"),
+             ("undercut out", "undercut_out", "undercut_out_kg_s")]
+    for a, b in ((600, 660), (600, 900), (900, 1200), (1200, 1500), (600, 1500)):
+        parts = []
+        for name, k, wk in pairs:
+            v = f"{name} {tmean(H, k, a, b):.5f}"
+            if wk:
+                v += f" ({wmean(wk, a, b):.5f})"
+            parts.append(v)
+        say(f"   {a}-{b} s: " + ", ".join(parts) + f"; fan {1e3 * tmean(H, 'fan_vol', a, b):.2f} l/s; room "
+            f"{tmean(H, 'mean_T_C', a, b):.2f} C")
+    say("   with the fan on over the window alone, 600-1500 s: " + ", ".join(
+        f"{name} {tmean(H, k, 600, 1500) / wmean(wk, 600, 1500):.4f}" for name, k, wk in pairs[1:7]))
+    sash_in = tmean(H, "opening_in", 600, 1500)
+    say(f"   600-1500 s: {sash_in * 3600 / DRY_KG_M3_0C:.1f} m3/h of 0 C outdoor air in through the sash "
+        f"({DRY_KG_M3_0C:.4f} kg/m3), net {(sash_in - tmean(H, 'opening_out', 600, 1500)) * 3600 / DRY_KG_M3_0C:.1f} "
+        f"m3/h; the fan {tmean(H, 'fan_vol', 600, 1500) * 3600:.1f} m3/h out")
+    net = [tmean(H, "undercut_in", a, a + 60) - tmean(H, "undercut_out", a, a + 60) for a in range(600, 1500, 60)]
+    say("   net hall air in under the door, minute by minute, g/s: " + " ".join(f"{1e3 * v:.2f}" for v in net))
+    say(f"   vapour into the hall by 1500 s {1e3 * outs['undercut']:.3f} g, {100 * outs['undercut'] / W0:.2f}% of the "
+        "600 s inventory")
+    say("")
+
+    say("== the vapour fraction of the air leaving through the grille and through the sash, over the room's mean")
+    for face in ("fan", "opening"):
+        parts = []
+        for a, b in ((600, 660), (660, 780), (780, 900), (900, 1200), (1200, 1500), (600, 1500)):
+            m = (H["time"] > a + 1e-9) & (H["time"] <= b + 1e-9)
+            dt = H["dt"][m]
+            y_out = (H[face + "_conv"][m] * dt).sum() / (H[face + "_out"][m] * dt).sum()
+            y_room = ((H["water"][m] / H["mass"][m]) * dt).sum() / dt.sum()
+            parts.append(f"{a}-{b} s {y_out / y_room:.2f}")
+        say(f"   {'grille' if face == 'fan' else 'sash'}: " + ", ".join(parts))
+    say("")
+
+    say("== the outdoor-air tracer")
+    rng = tracer_range(run)
+    say(f"   range over 600-1500 s (every tenth step): {rng[:, 0].min():.3g} to {rng[:, 1].max():.7f}")
+    say("   the outdoor air's share of the fan's air (fanExhaust, every tenth step, weighted by the fan's mass flow)")
+    say("   against its share of the room's air (outdoorAirRoom), time means:")
+    for a, b in ((600, 660), (600, 900), (900, 1200), (1200, 1500), (600, 1500)):
+        m = (H["time"] > a + 1e-9) & (H["time"] <= b + 1e-9)
+        fan_share = (H["fan_outdoor"][m] * H["dt"][m]).sum() / (H["fan_out"][m] * H["dt"][m]).sum()
+        say(f"     {a}-{b} s   fan's air {fan_share:.3f}   room {tmean(H, 'room_outdoor', a, b):.3f}")
+    m = (ex[:, 0] > 600) & (ex[:, 0] <= 900 + 1e-9)
+    say(f"   largest share in the fan's air over 600-900 s {ex[m, 1].max():.3f}")
+    for t in (660, 780, 900, 1200, 1500):
+        say(f"   the room's air at {t} s: {at(H, 'room_outdoor', t):.3f} outdoor air (window {w_at('outdoor_air_share', t):.3f})")
+    say("")
+
+    f = None
+    for name in ("horizontal.vtp", "horizontal.vtp.gz"):
+        p = run / "postProcessing/earlyStillness/601.25" / name
+        if p.exists():
+            f = p
+    if f is not None:
+        d = read_vtp(f)
+        pts, conn, offs = d[("Points", "Points")], d[("Polys", "connectivity")], d[("Polys", "offsets")]
+        starts = np.r_[0, offs[:-1]]
+        c = np.array([pts[conn[a:b]].mean(0) for a, b in zip(starts, offs)])
+        sel = (c[:, 0] < -0.24) & ((c[:, 2] < -1.3) | (c[:, 2] > 1.7))
+        v = np.linalg.norm(d[("CellData", "U")][sel], axis=1)
+        say(f"== the outdoor air at 601.25 s on y = 1.5 m, beyond the wall and clear of the window, {int(sel.sum())} faces: "
+            f"median {np.median(v):.2g} m/s, largest {v.max():.2g} m/s")
+        say("")
+
+    if (runs / "fanwindowCo1/postProcessing/moistureBudget/budget.dat").exists():
+        C1 = history(runs / "fanwindowCo1")
+        say("== fanwindow (Courant 2) against fanwindowCo1 (Courant 1), 600-615 s")
+        for name, h in (("Courant 1", C1), ("Courant 2", H)):
+            rem = at(h, "water", 600) - at(h, "water", 615)
+            m = (h["time"] > 600) & (h["time"] <= 615 + 1e-9)
+            say(f"   {name}: vapour removed {1e3 * rem:.5f} g, fan {tmean(h, 'fan_out', 600, 615):.7f} kg/s, sash in "
+                f"{tmean(h, 'opening_in', 600, 615):.7f} kg/s (605-615 s {tmean(h, 'opening_in', 605, 615):.7f}), "
+                f"undercut in {tmean(h, 'undercut_in', 600, 615):.7f} kg/s, in the room at 615 s "
+                f"{1e3 * at(h, 'water', 615):.4f} g, {int(m.sum())} steps")
+        say("")
+
+    times = np.round(np.arange(600, 1500 + 1e-6, 15), 6)
+    rows = [(t, section(run, t)) for t in times]
+    rows = [(t, a) for t, a in rows if a is not None]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(out_dir / "section_rh.csv", "w", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(["t_s", "saturated_pct", "mean_rh_pct", "max_rh_pct", "below50_pct", "mean_T_C", "outdoor_air_share"])
+        for t, a in rows:
+            w.writerow([f"{t:g}", f"{100 * a['saturated']:.2f}", f"{a['mean_rh']:.2f}", f"{a['max_rh']:.1f}",
+                        f"{100 * a['below50']:.2f}", f"{a['T']:.2f}", f"{a['outdoor']:.3f}"])
+    say("== relative humidity on the section z = 0.455 m, the room's faces (x > 0) by area, as for window")
+    say("     t (s)  min    saturated  mean RH  max  below 50%  outdoor share")
+    for t, a in rows:
+        if (t - 600) % 60 == 0:
+            say(f"     {t:5.0f} {(t - 600) / 60:4.0f}     {100 * a['saturated']:6.1f}%  {a['mean_rh']:6.1f}  {a['max_rh']:5.0f}"
+                f"     {100 * a['below50']:5.1f}%  {a['outdoor']:.3f}")
+    last = max((t for t, a in rows if a["saturated"] > 0), default=None)
+    say(f"   saturated air on the section until {last:g} s (15 s sampling)")
+    say("")
+
+    grid = np.arange(600, 1500 + 1e-6, 5)
+    cols = ["t_s", "vapour_g", "mean_T_C", "air_mass_kg", "removed_pct", "fan_out_kg_s", "sash_in_kg_s", "sash_out_kg_s",
+            "top_gap_in_kg_s", "top_gap_out_kg_s", "side_gaps_in_kg_s", "side_gaps_out_kg_s", "undercut_in_kg_s",
+            "undercut_out_kg_s", "vapour_out_fan_g", "vapour_out_sash_g", "vapour_out_undercut_g", "outdoor_air_share",
+            "fan_outdoor_air_share"]
+    with open(out_dir / "history.csv", "w", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(cols)
+        for i, g in enumerate(grid):
+            row = [f"{g:g}", f"{1e3 * at(H, 'water', g):.4f}", f"{at(H, 'mean_T_C', g):.3f}", f"{at(H, 'mass', g):.5f}",
+                   f"{100 * (1 - at(H, 'water', g) / W0):.3f}"]
+            if i:
+                row += [f"{tmean(H, k, grid[i - 1], g):.6f}" for k in ("fan_out", "opening_in", "opening_out", "gapTop_in",
+                        "gapTop_out", "side_in", "side_out", "undercut_in", "undercut_out")]
+            else:
+                row += [""] * 9
+            row += [f"{1e3 * vap(p, 600, g):.4f}" for p in ("fan", "opening", "undercut")]
+            row += [f"{at(H, 'room_outdoor', g):.4f}"]
+            if i:
+                m = (H["time"] > grid[i - 1] + 1e-9) & (H["time"] <= g + 1e-9)
+                row += [f"{(H['fan_outdoor'][m] * H['dt'][m]).sum() / (H['fan_out'][m] * H['dt'][m]).sum():.4f}"]
+            else:
+                row += [""]
+            w.writerow(row)
+
+    (out_dir / "summary.txt").write_text("\n".join(lines) + "\n")
+    print("\n".join(lines))
 
 
 if __name__ == "__main__":
