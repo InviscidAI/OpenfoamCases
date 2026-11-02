@@ -1,0 +1,247 @@
+FoamFile { version 2.0; format ascii; class dictionary; object functions; }
+// crossVentilation's function objects, for `two`; make_case.py drops the opening2 entries for
+// `one`, and for the breeze runs writes the scalar's alphaD and alphaDt as those runs had them
+// (README, "The model").
+//
+// the share of the room's own air, carried as a passive scalar with T's diffusivity:
+// alpha + alphat = mu/Pr + mut/Prt with radiatorUnderWindow's Pr 0.71 and Prt 0.85 (no nut key)
+s
+{
+    type            scalarTransport;
+    libs            (solverFunctionObjects);
+    field           s;
+    phi             phi;
+    rho             rho;
+    alphaD          ALPHAD;
+    alphaDt         ALPHADT;
+    writeControl    writeTime;
+}
+
+// ---- every time step: the room's air and the openings -----------------------------
+roomAir
+{
+    type            volFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      cellZone;
+    name            room;
+    operation       weightedVolIntegrate;
+    weightField     rho;
+    fields          (s);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+indoorAir
+{
+    $roomAir;
+    name            indoor;
+}
+roomMass
+{
+    type            volFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      cellZone;
+    name            room;
+    operation       volIntegrate;
+    fields          (rho);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+roomMeanT
+{
+    type            volFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      cellZone;
+    name            room;
+    operation       weightedVolAverage;
+    weightField     rho;
+    fields          (T);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+// gross mass flow each way through the window wall's opening, in the frame's plane x = 0, kg/s:
+// in = into the room (+x)
+opening1In
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      faceZone;
+    name            opening1;
+    operation       sumDirection;
+    direction       (1 0 0);
+    fields          (phi);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+opening1Out
+{
+    $opening1In;
+    direction       (-1 0 0);
+}
+// the room's own air leaving: sum of phi s over the opening (net, + into the room)
+opening1S
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      faceZone;
+    name            opening1;
+    operation       weightedSum;
+    weightField     phi;
+    fields          (s T);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+// the same through the opposite wall's opening, in its frame's plane x = 4 m: in = into the
+// room (-x)
+opening2In
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      faceZone;
+    name            opening2;
+    operation       sumDirection;
+    direction       (-1 0 0);
+    fields          (phi);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+opening2Out
+{
+    $opening2In;
+    direction       (1 0 0);
+}
+opening2S
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      faceZone;
+    name            opening2;
+    operation       weightedSum;
+    weightField     phi;
+    fields          (s T);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+minMax
+{
+    type            fieldMinMax;
+    libs            (fieldFunctionObjects);
+    fields          (T s U);
+    writeControl    adjustableRunTime;
+    writeInterval   1.25;
+    log             false;
+}
+probes
+{
+    type            probes;
+    libs            (sampling);
+    fields          (T U s);
+    writeControl    adjustableRunTime;
+    writeInterval   1.25;
+    probeLocations
+    (
+        (0.5 0.1 0.01) (1.0 0.1 0.01) (2.0 0.1 0.01) (3.0 0.1 0.01)
+        (1.0 1.1 0.01) (2.0 1.1 0.01) (3.0 1.1 0.01) (2.0 2.2 0.01)
+    );
+}
+
+// ---- the clip: the section through the middle of the windows, and the floor ----
+// No bounds on any plane: in an earlier case a plane with a thin bounds box wrote nothing.
+planes
+{
+    type            surfaces;
+    libs            (sampling);
+    writeControl    adjustableRunTime;
+    writeInterval   1.25;
+    surfaceFormat   vtk;
+    formatOptions   { vtk { format binary; } }
+    interpolate     false;
+    fields          (T U s);
+    surfaces
+    {
+        mid     { type cuttingPlane; point (0 1.2 0); normal (0 0 1); interpolate false; }
+        ankle   { type cuttingPlane; point (2 0.1 0); normal (0 1 0); interpolate false; }
+    }
+}
+
+roomMeanS { $roomMeanT; fields (s); }
+
+// the scalar's budget: s's own face flux, convection and diffusion as the scalarTransport
+// discretises them, summed over each opening into the room every step; processor faces once
+fluxBudget
+{
+ type coded;
+ libs (utilityFunctionObjects);
+ name fluxBudget;
+ executeControl timeStep;
+ writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include "turbulentFluidThermoModel.H"
+ #include "coupledPolyPatch.H"
+ #include <fstream>
+ #};
+ codeOptions
+ #{
+ -I$(LIB_SRC)/finiteVolume/lnInclude -I$(LIB_SRC)/meshTools/lnInclude -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude -I$(LIB_SRC)/transportModels/compressible/lnInclude -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude
+ #};
+ codeLibs
+ #{
+ -lfiniteVolume -lmeshTools -lcompressibleTurbulenceModels
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ const auto& s=m.lookupObject<volScalarField>("s");
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ const auto& turb=m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+ volScalarField D("DsBudget",turb.mu()/0.71+turb.mut()/0.85);
+ fvScalarMatrix adv(fvm::div(phi,s,"div(phi,s)"));
+ fvScalarMatrix diff(fvm::laplacian(D,s));
+ surfaceScalarField flux("sFluxBudget",adv.flux()-diff.flux());
+ scalarList q(2,0);
+ forAll(m.faceZones(),zi)
+ {
+  const faceZone& z=m.faceZones()[zi];
+  if(z.name()=="opening1" || z.name()=="opening2")
+  {
+   label k=z.name()=="opening1" ? 0 : 1;
+   forAll(z,j)
+   {
+    label f=z[j]; scalar value=0;
+    if(f<m.nInternalFaces()) value=flux[f];
+    else
+    {
+     label patch=m.boundaryMesh().whichPatch(f);
+     const polyPatch& pp=m.boundaryMesh()[patch];
+     const auto* cpp=isA<coupledPolyPatch>(pp);
+     if(cpp && !cpp->owner()) continue;
+     value=flux.boundaryField()[patch][pp.whichFace(f)];
+    }
+    q[k]+=(z.flipMap()[j] ? -1 : 1)*value;
+   }
+  }
+ }
+ forAll(q,k) reduce(q[k],sumOp<scalar>());
+ if(Pstream::master())
+ {
+  fileName dir=m.time().globalPath()/"postProcessing"/"fluxBudget";
+  mkDir(dir);
+  std::ofstream os((dir/"budget.dat").c_str(),std::ios_base::app);
+  os.precision(12);
+  // t, net scalar entering through each opening, radiator input in watts
+  os<<m.time().value()<<" "<<q[0]<<" "<<q[1]<<" 60\n";
+ }
+ #};
+}
+
+opening1Net { $opening1In; operation sumDirectionBalance; }
+
+opening2Net { $opening2In; operation sumDirectionBalance; }

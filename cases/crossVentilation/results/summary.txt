@@ -1,0 +1,85 @@
+Outdoor air at 0 C and 1e5 Pa: rho 1.2752 kg/m3; room volumes an hour are volume flows of
+that air over the room zone's volume. Shares in percent of the room's own air; in and out are
+gross mass flows, kg/s, net = in - out, all into the room positive.
+
+== one: 9832 steps to t = 180 s; radiator 60-60 W
+   room zone 656696 cells, 33.6000 m3; opening1 2080 faces 1.2000 m2
+   room mass 39.9162 kg at the first step, 41.4659 kg at 180 s
+   t  30 s: share replaced 21.82% (1 - mean s 22.82%); air in 0.3093, mean over 0-t 0.3175 kg/s = 26.68/h; room 16.25 C; budget error +0.01% of what left
+   t  60 s: share replaced 41.49% (1 - mean s 42.81%); air in 0.2777, mean over 0-t 0.3063 kg/s = 25.74/h; room 13.37 C; budget error +0.07% of what left
+   t 120 s: share replaced 67.57% (1 - mean s 68.66%); air in 0.2272, mean over 0-t 0.2764 kg/s = 23.22/h; room 10.20 C; budget error +0.08% of what left
+   t 180 s: share replaced 80.29% (1 - mean s 81.03%); air in 0.2088, mean over 0-t 0.2553 kg/s = 21.45/h; room  9.05 C; budget error +0.14% of what left
+   means, kg/s:       0-60 s    0-180 s  120-180 s
+     air in        0.30626    0.25534    0.21330
+     in1           0.30626    0.25534    0.21330
+     out1          0.29086    0.24673    0.21049
+     net1          0.01540    0.00861    0.00280
+   scalar budget at 180 s: 32.0499 kg of the room's air gone, error +0.0436 kg, +0.14%; within 0.14% at every step from 30 s
+
+== two: 28361 steps to t = 180 s; radiator 60-60 W
+   room zone 656696 cells, 33.6000 m3; opening1 1040 faces 0.6000 m2, opening2 1040 faces 0.6000 m2
+   room mass 39.9161 kg at the first step, 41.9616 kg at 180 s
+   t  30 s: share replaced 45.35% (1 - mean s 46.87%); air in 0.8925, mean over 0-t 0.8849 kg/s = 74.35/h; room 11.85 C; budget error +0.16% of what left
+   t  60 s: share replaced 69.63% (1 - mean s 70.83%); air in 0.8921, mean over 0-t 0.8903 kg/s = 74.80/h; room  8.42 C; budget error -0.09% of what left
+   t 120 s: share replaced 91.79% (1 - mean s 92.18%); air in 0.8972, mean over 0-t 0.8973 kg/s = 75.39/h; room  6.05 C; budget error -0.14% of what left
+   t 180 s: share replaced 97.73% (1 - mean s 97.84%); air in 1.0032, mean over 0-t 0.9077 kg/s = 76.27/h; room  5.71 C; budget error -0.14% of what left
+   means, kg/s:       0-60 s    0-180 s  120-180 s
+     air in        0.89020    0.90772    0.92862
+     in1           0.89019    0.90771    0.92862
+     out1          0.01865    0.01881    0.01929
+     net1          0.87154    0.88890    0.90933
+     in2           0.00001    0.00000    0.00000
+     out2          0.84418    0.87754    0.90847
+     net2         -0.84417   -0.87754   -0.90847
+     through       0.85786    0.88322    0.90890
+   scalar budget at 180 s: 39.0093 kg of the room's air gone, error -0.0552 kg, -0.14%; within 0.16% at every step from 30 s
+   through-flow over the air in, 10 s windows: +94.92% to +97.95%; 90-180 s +97.829%
+
+== stillOne: 14808 steps to t = 300 s; radiator 60-60 W
+   room zone 656696 cells, 33.6000 m3; opening1 2080 faces 1.2000 m2
+   room mass 39.9161 kg at the first step, 41.5719 kg at 300 s
+   t  30 s: share replaced 21.87% (1 - mean s 22.87%); air in 0.3096, mean over 0-t 0.3174 kg/s = 26.67/h; room 16.25 C; budget error +0.30% of what left
+   t  60 s: share replaced 41.61% (1 - mean s 42.93%); air in 0.2767, mean over 0-t 0.3063 kg/s = 25.73/h; room 13.37 C; budget error +0.45% of what left
+   t 120 s: share replaced 67.72% (1 - mean s 68.80%); air in 0.2283, mean over 0-t 0.2762 kg/s = 23.21/h; room 10.21 C; budget error +0.50% of what left
+   t 180 s: share replaced 80.42% (1 - mean s 81.15%); air in 0.2069, mean over 0-t 0.2550 kg/s = 21.42/h; room  9.07 C; budget error +0.62% of what left
+   t 240 s: share replaced 87.50% (1 - mean s 87.99%); air in 0.2076, mean over 0-t 0.2430 kg/s = 20.42/h; room  8.56 C; budget error +0.62% of what left
+   t 300 s: share replaced 91.96% (1 - mean s 92.28%); air in 0.2019, mean over 0-t 0.2351 kg/s = 19.75/h; room  8.32 C; budget error +0.63% of what left
+   means, kg/s:       0-60 s    0-180 s  120-180 s    0-300 s  240-300 s
+     air in        0.30622    0.25495    0.21240    0.23511    0.20369
+     in1           0.30622    0.25495    0.21240    0.23511    0.20369
+     out1          0.29084    0.24636    0.20962    0.22959    0.20310
+     net1          0.01538    0.00859    0.00278    0.00552    0.00059
+   scalar budget at 300 s: 36.7080 kg of the room's air gone, error +0.2328 kg, +0.63%; within 0.63% at every step from 30 s
+
+== stillTwo: 14413 steps to t = 300 s; radiator 60-60 W
+   room zone 656696 cells, 33.6000 m3; opening1 1040 faces 0.6000 m2, opening2 1040 faces 0.6000 m2
+   room mass 39.9161 kg at the first step, 41.5987 kg at 300 s
+   t  30 s: share replaced 21.51% (1 - mean s 22.53%); air in 0.3096, mean over 0-t 0.3124 kg/s = 26.25/h; room 16.20 C; budget error +0.12% of what left
+   t  60 s: share replaced 41.41% (1 - mean s 42.79%); air in 0.2678, mean over 0-t 0.3037 kg/s = 25.52/h; room 13.09 C; budget error +0.21% of what left
+   t 120 s: share replaced 64.96% (1 - mean s 66.15%); air in 0.2103, mean over 0-t 0.2685 kg/s = 22.56/h; room 10.00 C; budget error +0.32% of what left
+   t 180 s: share replaced 76.27% (1 - mean s 77.17%); air in 0.1999, mean over 0-t 0.2466 kg/s = 20.72/h; room  8.95 C; budget error +0.29% of what left
+   t 240 s: share replaced 83.25% (1 - mean s 83.91%); air in 0.1947, mean over 0-t 0.2347 kg/s = 19.72/h; room  8.43 C; budget error +0.26% of what left
+   t 300 s: share replaced 88.07% (1 - mean s 88.55%); air in 0.1892, mean over 0-t 0.2263 kg/s = 19.02/h; room  8.14 C; budget error +0.24% of what left
+   means, kg/s:       0-60 s    0-180 s  120-180 s    0-300 s  240-300 s
+     air in        0.30370    0.24654    0.20264    0.22633    0.19283
+     in1           0.15154    0.12211    0.09987    0.11222    0.09557
+     out1          0.14338    0.11737    0.09749    0.10862    0.09441
+     net1          0.00816    0.00474    0.00238    0.00361    0.00117
+     in2           0.15216    0.12443    0.10277    0.11410    0.09725
+     out2          0.14427    0.12048    0.10258    0.11211    0.09771
+     net2          0.00790    0.00395    0.00019    0.00200   -0.00046
+     through       0.00013    0.00039    0.00109    0.00081    0.00082
+   scalar budget at 300 s: 35.1524 kg of the room's air gone, error +0.0835 kg, +0.24%; within 0.33% at every step from 30 s
+   through-flow over the air in, 10 s windows: -1.09% to +1.97%; 210-300 s +0.459%
+
+two against the orifice formula for its two 0.60 m2 openings in series, 3.86 Pa across both:
+   Cd 0.6 gives 0.7987 kg/s; the run takes in 0.9286 kg/s over 120-180 s, +16.3%, an effective Cd of 0.70
+   a well-mixed room fed that inflow, time constant 46.1 s: 72.8% at 60 s, 92.6% at 120 s, 98.0% at 180 s; the run: 69.6% (70.8% as 1 - mean s), 91.8% (92.2% as 1 - mean s), 97.7% (97.8% as 1 - mean s)
+
+one against stillOne: share at 60 s 41.49% against 41.61%, at 180 s 80.29% against 80.42%; air in over 0-180 s 0.2553 against 0.2549 kg/s, ratio 1.002
+
+two against stillTwo: share at 60 s 69.63% against 41.41%, at 180 s 97.73% against 76.27%; air in over 0-180 s 0.9077 against 0.2465 kg/s, ratio 3.682
+
+stillTwo against stillOne: share at 60 s 41.41% against 41.61%, at 300 s 88.07% against 91.96%; air in over 0-300 s 0.2263 against 0.2351 kg/s, ratio 0.963
+
+two against one: share at 60 s 69.63% against 41.49%, at 180 s 97.73% against 80.29%; air in over 0-180 s 0.9077 against 0.2553 kg/s, ratio 3.555
