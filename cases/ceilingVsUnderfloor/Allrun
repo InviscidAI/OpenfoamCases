@@ -1,0 +1,71 @@
+#!/bin/bash
+# underfloorVsRadiator's room warmed from a 16 C night setback with 1400 W through the whole
+# ceiling or the whole floor, with radiation, 0-1200 s from switch-on.
+#
+#   ./Allrun ceiling|floor [nProcs]
+#   ./Allrun --setup-only ceiling|floor [nProcs]
+#
+# ceiling  the ceiling gives 1400 W (100 W/m2); the floor is a 3/4 in wood layer.
+# floor    the floor gives 1400 W; the ceiling is a 1/2 in gypsum layer.
+# nProcs   MPI ranks, default 8 (both solved runs used 8, side by side).
+# --setup-only compiles the wall condition if needed, meshes, writes the run, writes the t = 0
+#          planes, decomposes it, and stops before the solve.
+#
+# Every wall is radLayerWall (src/radLayerWall), compiled into $FOAM_USER_LIBBIN as
+# libradLayerWall.so. scripts/make_mesh.py writes the shared mesh case into runs/mesh;
+# scripts/make_case.py writes the run into runs/<run>/. When both runs have solved,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  ceiling|floor) ;;
+  *) echo "usage: $0 [--setup-only] ceiling|floor [nProcs]" >&2; exit 2 ;;
+esac
+
+# the wall condition (wmake does nothing if it is up to date)
+wmake libso src/radLayerWall > log.wmake.radLayerWall 2>&1 || { echo "src/radLayerWall did not compile: log.wmake.radLayerWall" >&2; exit 1; }
+
+# the mesh both runs share: blockMesh, the glass cut out of the window wall, the occupied
+# zone's bands
+m=runs/mesh
+if [ ! -f $m/constant/polyMesh/owner ] || [ ! -f $m/log.checkMesh ]; then
+  rm -rf $m
+  python3 scripts/make_mesh.py $m
+  blockMesh -case $m > $m/log.blockMesh 2>&1
+  topoSet -case $m -dict system/topoSetDict.glass > $m/log.topoSet.glass 2>&1
+  createPatch -case $m -overwrite > $m/log.createPatch 2>&1
+  topoSet -case $m -dict system/topoSetDict.zones > $m/log.topoSet.zones 2>&1
+  checkMesh -case $m -constant > $m/log.checkMesh 2>&1
+  grep -q 'Mesh OK' $m/log.checkMesh || { echo "$m: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+fi
+grep -E '^ +cells:|Mesh OK' $m/log.checkMesh
+
+r=runs/$run
+rm -rf "$r"
+python3 scripts/make_case.py "$run" "$r" $m --nprocs "$nproc"
+(
+  cd "$r"
+  cp -r 0.orig 0
+  # the planes at t = 0 from the initial fields, which the solver does not write
+  postProcess -dict system/planesT0 -fields '(T U G)' -time 0 > log.planesT0 2>&1
+  decomposePar > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel > log.buoyantPimpleFoam 2>&1
+  # a parallel log ends with "End" and then "Finalising parallel run"
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+if [ -f runs/ceiling/log.buoyantPimpleFoam ] && [ -f runs/floor/log.buoyantPimpleFoam ] \
+   && grep -q '^End' runs/ceiling/log.buoyantPimpleFoam && grep -q '^End' runs/floor/log.buoyantPimpleFoam; then
+  python3 scripts/extract_results.py runs results
+fi

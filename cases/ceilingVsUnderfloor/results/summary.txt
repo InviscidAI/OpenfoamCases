@@ -1,0 +1,72 @@
+ceilingVsUnderfloor: figures from the two runs' monitors (scripts/extract_results.py)
+1400 W through the whole ceiling or the whole floor from a 16 C start, 0-1200 s
+
+ceiling: to t = 1200 s in 13173 steps, mean step 0.0911 s, 9517 s of wall time (2.64 h)
+floor: to t = 1200 s in 22857 steps, mean step 0.0525 s, 20386 s of wall time (5.66 h)
+
+Occupied zone at 1200 s, C (air; mean radiant (G/4 sigma)^1/4; operative = their mean)
+  run       height          air    radiant  operative
+  ceiling   ankle    0.1 m   18.15    22.00    20.07
+  ceiling   knee     0.6 m   18.16    22.51    20.33
+  ceiling   head     1.1 m   18.22    23.46    20.84
+  ceiling   standing 1.7 m   18.55    25.35    21.95
+  floor     ankle    0.1 m   23.41    26.43    24.92
+  floor     knee     0.6 m   23.09    24.37    23.73
+  floor     head     1.1 m   23.09    23.05    23.07
+  floor     standing 1.7 m   23.14    22.13    22.63
+
+Air in the occupied zone over time, C (every-step band means)
+  t s     ceiling ankle  head    floor ankle  head
+     60          16.12 16.11         16.72 16.88
+    120          16.20 16.19         18.18 17.64
+    300          16.46 16.49         19.84 19.29
+    410          16.68 16.68         20.46 20.01
+    600          17.03 17.06         21.49 21.11
+    900          17.60 17.64         22.54 22.19
+   1200          18.15 18.22         23.41 23.09
+  head minus ankle at 1200 s: ceiling +0.07 K, floor -0.32 K
+  room mean at 1200 s: ceiling 19.41 C, floor 23.14 C
+  ceiling ankle air reaches 20 C and stays: not by 1200 s (max 18.15 C)
+  ceiling head air reaches 20 C and stays: not by 1200 s (max 18.22 C)
+  floor ankle air reaches 20 C and stays: 329 s (max 23.41 C)
+  floor head air reaches 20 C and stays: 410 s (max 23.12 C)
+  ceiling ankle and head both at 20 C or more from: not by 1200 s
+  floor ankle and head both at 20 C or more from: 410 s
+  ceiling operative temperature at the ankle reaches 20 C and stays: 1164 s
+  ceiling operative temperature at the head reaches 20 C and stays: 800 s
+  floor operative temperature at the ankle reaches 20 C and stays: 82 s
+  floor operative temperature at the head reaches 20 C and stays: 317 s
+  floor ankle air: 17.84 C at 30 s, 16.72 C at 60 s
+  ceiling run, probe at x 2.0 m, y 2.2 m (0.2 m under the ceiling): 23.24 C at 1200 s
+
+Surfaces, C (area means; max the warmest face)
+  ceiling     60 s  heated ceiling  33.99 (max  34.85)   floor  16.65 (max  17.00)   glass  12.34
+  ceiling    300 s  heated ceiling  35.48 (max  35.97)   floor  17.49 (max  18.24)   glass  12.94
+  ceiling    600 s  heated ceiling  36.32 (max  37.06)   floor  18.13 (max  19.08)   glass  13.42
+  ceiling   1200 s  heated ceiling  37.68 (max  38.93)   floor  19.17 (max  20.44)   glass  14.32
+  floor       60 s  heated floor  29.00 (max  32.47)   ceiling  16.52 (max  16.78)   glass  11.23
+  floor      300 s  heated floor  30.52 (max  33.69)   ceiling  17.38 (max  18.01)   glass  12.02
+  floor      600 s  heated floor  31.63 (max  34.55)   ceiling  18.27 (max  19.17)   glass  12.83
+  floor     1200 s  heated floor  33.23 (max  36.41)   ceiling  20.02 (max  21.34)   glass  13.93
+  floor run: the heated floor's mean first reaches 29 C at 2.82 s and stays at or above it from 60.06 s (min after 1 s 27.45 C at 1.0 s)
+  floor run at 329 s, when the ankle air reaches 20 C: floor mean 30.62 C, max 33.71 C, room mean air 19.60 C
+
+The heated surface, W (convection into the air / net radiation given out / the two together)
+  ceiling  run mean    63.2 /  1336.7 /  1399.8  (95.5% radiation)
+  ceiling  at 1200 s    44.5 /  1355.5 /  1399.9
+  floor    run mean   431.2 /   968.6 /  1399.8  (69.2% radiation)
+  floor    at 1200 s   409.6 /   990.1 /  1399.7
+
+Where the 1.68 MJ went by 1200 s, MJ (heat each surface took from the room; the air's rise)
+  ceiling  floor 0.479, windowWall 0.204, innerWall 0.243, sideWalls 0.570; layers 1.496 (89%)
+           air 0.098 (5.8%), glass to outside 0.085 (glass wallHeatFlux -0.085), heated surface gave 1.6798 of 1.68
+           sum of air, layers and glass 1.6793
+  floor    ceiling 0.427, windowWall 0.194, innerWall 0.239, sideWalls 0.531; layers 1.390 (83%)
+           air 0.208 (12.4%), glass to outside 0.081 (glass wallHeatFlux -0.081), heated surface gave 1.6798 of 1.68
+           sum of air, layers and glass 1.6786
+
+The air's heat budget over 0-1200 s (rise of (cv/R) int p dV against the sum of convection)
+  ceiling  stored   81.86 W, convected in   81.88 W, gap -0.024 W
+           sum of qr over all walls: run mean -0.348 W, at 1200 s -0.295 W
+  floor    stored  172.94 W, convected in  173.84 W, gap -0.891 W
+           sum of qr over all walls: run mean -0.126 W, at 1200 s -0.139 W

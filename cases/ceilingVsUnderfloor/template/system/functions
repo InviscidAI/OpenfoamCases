@@ -1,0 +1,248 @@
+FoamFile { version 2.0; format ascii; class dictionary; object functions; }
+// ---- every time step ------------------------------------------------------------
+// the room's internal energy is (cv/R) times the integral of p dV for a perfect gas in a
+// closed box (radiatorUnderWindow's energyCheck): the heat budget without the mean temperature
+energyCheck
+{
+    type            volFieldValue;
+    libs            (fieldFunctionObjects);
+    fields          (p rho);
+    operation       volIntegrate;
+    regionType      all;
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+roomMeanT
+{
+    type            volFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      all;
+    operation       volAverage;
+    fields          (T);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+// the occupied zone's mean air temperature in bands 0.04 m tall at 0.1, 0.6, 1.1 and
+// 1.7 m (ASHRAE 55: 1.0 m from the window wall, 0.3 m from the others)
+occ_ankle
+{
+    $roomMeanT;
+    regionType      cellZone;
+    name            occ_ankle;
+}
+occ_knee
+{
+    $roomMeanT;
+    regionType      cellZone;
+    name            occ_knee;
+}
+occ_head
+{
+    $roomMeanT;
+    regionType      cellZone;
+    name            occ_head;
+}
+occ_standing
+{
+    $roomMeanT;
+    regionType      cellZone;
+    name            occ_standing;
+}
+// the glass's and the floor's mean surface temperature; the glass's loss is
+// 4.403 W/m2K times the area integral of (T - 273.15)
+surfaceT
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    regionType      patch;
+    name            glass;
+    operation       areaAverage;
+    fields          (T);
+    writeFields     false;
+    writeControl    timeStep;
+    log             false;
+}
+glassIntT
+{
+    $surfaceT;
+    operation       areaIntegrate;
+}
+floorT
+{
+    $surfaceT;
+    name            floor;
+}
+floorTmax
+{
+    $surfaceT;
+    name            floor;
+    operation       max;
+}
+// the heat through every boundary, at the field writes only (see writeInterval)
+wallHeatFlux
+{
+    type            wallHeatFlux;
+    libs            (fieldFunctionObjects);
+    writeControl    writeTime;
+    log             false;
+}
+minMax
+{
+    type            fieldMinMax;
+    libs            (fieldFunctionObjects);
+    fields          (T U);
+    writeControl    adjustableRunTime;
+    writeInterval   1.25;
+    log             false;
+}
+probes
+{
+    type            probes;
+    libs            (sampling);
+    fields          (T U);
+    writeControl    adjustableRunTime;
+    writeInterval   1.25;
+    probeLocations
+    (
+        (0.5 0.1 0.005) (1.0 0.1 0.005) (2.0 0.1 0.005) (3.0 0.1 0.005)
+        (1.0 1.1 0.005) (2.0 1.1 0.005) (3.0 1.1 0.005) (2.0 2.2 0.005)
+    );
+}
+
+// ---- the clip: radiatorUnderWindow's section through the middle of the window and the radiator, and
+// the whole room at ankle and seated head height. No bounds on any plane.
+qr_ceiling
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name ceiling; operation areaIntegrate; fields (qr);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+qr_floor
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name floor; operation areaIntegrate; fields (qr);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+qr_glass
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name glass; operation areaIntegrate; fields (qr);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+qr_windowWall
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name windowWall; operation areaIntegrate; fields (qr);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+qr_innerWall
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name innerWall; operation areaIntegrate; fields (qr);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+qr_sideWalls
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name sideWalls; operation areaIntegrate; fields (qr);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+T_ceilingMean
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name ceiling; operation areaAverage; fields (T);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+T_ceilingMin
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name ceiling; operation min; fields (T);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+T_ceilingMax
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name ceiling; operation max; fields (T);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+T_floorMean
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name floor; operation areaAverage; fields (T);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+T_floorMin
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name floor; operation min; fields (T);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+T_floorMax
+{
+    type surfaceFieldValue; libs (fieldFunctionObjects);
+    regionType patch; name floor; operation max; fields (T);
+    writeFields false; writeControl timeStep; log false; writePrecision 12;
+}
+
+comfort_ankle
+{
+    type volFieldValue; libs (fieldFunctionObjects);
+    regionType cellZone; name occ_ankle; operation volAverage; fields (T G);
+    writeFields false; writeControl adjustableRunTime; writeInterval 1.25;
+    log false; writePrecision 12;
+}
+
+comfort_knee
+{
+    type volFieldValue; libs (fieldFunctionObjects);
+    regionType cellZone; name occ_knee; operation volAverage; fields (T G);
+    writeFields false; writeControl adjustableRunTime; writeInterval 1.25;
+    log false; writePrecision 12;
+}
+
+comfort_head
+{
+    type volFieldValue; libs (fieldFunctionObjects);
+    regionType cellZone; name occ_head; operation volAverage; fields (T G);
+    writeFields false; writeControl adjustableRunTime; writeInterval 1.25;
+    log false; writePrecision 12;
+}
+
+comfort_standing
+{
+    type volFieldValue; libs (fieldFunctionObjects);
+    regionType cellZone; name occ_standing; operation volAverage; fields (T G);
+    writeFields false; writeControl adjustableRunTime; writeInterval 1.25;
+    log false; writePrecision 12;
+}
+
+planes
+{
+    type            surfaces;
+    libs            (sampling);
+    writeControl    adjustableRunTime;
+    writeInterval   1.25;
+    surfaceFormat   vtk;
+    formatOptions   { vtk { format binary; } }
+    interpolate     false;
+    fields          (T U G);
+    surfaces
+    {
+        mid     { type cuttingPlane; point (2 1.2 0.005); normal (0 0 1); interpolate false; }
+        ankle   { type cuttingPlane; point (2 0.1 0); normal (0 1 0); interpolate false; }
+        head    { type cuttingPlane; point (2 1.1 0); normal (0 1 0); interpolate false; }
+    }
+}

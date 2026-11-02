@@ -19,6 +19,9 @@ of EN 16798-1's best comfort category, for different reasons. **The load is smal
 only the glass losing heat and every other wall and the ceiling held at 20 °C. Read
 [What it cannot](#what-it-cannot) before any number here.
 
+The same room warmed from a night setback with 1400 W through the whole ceiling or the whole
+floor, with radiation and walls that store heat, is [`ceilingVsUnderfloor`](../ceilingVsUnderfloor).
+
 ## The room
 
 | | value | from |
