@@ -1,0 +1,28 @@
+FoamFile { version 2.0; format ascii; class dictionary; object faSolution; }
+// The finite-area dictionaries of the sofa's shell, after OpenFOAM's thermalShell tutorials; the
+// jouleHeatingSource entries are unused and kept as the solved run had them.
+solvers
+{
+    "(Ts|Ts_.*)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DIC;
+        tolerance       1e-07;
+        relTol          0.01;
+    }
+
+    jouleHeatingSource:V
+    {
+        solver          PBiCGStab;
+        preconditioner  DIC;
+        tolerance       1e-07;
+        relTol          0.01;
+    }
+}
+
+nNonOrthCorr    1;
+
+relaxationFactors
+{
+    T           1;
+}

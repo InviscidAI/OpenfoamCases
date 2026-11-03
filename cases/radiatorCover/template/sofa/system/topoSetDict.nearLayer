@@ -1,0 +1,8 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+// The first refinement: the cells owning a sofa face, and every cell sharing a point with them
+actions (
+ { name sofaFaces; type faceSet; action new; source patchToFace; patch sofa; }
+ { name nearSofa; type cellSet; action new; source faceToCell; sets (sofaFaces); option owner; }
+ { name nearPts; type pointSet; action new; source cellToPoint; sets (nearSofa); option all; }
+ { name nearSofa; type cellSet; action add; source pointToCell; sets (nearPts); option any; }
+);

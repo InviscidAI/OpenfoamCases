@@ -1,0 +1,59 @@
+A sofa 15 cm in front of the radiator against the bare radiator, 0-300 s from switch-on (W and J per metre of section)
+
+steps: bare 63519, sofa 80106; last monitored time 300 and 300 s
+
+The radiator's output from switch-on to 300 s, kJ/m
+            output  convection  radiation
+  bare     164.4       107.0       57.4
+  sofa     151.6       107.9       43.7
+  sofa / bare  92.2%
+
+Minute by minute (means, W/m)
+  minute    bare: output   rad | sofa: output   rad  sofa stores | sofa/bare
+    0- 60         605.8 195.5 |        592.2 179.9         85.3 |    97.8%
+   60-120         576.5 192.7 |        540.3 157.7         52.6 |    93.7%
+  120-180         546.0 191.8 |        499.8 141.1         24.2 |    91.5%
+  180-240         519.2 189.6 |        461.2 129.4          9.1 |    88.8%
+  240-300         492.9 187.6 |        433.4 120.9          1.0 |    87.9%
+
+Where the heat went, 0-300 s, kJ/m (into the air +, out of it -)
+                                         bare    sofa
+  the radiator's output                       164.4   151.6
+  lost through the glass                      -29.1   -30.1
+  radiation into the ceiling and inner wall   -37.3    -9.9
+  convection into the ceiling and inner wall  -36.1   -38.4
+  stored in the sofa's surface                  0.0   -10.3
+  rise of the air                              61.7    62.9
+  residual (closure)                           0.20    0.12
+  The floor and the window wall below and above the glass are adiabatic; what they absorb as
+  radiation they give the air, so they are left out. The ceiling and inner wall are held at 20 C:
+  what they take leaves the model.
+
+The sofa's surface, what it takes from the room and stores, W/m
+    0- 10 s    96.0
+   10- 60 s    83.2
+   60-120 s    52.6
+  120-180 s    24.2
+  180-240 s     9.1
+  240-300 s     1.0
+  last step, 300 s: -1.9; radiation it absorbs over 0-300 s 15.8 kJ/m
+
+The room's air, C (own air: outside the convector; room: all of it, as in summary.txt)
+  time    own air: bare   sofa  sofa-bare | room: bare   sofa
+    10            20.59  20.59     +0.01 |       20.71  20.72
+    30            21.47  21.51     +0.04 |       21.58  21.63
+    60            22.45  22.49     +0.04 |       22.57  22.62
+   120            24.13  24.31     +0.18 |       24.24  24.43
+   180            25.52  25.83     +0.31 |       25.63  25.94
+   240            26.62  27.01     +0.39 |       26.72  27.11
+   300            27.44  27.90     +0.46 |       27.54  28.00
+
+The gap behind the sofa (x < 0.2731 m, y < 0.72 m): enthalpy carried out and in, W/m
+    0- 60 s  out  426.4  in  18.7
+   60-120 s  out  477.5  in  43.3
+  120-180 s  out  480.7  in  64.6
+  180-240 s  out  491.1  in  96.4
+  240-300 s  out  502.3  in 124.4
+
+The sofa room's heat budget, radiator + walls + sofa - rise of the air's energy
+  over each minute -0.22 to +2.54 W/m; over each 7.5 s, the first +22.89, the rest -1.42 to +0.59 W/m; 0-300 s +0.386 W/m

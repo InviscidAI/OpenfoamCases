@@ -1,0 +1,18 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+// The sofa: an IKEA BACKSAELEN 3-seat sofa's side profile, its back 15 cm in front of the
+// radiator's front (x = 0.123 m). The bounds are the bare run's grid lines nearest the sofa's
+// figures, so every cell is either wholly sofa or wholly air. Selection is by cell centre.
+//   seat and base   x 0.2731-1.2222, y 0.171-0.429  (17 cm clear under it, 43 cm seat, 94 cm deep)
+//   backrest frame  x 0.2731-0.3965, y 0.429-0.720  (12 cm thick, 72 cm top)
+//   back cushion    x 0.3965-0.6146, y 0.429-0.850  (22 cm thick, 85 cm overall)
+actions
+(
+ { name sofa; type cellSet; action new;
+   source boxToCell; box (0.2731255747 0.171 -1) (1.2222222222 0.429 2); }
+ { name sofa; type cellSet; action add;
+   source boxToCell; box (0.2731255747 0.429 -1) (0.396494214 0.72 2); }
+ { name sofa; type cellSet; action add;
+   source boxToCell; box (0.396494214 0.429 -1) (0.6145573571 0.85 2); }
+ { name fluid; type cellSet; action new; source cellToCell; sets (sofa); }
+ { name fluid; type cellSet; action invert; }
+);

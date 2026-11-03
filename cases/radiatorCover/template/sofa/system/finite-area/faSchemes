@@ -1,0 +1,40 @@
+FoamFile { version 2.0; format ascii; class dictionary; object faSchemes; }
+// The finite-area dictionaries of the sofa's shell, after OpenFOAM's thermalShell tutorials; the
+// jouleHeatingSource entries are unused and kept as the solved run had them.
+ddtSchemes
+{
+    default         Euler;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+    grad(jouleHeatingSource:V) Gauss linear;
+}
+
+divSchemes
+{
+    default         none;
+}
+
+laplacianSchemes
+{
+    default         none;
+    // Generic names (without region)
+    laplacian((kappas*hs),Ts) Gauss linear corrected;
+    laplacian((hs*jouleHeatingSource:sigma),jouleHeatingSource:V) Gauss linear corrected;
+
+    // Same but with specified suffix
+    laplacian((kappas*hs_shell),Ts_shell) Gauss linear corrected;
+    laplacian((hs_shell*jouleHeatingSource:sigma),jouleHeatingSource:V) Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default         linear;
+}
+
+lnGradSchemes
+{
+    default         corrected;
+}

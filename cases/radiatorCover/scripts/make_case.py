@@ -1,6 +1,6 @@
 """Write one run of the radiator cover case: its mesh, its fields and its dictionaries.
 
-    python3 scripts/make_case.py bare|cover <runDir> [--nprocs N]
+    python3 scripts/make_case.py bare|cover|sofa <runDir> [--nprocs N]
 
 The mesh is written directly as a polyMesh, one cell thick (z = 0 to 1 m), from a Cartesian
 grid with lines on every edge of the radiator, the cover and its slots. Both runs share the
@@ -12,6 +12,12 @@ The convector behind the panel (x = 0.040-0.103, y = 0.15-0.75) is the cellZone 
 
 The files under template/ are copied in unchanged; 0/T, 0/IDefault and
 system/decomposeParDict are written here.
+
+The sofa run starts from the bare run's grid. This script writes that grid, the sofa's
+fields and its dictionaries (template/sofa/, and a controlDict that also #includes
+config/sofaSettings); ../Allrun then cuts the sofa out of the mesh with topoSet and
+subsetMesh, refines the cells along its faces twice with refineMesh and makes its shell's
+finite-area mesh with makeFaMesh, with the fields set aside meanwhile.
 """
 import argparse
 import json
@@ -171,11 +177,34 @@ def mesh(run, case):
     return cc, nx, ny, conv, bounds
 
 
-def fields(case, bounds):
-    """0/T (the radiator panel at 55 C, the cover's baffles) and 0/IDefault."""
+# The sofa's surface: one 12 mm layer of fabric over foam, 66.7 kg/m3 and 1000 J/kg K, about
+# 800 J/m2 K, warmed by convection and by the radiation it absorbs (qr) on the room side and
+# adiabatic behind. The layer's own emissivity is 0: the room's radiation sees the patch's 0.9.
+SOFA_T = """// The sofa: a thin layer with heat capacity, fabric over the foam that a few minutes' heat
+// reaches, about 800 J/m2K, warmed by convection and radiation (qr) on the room side and
+// adiabatic behind. Its finite-area region is sofaShell (system/finite-area, 0/finite-area).
+sofa
+{
+    type            compressible::thermalShell;
+    value           uniform $Tamb;
+    active          true;
+    region          sofaShell;
+    thermalShellModel thermalShell;
+    thermo { rho 66.7; kappa 0.05; Cp 1000; emissivity 0; }
+    qr              qr;
+    thickness       0.012;
+    h               hs;
+}
+"""
+
+
+def fields(case, bounds, run):
+    """0/T (the radiator panel at 55 C, the cover's baffles, the sofa's shell) and 0/IDefault."""
     txt = H("T", "volScalarField") + '#include "../../../config/caseSettings"\ndimensions [0 0 0 1 0 0 0];\ninternalField uniform $Tamb;\nboundaryField\n{\n'
     txt += "glass { type externalWallHeatFluxTemperature; mode coefficient; h uniform $hGlassExt; Ta uniform $Tout; kappaMethod fluidThermo; qr qr; value uniform $Tamb; }\n"
     txt += '"(floor|outerWall)" { type externalWallHeatFluxTemperature; mode flux; q uniform 0; kappaMethod fluidThermo; qr qr; value uniform $Tamb; }\n'
+    if run == "sofa":
+        txt += SOFA_T
     txt += '"(ceiling|innerWall)" { type fixedValue; value uniform $Tamb; }\nradiatorPanel { type fixedValue; value uniform 328.15; }\nfrontAndBack { type empty; }\n'
     for name, n, start in bounds:
         if not name.endswith(("A", "B")) or name == "frontAndBack":
@@ -200,11 +229,23 @@ def fields(case, bounds):
 '''
     (case / "0/T").write_text(txt + "}\n")
     (case / "0/IDefault").write_text(H("IDefault", "volScalarField") + 'dimensions [1 0 -3 0 0 0 0];\ninternalField uniform 133.4;\nboundaryField\n{\nfrontAndBack {type empty;}\n".*" { type greyDiffusiveRadiation; value uniform 133.4;}\n}\n')
+    if run == "sofa":
+        # the sofa a wall in every other field, and the shell's temperature and thickness
+        for name in ["U", "alphat", "k", "nut", "omega", "p", "p_rgh"]:
+            f = case / "0" / name
+            body = f.read_text().replace("|radiatorPanel|", "|radiatorPanel|sofa|")
+            assert "|sofa|" in body, name
+            f.write_text(body)
+        (case / "0/finite-area").mkdir()
+        for name, dim, value in [("Ts", "[0 0 0 1 0 0 0]", "293.15"), ("hs", "[0 1 0 0 0 0 0]", "0.012")]:
+            (case / "0/finite-area" / name).write_text(
+                H(name, "areaScalarField") + f"dimensions {dim};\ninternalField uniform {value};\n"
+                "boundaryField { sofaFrontAndBack { type empty; } }\n")
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("run", choices=["bare", "cover"])
+    ap.add_argument("run", choices=["bare", "cover", "sofa"])
     ap.add_argument("dir")
     ap.add_argument("--nprocs", type=int, default=16)
     a = ap.parse_args()
@@ -215,7 +256,15 @@ def main():
     shutil.copytree(TEMPLATE / "system", case / "system")
     shutil.copytree(TEMPLATE / "0.orig", case / "0")
     cc, nx, ny, conv, bounds = mesh(a.run, case)
-    fields(case, bounds)
+    fields(case, bounds, a.run)
+    if a.run == "sofa":
+        shutil.copytree(TEMPLATE / "sofa/system", case / "system", dirs_exist_ok=True)
+        (case / "system/controlDict").write_text(
+            "FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}\n"
+            '#include "../../../config/caseSettings"\n'
+            "// the sofa run's field writes and monitor, merged into the shared control dictionary\n"
+            '#include "../../../config/sofaSettings"\n'
+            "$sharedControl;\n")
     (case / "system/decomposeParDict").write_text(
         "FoamFile {version 2.0; format ascii; class dictionary; object decomposeParDict;}\n"
         f"numberOfSubdomains {a.nprocs};\nmethod scotch;\n")
@@ -226,7 +275,8 @@ def main():
                          "cells": int(sum((y[:-1] >= lo - 1e-8) & (y[1:] <= hi + 1e-8)))} for lo, hi in SLOTS]}
     (case / "mesh_geometry.json").write_text(json.dumps(report, indent=2))
     print(a.run, report["cells"], "cells,", nx, "x", ny, "grid, convector", len(conv), "cells, smallest",
-          f'{report["min_dx"] * 1e3:.2f} x {report["min_dy"] * 1e3:.2f} mm')
+          f'{report["min_dx"] * 1e3:.2f} x {report["min_dy"] * 1e3:.2f} mm'
+          + (", before the sofa is cut out" if a.run == "sofa" else ""))
 
 
 if __name__ == "__main__":

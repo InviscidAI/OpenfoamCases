@@ -1,0 +1,9 @@
+FoamFile { version 2.0; format ascii; class dictionary; object faOptions; }
+contact
+{
+    type            contactHeatFluxSource;
+    active          true;
+    region          sofaShell;
+    selectionMode   all;
+    kappaMethod     fluidThermo;
+}

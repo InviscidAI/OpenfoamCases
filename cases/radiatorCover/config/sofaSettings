@@ -1,0 +1,139 @@
+// -------------------------------------------------------------------------
+// sofaSettings - what the sofa run changes in caseSettings' control
+// dictionary. Its system/controlDict #includes caseSettings and then this
+// file, whose sharedControl is merged into caseSettings' entry by entry.
+// -------------------------------------------------------------------------
+sharedControl
+{
+ // the fields every 30 s, the last two kept, so that a stopped solve can be
+ // continued; the run was solved in one go
+ writeInterval 30;
+ purgeWrite 2;
+ functions
+ {
+  wallHeatFlux { patches (glass floor ceiling innerWall outerWall radiatorPanel sofa); }
+  // caseSettings' monitor with the sofa a wall (columns sofaConv, sofaRad) and the
+  // cover's region made the gap behind the sofa, from the window wall to the sofa's
+  // back and up to its frame's top (x < 0.2731 m, y < 0.72 m): its columns are
+  // Ugap, gapGrossOut, gapGrossIn, gapDiffusion, gapOpeningRadiation and gapMass.
+  // mdfConvection and mdfRadiation stay zero, as in the bare run.
+  heatAccounting
+  {
+ codeExecute
+ #{
+  const fvMesh& m=mesh();
+  if (!m.foundObject<volScalarField>("h")) return true;
+  const auto& T=m.lookupObject<volScalarField>("T");
+  const auto& p=m.lookupObject<volScalarField>("p");
+  const auto& rho=m.lookupObject<volScalarField>("rho");
+  const auto& h=m.lookupObject<volScalarField>("h");
+  const auto& U=m.lookupObject<volVectorField>("U");
+  const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+  const auto& turb=m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+  const auto alpha=turb.alphaEff();
+  surfaceScalarField hf(fvc::flux(phi,h,"div(phi,h)"));
+  surfaceScalarField df(-fvc::interpolate(alpha())*fvc::snGrad(h)*m.magSf());
+  surfaceScalarField rad(IOobject("monitorRad",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar(dimPower,Zero));
+  const auto* dom=m.cfindObject<radiation::fvDOM>("radiationProperties");
+  if(dom)
+  {
+   for(label r=0;r<dom->nRay();r++)
+   {
+    surfaceScalarField Ji(IOobject("monitorJi",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),dom->IRay(r).dAve() & m.Sf());
+    rad+=fvc::flux(Ji,dom->IRayLambda(r,0),"div(Ji,Ii_h)");
+   }
+  }
+  const auto* qr=m.cfindObject<volScalarField>("qr");
+  // masks are geometrical, ensuring the same definition after decomposition.
+  wordList maskTypes(m.boundary().size(),"zeroGradient");
+  forAll(m.boundary(),b) if(m.boundary()[b].coupled() || m.boundary()[b].type()=="empty") maskTypes[b]=m.boundary()[b].type();
+  volScalarField z(IOobject("zoneMask",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar(dimless,Zero),maskTypes);
+  volScalarField c(IOobject("coverMask",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar(dimless,Zero),maskTypes);
+  scalar mass=0,mt=0,energy=0,ez=0,ec=0,kez=0,mz=0,mc=0;
+  const scalar R=8314.46261815324/28.96, cv=1005-R;
+  forAll(T,i)
+  {
+   const vector a=m.C()[i];
+   z[i]=(a.x()>.04 && a.x()<.103 && a.y()>.15 && a.y()<.75)?1:0;
+   // the gap behind the sofa, from the wall to the sofa's back and up to its frame top
+   c[i]=(a.x()<.2731255747 && a.y()<.72)?1:0;
+   mass+=rho[i]*m.V()[i]; mt+=rho[i]*m.V()[i]*T[i];
+   scalar e=cv/R*p[i]*m.V()[i];
+   energy+=e; ez+=z[i]*e; ec+=c[i]*e;
+   kez+=z[i]*.5*rho[i]*magSqr(U[i])*m.V()[i];
+   mz+=z[i]*rho[i]*m.V()[i];mc+=c[i]*rho[i]*m.V()[i];
+  }
+  z.correctBoundaryConditions(); c.correctBoundaryConditions();
+  auto gz=fvc::snGrad(z); auto gc=fvc::snGrad(c);
+  scalar za=0,zd=0,co=0,ci=0,cd=0,cr=0;
+  forAll(m.neighbour(),f)
+  {
+   scalar dz=z[m.owner()[f]]-z[m.neighbour()[f]], dc=c[m.owner()[f]]-c[m.neighbour()[f]];
+   za+=dz*hf[f]; zd+=dz*df[f];
+   scalar a=dc*hf[f], flux=dc*phi[f];
+   if(flux>0)co+=a;else ci-=a;
+   cd+=dc*df[f]; cr+=dc*rad[f];
+  }
+  scalar panelC=0,panelR=0,mdf=0,coverRad=0;
+  scalarList w(12,0);
+  const wordList walls({"glass","ceiling","innerWall","floor","outerWall","sofa"});
+  forAll(m.boundary(),b)
+  {
+   const auto& patch=m.boundary()[b];
+   if(patch.type()=="empty")continue;
+   if(patch.coupled())
+   {
+    const auto zn=z.boundaryField()[b].patchNeighbourField();
+    const auto cn=c.boundaryField()[b].patchNeighbourField();
+    forAll(patch,j)
+    {
+     const label cell=patch.faceCells()[j];
+     scalar dz=.5*(z[cell]-zn()[j]),dc=.5*(c[cell]-cn()[j]);
+     za+=dz*hf.boundaryField()[b][j];zd+=dz*df.boundaryField()[b][j];
+     scalar a=dc*hf.boundaryField()[b][j], flux=dc*phi.boundaryField()[b][j];
+     if(flux>0)co+=a;else ci-=a;
+     cd+=dc*df.boundaryField()[b][j];cr+=dc*rad.boundaryField()[b][j];
+    }
+    continue;
+   }
+   scalarField conv(alpha().boundaryField()[b]*h.boundaryField()[b].snGrad()*m.magSf().boundaryField()[b]);
+   forAll(patch,j)
+   {
+    const label cell=patch.faceCells()[j];
+    za+=z[cell]*hf.boundaryField()[b][j]; zd-=z[cell]*conv[j];
+    scalar radIn=qr ? -qr->boundaryField()[b][j]*m.magSf().boundaryField()[b][j] : 0;
+    if(patch.name()=="radiatorPanel"){panelC+=conv[j];panelR+=radIn;}
+    forAll(walls,k)if(patch.name()==walls[k]){w[2*k]+=conv[j];w[2*k+1]+=radIn;}
+    if(patch.name().ends_with("B")) {mdf+=conv[j];coverRad+=radIn;}
+    // On overhang lower face A, both sides are in the room.
+    if(patch.name()=="topA" && m.Cf().boundaryField()[b][j].x()>.165){mdf+=conv[j];coverRad+=radIn;}
+   }
+  }
+  const auto fluxSum=fvc::surfaceSum(mag(phi));
+  scalar coMax=0,uMax=0;vector coAt(Zero),uAt(Zero);
+  forAll(T,i)
+  {
+   scalar ca=.5*m.time().deltaTValue()*fluxSum()[i]/(rho[i]*m.V()[i]);
+   if(ca>coMax){coMax=ca;coAt=m.C()[i];}
+   if(mag(U[i])>uMax){uMax=mag(U[i]);uAt=m.C()[i];}
+  }
+  scalar globalCo=coMax,globalU=uMax;reduce(globalCo,maxOp<scalar>());reduce(globalU,maxOp<scalar>());
+  if(coMax<globalCo)coAt=Zero;if(uMax<globalU)uAt=Zero;
+  reduce(coAt,sumOp<vector>());reduce(uAt,sumOp<vector>());
+  scalarList v({mass,mt,energy,ez,ec,kez,za,zd,panelC,panelR,co,ci,cd,cr,mdf,coverRad});
+  forAll(v,i)reduce(v[i],sumOp<scalar>());forAll(w,i)reduce(w[i],sumOp<scalar>());
+  reduce(mz,sumOp<scalar>());reduce(mc,sumOp<scalar>());
+  if(Pstream::master())
+  {
+   fileName dir=m.time().globalPath()/"postProcessing/heatAccounting";mkDir(dir);
+   static bool first=true;
+   std::ofstream out((dir/"heat.csv").c_str(),first?std::ios::out:std::ios::app);
+   out<<std::setprecision(14);
+   if(first)out<<"time,mass,massT,Uroom,Uzone,Ugap,KEzone,zoneEnthalpy,zoneDiffusion,panelConvection,panelRadiation,gapGrossOut,gapGrossIn,gapDiffusion,gapOpeningRadiation,mdfConvection,mdfRadiation,glassConv,glassRad,ceilingConv,ceilingRad,innerWallConv,innerWallRad,floorConv,floorRad,outerWallConv,outerWallRad,sofaConv,sofaRad,zoneMass,gapMass,maxCo,maxCoX,maxCoY,maxU,maxUX,maxUY\n";
+   out<<m.time().value();forAll(v,i)out<<','<<v[i];forAll(w,i)out<<','<<w[i];out<<','<<mz<<','<<mc<<','<<globalCo<<','<<coAt.x()<<','<<coAt.y()<<','<<globalU<<','<<uAt.x()<<','<<uAt.y()<<'\n';
+   first=false;
+  }
+ #};
+  }
+ }
+}

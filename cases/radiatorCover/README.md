@@ -5,10 +5,12 @@ warn that boxing a radiator in costs some of its heat. This case switches the sa
 on twice under a cold window, once bare and once inside a typical MDF cover, and asks how
 much of the bare radiator's heat the covered one still gets into the room in the first five
 minutes, and where its warm air goes. It is about the heat that reaches the room, not about
-comfort or energy bills.
+comfort or energy bills. A third run, added later, puts a sofa 15 cm in front of the bare
+radiator and asks whether the room warms more slowly.
 
     ./Allrun bare      # the radiator bare, 0-300 s from switch-on
     ./Allrun cover     # the same radiator inside the cover
+    ./Allrun sofa      # the bare radiator with a sofa standing 15 cm in front of it
 
 **The result.** Over the 300 s from switch-on, the heat that crossed the cover's outside
 into the room was **114.9 kJ per metre, 69.9% of the 164.4 kJ/m the bare radiator gave**: on
@@ -17,6 +19,17 @@ rose from 65% to 75%, because the bare room warmed faster and a radiator held at
 less into warmer air; corrected to the same room temperature it is 65-71% in every minute.
 The limits below say why this is a comparison of two shapes in a 2-D section over five
 minutes, not a measurement of a real cover's cost.
+
+**With the sofa** the radiator gave 151.6 kJ/m over the five minutes, 92% of the bare
+radiator's 164.4, and yet the room's air did not warm more slowly. It was the same as the bare
+room's to within 0.05 K for the first minute, and then it pulled slightly ahead, to 27.9 C
+against 27.5 C at five minutes. That rests above all on one assumption of this room: **the
+ceiling and the inner wall are held at 20 C**. In the bare room they absorb 37 kJ/m of the
+radiator's radiation over the five minutes, and that heat leaves the model. With the sofa they
+absorb 10 kJ/m, because the sofa's back catches the radiation and gives most of it to the air.
+In a room whose ceiling and walls warm up, part of that 37 kJ/m would come back, and the answer
+could change. [The sofa in front of the radiator](#the-sofa-in-front-of-the-radiator) has the
+run and its limits.
 
 The room is [`radiatorUnderWindow`](../radiatorUnderWindow)'s 2-D section, its window and
 its radiator box, but this is a case of its own, not a third run of that case: the radiator
@@ -251,6 +264,148 @@ exactly. After the first 7.5 s every 7.5 s interval closes to within 1.5 W/m (ba
 W/m (cover). Both solves end in `End` at 300 s with no fatal error; `omega` was bounded once,
 at the first step, and `k` is held at its 1e-15 floor in some steps.
 
+## The sofa in front of the radiator
+
+The usual advice is to keep a sofa well away from a radiator so that its heat can reach the
+room. The `sofa` run is the bare run with a sofa standing in front of the radiator: the same
+room, the same radiator held at 55 C, the same numerics, and the same mesh with the sofa cut
+out of it. It asks whether the room's air warms more slowly than in the bare run over the
+first five minutes. The bare run is not solved again.
+
+### The sofa and the gap
+
+**An IKEA BACKSÄLEN 3-seat sofa**, from IKEA's product page (read 18 Oct 2026): depth 94 cm,
+"Height including back cushions 85 cm", backrest 72 cm, seat height 43 cm, seat depth 60 cm,
+"Free height under furniture 17 cm". In the section it is a solid side profile in three
+blocks: the seat and base from 17 cm up to the 43 cm seat over the whole depth, a backrest
+frame 12 cm thick up to 72 cm, and a back cushion 22 cm thick in front of it up to 85 cm. The
+split of the 34 cm behind the seat into 12 and 22 cm is ours. The section is cut between the
+legs, so the 17 cm under the sofa is open from back to front, as it is along most of a real
+sofa's length.
+
+**The gap is 15 cm** from the radiator's front to the sofa's back. It is the gap people say they
+leave, and less than the advice asks for:
+
+- a Mumsnet poster planned "about 15-17cm gap" in front of a radiator, and the one reply with a
+  figure accepted it (26 Jul 2026);
+- a MoneySavingExpert reply advises "just leave a 5" pr 6" gap for airflow", 13-15 cm, while
+  other posters on the same page have theirs "rammed up to the radiator" or "normally right up
+  against it" (page 3, read 31 Oct 2026);
+- the advice asks for 30 cm: the Verbraucherzentrale, "Sofas und Schränke sollten mindestens 30
+  Zentimeter Abstand zur Heizung haben", and EngineerFix, "at least 12 inches (30 cm) away from
+  all sides of the radiator".
+
+On the mesh every edge of the sofa is the bare run's nearest grid line
+(`template/sofa/system/topoSetDict.sofa`): its back at x = 0.2731 m, 0.150 m in front of the
+panel's front at x = 0.123 m; its underside at y = 0.171 m; the frame's top at 0.720 m and x =
+0.3965 m; the cushion's top at 0.850 m and x = 0.6146 m; the seat at 0.429 m; its front at x =
+1.2222 m, 0.949 m deep.
+
+**The sofa's surface** is the patch `sofa`, a `compressible::thermalShell`: one thin layer, 12 mm
+thick, 66.7 kg/m3, 1000 J/kg K and 0.05 W/m K, about 800 J/m2 K, standing for the fabric and
+the foam just under it that a few minutes' heat reaches. Its room side is warmed by convection
+and by the radiation it absorbs, with emissivity 0.9 like every other surface; its other side
+is adiabatic, so nothing passes into the foam, the frame or the air inside the sofa. The
+layer's figures are ours, not a measured sofa's.
+
+**The mesh.** `subsetMesh` removes the sofa's 11,706 cells from the bare run's 148,240, leaving
+136,534. On that mesh the sofa's faces sat in 7-22 mm cells, and the first solve diverged next to
+the sofa (see the history below), so `refineMesh` splits in x and y the cells owning a sofa face
+and every cell touching them (1,210 cells), and then the cells owning a sofa face again (1,198):
+**143,758 cells**, the cells along the sofa a quarter of their first size, 2,400 sofa faces.
+`checkMesh`: Mesh OK, maximum non-orthogonality 68 at the split faces. `makeFaMesh` makes the
+layer's finite-area mesh on the patch `sofa`.
+
+**The monitor** is `heatAccounting` with the sofa as a wall (`sofaConv`, `sofaRad`) and, in place
+of the cover's region, the gap behind the sofa, from the window wall to the sofa's back and up
+to its frame's top (x < 0.2731 m, y < 0.72 m, the `gap*` columns); `config/sofaSettings` holds the
+change. The run writes its fields every 30 s, keeping the last two. It took 80,106 steps; after
+10 s the cell setting the step was at the sofa's front lower corner (x = 1.225-1.231 m, y =
+0.171 m) in 74% of steps and just below the convector in 20%.
+
+### What the sofa run gives
+
+`scripts/extract_results.py` writes `results/sofa/summary.txt` and `results/sofa/history.csv` (every
+2.5 s) from the sofa run's monitor, set against the bare run's. The room's own air is its air
+outside the convector, whose air is held at 55 C; the bare room's figures are those of the bare
+run above.
+
+| | 0-60 s | 60-120 | 120-180 | 180-240 | 240-300 |
+|---|---:|---:|---:|---:|---:|
+| bare: radiator's output, W/m | 605.8 | 576.5 | 546.0 | 519.2 | 492.9 |
+| sofa: radiator's output, W/m | 592.2 | 540.3 | 499.8 | 461.2 | 433.4 |
+| sofa / bare | 97.8% | 93.7% | 91.5% | 88.8% | 87.9% |
+| sofa: panel's net radiation, W/m | 179.9 | 157.7 | 141.1 | 129.4 | 120.9 |
+| stored in the sofa's surface, W/m | 85.3 | 52.6 | 24.2 | 9.1 | 1.0 |
+
+| the room's own air, C | 30 s | 60 s | 120 s | 180 s | 240 s | 300 s |
+|---|---:|---:|---:|---:|---:|---:|
+| bare | 21.47 | 22.45 | 24.13 | 25.52 | 26.62 | 27.44 |
+| sofa | 21.51 | 22.49 | 24.31 | 25.83 | 27.01 | 27.90 |
+| sofa less bare, K | +0.04 | +0.04 | +0.18 | +0.31 | +0.39 | +0.46 |
+
+These are the monitors' mass-weighted means. On the clip's mid-plane section the area mean of
+the same air reads 27.91 C against 27.46 C at 300 s, so 27.9 against 27.5 C.
+
+Over the whole 300 s, in kJ per metre (into the room's air +, out of it -):
+
+| | bare | sofa |
+|---|---:|---:|
+| the radiator's output | 164.4 | 151.6 |
+| of which the panel's net radiation | 57.4 | 43.7 |
+| lost through the glass | -29.1 | -30.1 |
+| **radiation absorbed by the ceiling and inner wall, held at 20 C** | **-37.3** | **-9.9** |
+| convection into the ceiling and inner wall | -36.1 | -38.4 |
+| stored in the sofa's surface | | -10.3 |
+| rise of the air's energy | 61.7 | 62.9 |
+| residual | 0.2 | 0.1 |
+
+**Why the sofa room ends a little warmer.** The sofa cuts the radiator's output by 8% over the
+five minutes, all of it radiation: the sofa's back, 15 cm in front of the panel, warms and
+radiates back, and the panel's net radiation falls from 57.4 to 43.7 kJ/m, while the panel's
+and the convector's convection together are about the same, 107.9 against 107.0 kJ/m. But in
+the bare room most of the panel's radiation crosses the room to the ceiling and the inner wall,
+and they are held at 20 C: whatever
+radiation they absorb, 37.3 kJ/m in the five minutes, leaves the model at once and never warms
+the air. With the sofa in the way they absorb 9.9 kJ/m. The sofa's back takes the radiation
+instead, stores part of it (10.3 kJ/m, most of it in the first two minutes; by the last minute
+it stores 1 W/m and at 300 s it gives a little back) and hands the rest to the air by
+convection. So the sofa room's air gains 62.9 kJ/m against 61.7, and it holds 4% less air
+(10.95 against 11.39 kg/m), because the sofa takes up its room. The difference, 0.46 K at five
+minutes, is small, and it comes from where the radiation goes in a room whose ceiling and
+inner wall cannot warm. It is not a finding that a sofa helps a radiator.
+
+**What the air does.** The gap behind the sofa becomes a chimney: room air is drawn in under the
+sofa and rises between the radiator and the sofa's back, and the plume leans over the sofa's
+top. Out of the gap's region, the air carries 426-502 W/m of enthalpy above 20 C each minute,
+and brings 19-124 W/m back in.
+
+**The budget closes.** Radiator plus walls plus the sofa's surface less the rise of the air's
+energy closes over 0-300 s to +0.39 W/m; to within 2.6 W/m in each minute, and after the first
+7.5 s (+22.9 W/m, the convector's jump to 55 C, as in the other runs) to within 1.5 W/m in every
+7.5 s. The solve ends in `End` at 300 s.
+
+### How the sofa run got here
+
+The sofa was first solved with no heat capacity: an adiabatic surface that radiates, the floor's
+condition, on the unrefined mesh of 136,534 cells. That solve diverged twice, at 0.034 s and at
+1.26 s, with a negative temperature on the seat's front face just below its top. The wall's
+temperature is the cell's plus what it absorbs times the cell's depth over the air's
+conductivity, its emission feeds back into the radiation, and radiation is solved every 10
+steps; on 7-22 mm cells that loop has a gain above 1. Relaxing the sofa's wall temperature only
+delayed the divergence; radiation every step held but would have taken about 27 h. Refining the
+cells along the sofa, as above, cut the gain to about 0.6, and that run solved 0-300 s in 9.8 h
+on 16 ranks. In it the sofa's back reached 36 C within 0.6 s and 42 C by 300 s, the radiator gave
+148.9 kJ/m, and the room's air gained 7% more than the bare room's. A back that heats in under a
+second hands the panel's radiation straight to the air, which a fabric back over foam would partly
+store, so the sofa was given the heat capacity above and solved again. That run, without heat
+capacity, is not in this case.
+
+One thing is not explained. In the plane cells next to the sofa's back, the air at 300 s
+averages about 3 K warmer in the run with heat capacity than in the run without it, where less
+would be expected. The cause was not found. It does not enter the room's mean or the budget
+above.
+
 ## How the case got here
 
 The first attempt solved both runs 0-30 s side by side on 8 ranks each and restarted them
@@ -268,6 +423,13 @@ time, the air's temperature with moving air parcels, and a count in each panel o
 reached the room so far as a share of the bare radiator's 300 s total, ending at 100% and 70%.
 In the clip the cover is drawn about twice its true thickness so that it reads on a phone;
 the solve's cover is the baffles above.
+
+The sofa's clip shows the bare room above and the sofa room below, each whole from floor to
+ceiling, from switch-on, 300 s at 15 times real time, the air's temperature on a scale of
+18-34 C with moving air parcels and the sofa as a plain grey solid. It asks "Sofa by a radiator:
+is the room colder?" and shows a clock but no number. Rounded to whole degrees, the rooms would
+read 27 against 28 C over the last 30 s and make a winner of 0.46 K, so the picture is left to
+show that they warm alike. It does not show the walls held at 20 C, which that likeness rests on.
 
 ## What it cannot
 
@@ -297,6 +459,33 @@ the solve's cover is the baffles above.
 - **One mesh and one realization each.** No mesh study; k-omega SST URANS with wall
   functions on every surface.
 
+The sofa run has all of these, and more of its own:
+
+- **A ceiling and an inner wall held at 20 C.** This decides the sofa run's answer. In the bare
+  room they absorb 37 kJ/m of the panel's radiation over the five minutes and the heat leaves
+  the model; with the sofa they absorb 10 kJ/m, because the sofa's back catches it and gives
+  most of it to the air. That is why the sofa room ends slightly warmer, 27.9 against 27.5 C at
+  five minutes. Real ceilings and walls warm and give some of that heat back to the room, so
+  the bare room would lose less of its radiation, and the sofa room's lead could shrink or
+  reverse. A real room also loses heat through its outside walls and air leaks, which this
+  section does not beyond its glass. The run says that a sofa 15 cm away does not make the air
+  colder in this room over these five minutes; it does not say a sofa helps a radiator.
+- **A 2-D section through a sofa.** The sofa has no ends and no arms, so the radiator's plume
+  cannot go round it as it would along a real room's wall, and the air under it is open from
+  back to front over its whole length because the section is cut between the legs. Every number
+  is per metre of sofa and radiator.
+- **The sofa as a thin shell.** Its surface is one 12 mm layer of fabric over foam, about
+  800 J/m2 K, adiabatic behind, with figures of ours. A real sofa has a frame, cushions and
+  air inside it that would store more heat over a longer time and keep its back cooler at
+  first; its fabric's emissivity is a handbook value, ours.
+- **One gap, 15 cm.** It is the gap people say they leave (Mumsnet, MoneySavingExpert), not the
+  30 cm the advice asks for, and not a sofa pushed against the radiator, which many have.
+- **The room's air, not the person on the sofa.** The run compares the air's temperature. It
+  says nothing of the radiation that would have reached someone sitting in the room, which the
+  sofa's back blocks.
+- **Five minutes.** The sofa's surface had all but stopped storing heat by 300 s; an evening
+  would run on with walls, ceiling and sofa all warming, which this room does not have.
+
 ## Sources
 
 - Stelrad Compact K1 600 x 1000: 980 W at dT50 to EN 442, and EN 442's exponent of 1.3, as in
@@ -310,6 +499,16 @@ the solve's cover is the baffles above.
   133 (2016) 414-422; accepted manuscript at researchonline.ljmu.ac.uk/id/eprint/4222/. It
   quotes CIBSE Guide B (2005).
 - UK SAP default U-values for the glass, as in `radiatorUnderWindow`.
+- IKEA, BACKSÄLEN 3-seat sofa, ikea.cn/cn/en/p/backsaelen-3-seat-sofa-hallarp-grey-s29393158
+  (the sofa's dimensions), read 18 Oct 2026.
+- Mumsnet, mumsnet.com/talk/property/5559171-how-much-gap-if-putting-a-sofa-bed-in-front-of-radiator
+  (the 15-17 cm gap), 26 Jul 2026.
+- MoneySavingExpert forums, forums.moneysavingexpert.com/discussion/4952482, page 3 (the 5-6 in
+  gap, and sofas against the radiator), read 31 Oct 2026.
+- Verbraucherzentrale, "Heizung: 10 einfache Tipps",
+  verbraucherzentrale.de/wissen/energie/heizen-und-warmwasser/heizung-10-einfache-tipps-zum-heizkosten-sparen-13892
+  (30 cm).
+- EngineerFix, engineerfix.com/how-close-can-furniture-be-to-a-radiator (30 cm).
 
 ## Running it
 
@@ -319,19 +518,24 @@ NumPy (PyVista too for `results/section_means.csv`).
     cd cases/radiatorCover
     ./Allrun bare            # [nProcs], default 16
     ./Allrun cover
+    ./Allrun sofa
     python3 scripts/extract_results.py runs results
 
 `Allrun` writes the run into `runs/<run>/` with `scripts/make_case.py`, checks the mesh,
-decomposes it, writes the t = 0 section, solves and, once both runs have solved, writes
-`results/`. `./Allrun --setup-only <run> [nProcs]` stops before the solve; `./Allclean`
+decomposes it, writes the t = 0 section, solves and, once bare and cover have solved, writes
+`results/`, and `results/sofa/` once sofa has solved too. For the sofa run it first cuts the
+sofa out of the bare run's mesh and refines along it with OpenFOAM's `topoSet`, `subsetMesh`,
+`foamDictionary` and `refineMesh`, then makes the shell's area mesh with `makeFaMesh`.
+`./Allrun --setup-only <run> [nProcs]` stops before the solve; `./Allclean`
 removes the runs. The coded function object is compiled by OpenFOAM at the solve's start.
 
-The bare run took 26,712 s (7.4 h) and the covered run 36,896 s (10.2 h) of wall time, each
-alone on 16 ranks. Each writes 481 sections of about 11 MB, about 5.3 GB a run (gzip takes
-them to about 2 MB each); the fields are written once, at 300 s.
+The bare run took 26,712 s (7.4 h), the covered run 36,896 s (10.2 h) and the sofa run
+29,974 s (8.3 h) of wall time, each alone on 16 ranks. Each writes 481 sections of about
+10-11 MB, about 5 GB a run (gzip takes them to about 2 MB each); the fields are written once,
+at 300 s, in bare and cover, and every 30 s in sofa.
 
 The case was set up by an agent and checked by us; the runs were solved on our own machine.
-The files in `results/` are what `scripts/extract_results.py` wrote from those two runs.
+The files in `results/` are what `scripts/extract_results.py` wrote from those runs.
 Checked from a clean clone: `./Allrun --setup-only bare` and `cover` write the solved runs'
 meshes (points, faces, owner, neighbour, boundary and the cell, face and point zones) and
 every 0/ field byte for byte, and their t = 0 sections byte for byte; `checkMesh` passes at
@@ -339,3 +543,15 @@ every 0/ field byte for byte, and their t = 0 sections byte for byte; `checkMesh
 read the same settings through an older, longer `config/caseSettings` whose unused entries
 are gone; the scotch decomposition differs. `scripts/extract_results.py` on the solved runs
 writes `results/` byte for byte.
+
+The sofa run was built by hand from the bare run and is checked the same way, from a clean
+clone: `./Allrun --setup-only sofa` writes the solved run's mesh (points, faces, owner,
+neighbour, boundary, the zones, `pointMesh/boundary` and the cell, face and point sets), the
+shell's area mesh and every 0/ field byte for byte, but for the comment in `0/T`; `checkMesh`
+passes at 143,758 cells; its t = 0 section is the solved run's byte for byte. Its dictionaries
+are the solved run's once expanded, comments aside, with the unused entries of the older
+`config/caseSettings` gone; the solved run read its monitor from its own copy of that file and
+its field writes from a `system/stageSettings`, where this case has `config/sofaSettings`. The
+scotch decomposition differs. `scripts/extract_results.py` on the solved monitors writes
+`results/sofa/` byte for byte and leaves the bare and cover results as they were. Adding the
+sofa run changes nothing that `./Allrun bare` or `cover` writes.

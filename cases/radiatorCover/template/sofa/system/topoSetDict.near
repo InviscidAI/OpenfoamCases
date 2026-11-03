@@ -1,0 +1,6 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+// The second refinement: the cells owning a sofa face after the first
+actions (
+ { name sofaFaces; type faceSet; action new; source patchToFace; patch sofa; }
+ { name nearSofa; type cellSet; action new; source faceToCell; sets (sofaFaces); option owner; }
+);
