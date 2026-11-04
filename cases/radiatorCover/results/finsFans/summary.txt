@@ -1,0 +1,73 @@
+The radiator with fans under it against the same radiator bare, both with the 6.31 mm fin-gap convector, 0-300 s from switch-on (W and J per metre of section)
+
+steps: finsBare 55471, finsFans 78360; last monitored time 300 and 300 s
+
+The radiator's output from switch-on to 300 s, kJ/m
+            output  convection  of which the fins' zone  radiation
+  bare    162.60      105.34                    71.31      57.26
+  fans    173.09      116.11                    79.08      56.98
+  fans / bare  106.45%; convection 110.23%, radiation 99.51%
+
+Minute by minute (means, W/m; room = mass-weighted mean air temperature, C)
+  minute    bare: output  conv   rad   room | fans: output  conv   rad   room | fans/bare  same-room  convection
+    0- 60         583.6 388.5 195.1  21.31 |        626.1 431.2 194.9  21.50 |    107.3%     108.1%      111.0%
+   60-120         571.4 378.3 193.1  23.36 |        606.4 413.9 192.5  23.78 |    106.1%     108.0%      109.4%
+  120-180         551.2 359.9 191.3  25.09 |        583.0 392.9 190.1  25.66 |    105.8%     108.4%      109.2%
+  180-240         514.4 325.8 188.6  26.46 |        546.6 359.5 187.1  27.12 |    106.3%     109.6%      110.4%
+  240-300         489.5 303.2 186.3  27.41 |        522.7 337.6 185.1  28.15 |    106.8%     110.6%      111.3%
+  same-room: the fans' output rescaled to the bare room's temperature by EN 442's exponent, ((55 C - room)^1.3)
+
+The room's air, mass-weighted mean, C
+  time    bare   fans  fans-bare
+    10   20.54  20.61     +0.07
+    30   21.35  21.57     +0.21
+    60   22.41  22.74     +0.33
+   120   24.27  24.78     +0.50
+   180   25.85  26.47     +0.62
+   240   26.99  27.69     +0.70
+   300   27.79  28.56     +0.78
+
+The bare radiator against its rating, 980 ((55 C - room)/50)^1.3 W/m
+   25- 40 s   579.7 against  583.6  0.993
+    0- 60 s   583.6 against  586.6  0.995
+   60-120 s   571.4 against  540.6  1.057
+  120-180 s   551.2 against  502.4  1.097
+  180-240 s   514.4 against  472.9  1.088
+  240-300 s   489.5 against  452.4  1.082
+
+The air through the fan zone's bottom face and the convector, net upward, L/s per metre (rated 16.667)
+  window      fan face: bare   fans  fans/rated | into the convector: bare   fans | out of its top: bare   fans
+    7.5- 30           5.86  16.61       0.997 |                 7.88  11.39 |              7.62   9.11
+      0- 60           5.50  17.13       1.028 |                 7.47  11.12 |              7.26   8.90
+     60-120           5.88  16.72       1.003 |                 7.67  11.21 |              7.43   8.95
+    120-180           5.50  17.45       1.047 |                 7.26  10.62 |              7.15   8.58
+    180-240           5.18  18.49       1.109 |                 6.87  10.16 |              7.04   8.40
+    240-300           4.83  19.38       1.163 |                 6.49   9.88 |              6.90   8.23
+      8-300           5.42  17.80       1.068 |                 7.21  10.61 |              7.21   8.63
+  of the fans' extra air (fans less bare through the fan face), the share that enters the convector
+  and the share that leaves its top:
+    0- 60 s  0.314  0.141
+   60-120 s  0.326  0.140
+  120-180 s  0.281  0.120
+  180-240 s  0.247  0.102
+  240-300 s  0.233  0.091
+
+The fins' zone: its energy balance against hv V (55 C - its mean temperature), hv 448.855 W/m3/K, W/m
+  minute    bare: balance  hv V dT  zone C | fans: balance  hv V dT  zone C
+    0- 60          264.7    264.5   39.41 |         295.4    295.5   37.59
+   60-120          254.9    255.0   39.97 |         281.8    281.8   38.39
+  120-180          244.8    244.8   40.57 |         268.2    268.3   39.19
+  180-240          220.2    220.2   42.02 |         243.9    244.0   40.62
+  240-300          203.9    203.9   42.95 |         228.6    228.6   41.52
+
+Where the heat went, 0-300 s, kJ/m (into the air +, out of it -)
+                                                bare    fans
+  the radiator's output                           162.6   173.1
+  lost through the glass                          -26.1   -25.9
+  into the ceiling and inner wall, held at 20 C   -72.8   -77.1
+  rise of the air                                  63.7    70.0
+  residual (closure)                               0.04    0.08
+
+The room's heat budget, radiator + walls - rise of the air's energy
+  bare  over each minute -0.15 to +0.37 W/m; over each 7.5 s -0.45 to +1.03 W/m; 0-300 s +0.126 W/m
+  fans  over each minute +0.12 to +0.50 W/m; over each 7.5 s -0.34 to +1.25 W/m; 0-300 s +0.252 W/m

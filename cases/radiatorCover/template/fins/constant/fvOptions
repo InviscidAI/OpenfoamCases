@@ -1,0 +1,44 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+#include "../../../config/caseSettings"
+// finsSettings replaces caseSettings' dy with the fin gap's and adds fy, hv and fanUbar
+#include "../../../config/finsSettings"
+// fanOn 1 or 0, written by scripts/make_case.py
+#include "fanSettings"
+// The convector zone with the upward resistance of a 6.31 mm fin gap, and its air heated by
+// the fins at 55 C through a conductance hv instead of being held at 55 C:
+// S = hv (328.15 - T) on h, with hs = Cp (T - 293.15) (constant/thermophysicalProperties), so
+// Su = hv (328.15 - 293.15) and Sp = -hv / Cp per unit volume.
+convectorHeat
+{
+ type scalarSemiImplicitSource; selectionMode cellZone; cellZone convector;
+ volumeMode specific;
+ sources { h ( #eval{ $hv*(328.15 - 293.15) } #eval{ -$hv/1005.0 } ); }
+}
+convectorResistance
+{
+ type explicitPorositySource; selectionMode cellZone; cellZone convector;
+ explicitPorositySourceCoeffs
+ {
+  selectionMode cellZone; cellZone convector; type DarcyForchheimer;
+  DarcyForchheimerCoeffs
+  {
+   d (1e8 $dy 1e8); f (0 $fy 0);
+   coordinateSystem { type cartesian; origin (0 0 0); coordinateRotation { type axesRotation; e1 (1 0 0); e2 (0 1 0); } }
+  }
+ }
+}
+buoyancyTurb { type buoyancyTurbSource; selectionMode all; }
+// The fans: two SpeedComfort Duo fans (30 m3/h each) under the 1 m radiator, spread over the
+// section, a meanVelocityForce upward on the 70 x 24 mm cell zone fan; in finsBare the zone
+// is plain air.
+#ifeq $fanOn 1
+fanForce
+{
+ type meanVelocityForce; selectionMode cellZone; cellZone fan;
+ fields (U); Ubar (0 $fanUbar 0); relaxation 1.0;
+}
+#endif
+
+#remove "sharedSolution"
+#remove "sharedSchemes"
+#remove "sharedControl"

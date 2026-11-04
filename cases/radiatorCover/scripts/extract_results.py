@@ -31,6 +31,17 @@ sofa's surface stores heat: what it takes from the room, by convection and radia
 it stores. The room's own air is the room's air outside the convector, whose air is held at
 55 C.
 
+If <runsDir>/finsBare and <runsDir>/finsFans have solved, it writes <resultsDir>/finsBare/ and
+<resultsDir>/finsFans/ (each a history.csv every 2.5 s) and <resultsDir>/finsFans/summary.txt,
+the radiator with fans against the same radiator bare; it needs neither bare nor cover, and
+the files above do not change. In these runs the convector's air is heated by the fins
+through a conductance hv instead of being held at 55 C; the zone's energy balance above is
+still the heat the fins give, and the summary checks it against hv V (55 C - the zone's mean
+temperature) from the convT monitor. The air through the fan zone's bottom face and the
+convector's bottom and top comes from the face-flux monitors (fanInSum, convInSum,
+convOutSum, every 5 steps), in litres per second per metre at the phi-weighted density on
+the fan's face (fanInT).
+
 Each step's value is held over the step that ends at its time, and a window's mean is the
 integral over the window, partial steps included, over its length.
 """
@@ -255,8 +266,160 @@ def sofa_results(runs, out):
     print("\n".join(lines))
 
 
-def main():
-    runs, out = Path(sys.argv[1]), Path(sys.argv[2])
+FINS_HV = 448.854950  # W/m3/K, config/finsSettings
+RATED = 60 / 3.6  # L/s per metre: two fans of 30 m3/h on the 1 m radiator
+
+
+def monitor(run, name):
+    """A surfaceFieldValue or volFieldValue monitor's rows, every time directory, by time."""
+    rows = {}
+    for f in sorted((Path(run) / "postProcessing" / name).glob("*/*.dat")):
+        for line in f.read_text().splitlines():
+            if line and not line.startswith("#"):
+                v = [float(x) for x in line.split()]
+                rows[v[0]] = v[1:]
+    t = np.array(sorted(rows))
+    return t, np.diff(np.r_[0, t]), np.array([rows[k] for k in t])
+
+
+def fins_series(run):
+    """A fins run's terms: the radiator as series(), the fins' zone and the air the monitors count."""
+    d = read(run)
+    t, dt, s = series(d)
+    s = {k: s[k] for k in ["output_W", "convection_W", "radiation_W", "room_K", "catalogue_W", "glass_W",
+                           "wall_into_air_W", "energy_rate_W", "closure_W"]}
+    Mz0 = 1e5 / (R * TAMB) * ZONE
+    Ez = d["Uzone"] - 1005 * TAMB * d["zoneMass"]
+    Ez0 = CV / R * 1e5 * ZONE - 1005 * TAMB * Mz0
+    s["zone_W"] = (d["zoneEnthalpy"] + d["zoneDiffusion"] + np.diff(np.r_[Ez0, Ez]) / dt
+                   + np.diff(np.r_[0, d["KEzone"]]) / dt)
+    s["ceiling_inner_W"] = -(d["ceilingConv"] + d["ceilingRad"] + d["innerWallConv"] + d["innerWallRad"])
+    tf, dtf, rho = monitor(run, "fanInT")
+    flows = {"fan_air_Ls": "fanInSum", "conv_in_Ls": "convInSum", "conv_out_Ls": "convOutSum"}
+    m = {k: monitor(run, n) for k, n in flows.items()}
+    for k, (tm, dtm, v) in m.items():
+        assert np.array_equal(tm, tf), k
+        m[k] = 1e3 * v[:, 0] / rho[:, 1]
+    tz, dtz, zt = monitor(run, "convT")
+    m["zone_K"] = zt[:, 0]
+    m["fins_W"] = FINS_HV * ZONE * (TRAD - zt[:, 0])
+    return (t, dt, s), (tf, dtf, m)
+
+
+def fins_results(runs, out):
+    """results/finsBare/ and results/finsFans/: the radiator with fans against the same radiator bare."""
+    runs_ = {r: fins_series(runs / r) for r in ("finsBare", "finsFans")}
+    for r, ((t, dt, s), _) in runs_.items():
+        if t[-1] < 300 - 1e-6:
+            raise SystemExit(f"{r}'s monitor ends at {t[-1]} s")
+
+    def mean(rr, k, lo, hi):
+        (t, dt, s), (tf, dtf, m) = rr
+        if k in s:
+            return window(t, dt, s[k], lo, hi) / (hi - lo)
+        return window(tf, dtf, m[k], lo, hi) / (hi - lo)
+
+    def kJ(rr, k, lo=0, hi=300):
+        return mean(rr, k, lo, hi) * (hi - lo) / 1e3
+
+    cols = ["output_W", "convection_W", "zone_W", "radiation_W", "room_K", "catalogue_W", "glass_W",
+            "wall_into_air_W", "energy_rate_W", "closure_W", "fan_air_Ls", "conv_in_Ls", "conv_out_Ls", "zone_K"]
+    for r, rr in runs_.items():
+        (out / r).mkdir(parents=True, exist_ok=True)
+        cum = 0.0
+        with (out / r / "history.csv").open("w", newline="") as fh:
+            w = csv.writer(fh, lineterminator="\n")
+            w.writerow(["start_s", "end_s"] + [c.replace("_K", "_C") for c in cols] + ["output_since_0_kJ"])
+            for lo in np.arange(0, 300, 2.5):
+                v = {c: mean(rr, c, lo, lo + 2.5) for c in cols}
+                cum += 2.5 * v["output_W"]
+                w.writerow([f"{lo:g}", f"{lo + 2.5:g}"]
+                           + [f"{v[c] - 273.15:.3f}" if c.endswith("_K") else f"{v[c]:.2f}" for c in cols]
+                           + [f"{cum / 1e3:.3f}"])
+
+    b, f = runs_["finsBare"], runs_["finsFans"]
+    lines = []
+    say = lines.append
+    say("The radiator with fans under it against the same radiator bare, both with the 6.31 mm fin-gap "
+        "convector, 0-300 s from switch-on (W and J per metre of section)")
+    say("")
+    say(f"steps: finsBare {len(b[0][0])}, finsFans {len(f[0][0])}; last monitored time {b[0][0][-1]:g} and "
+        f"{f[0][0][-1]:g} s")
+    say("")
+    say("The radiator's output from switch-on to 300 s, kJ/m")
+    say("            output  convection  of which the fins' zone  radiation")
+    for name, rr in (("bare", b), ("fans", f)):
+        say(f"  {name:5s}  {kJ(rr, 'output_W'):7.2f}  {kJ(rr, 'convection_W'):10.2f}  {kJ(rr, 'zone_W'):23.2f}  "
+            f"{kJ(rr, 'radiation_W'):9.2f}")
+    say(f"  fans / bare  {100 * kJ(f, 'output_W') / kJ(b, 'output_W'):.2f}%; convection "
+        f"{100 * kJ(f, 'convection_W') / kJ(b, 'convection_W'):.2f}%, radiation "
+        f"{100 * kJ(f, 'radiation_W') / kJ(b, 'radiation_W'):.2f}%")
+    say("")
+    say("Minute by minute (means, W/m; room = mass-weighted mean air temperature, C)")
+    say("  minute    bare: output  conv   rad   room | fans: output  conv   rad   room | fans/bare  same-room  convection")
+    for lo in range(0, 300, 60):
+        mb = {k: mean(b, k, lo, lo + 60) for k in ("output_W", "convection_W", "radiation_W", "room_K")}
+        mf = {k: mean(f, k, lo, lo + 60) for k in ("output_W", "convection_W", "radiation_W", "room_K")}
+        same = mf["output_W"] * ((TRAD - mb["room_K"]) / (TRAD - mf["room_K"])) ** 1.3
+        say(f"  {lo:3d}-{lo + 60:3d}        {mb['output_W']:6.1f} {mb['convection_W']:5.1f} {mb['radiation_W']:5.1f} "
+            f"{mb['room_K'] - 273.15:6.2f} |       {mf['output_W']:6.1f} {mf['convection_W']:5.1f} {mf['radiation_W']:5.1f} "
+            f"{mf['room_K'] - 273.15:6.2f} |    {100 * mf['output_W'] / mb['output_W']:5.1f}%     "
+            f"{100 * same / mb['output_W']:5.1f}%      {100 * mf['convection_W'] / mb['convection_W']:5.1f}%")
+    say("  same-room: the fans' output rescaled to the bare room's temperature by EN 442's exponent, ((55 C - room)^1.3)")
+    say("")
+    say("The room's air, mass-weighted mean, C")
+    say("  time    bare   fans  fans-bare")
+    for time in (10, 30, 60, 120, 180, 240, 300):
+        tb_ = float(b[0][2]["room_K"][np.searchsorted(b[0][0], time - 1e-9)]) - 273.15
+        tf_ = float(f[0][2]["room_K"][np.searchsorted(f[0][0], time - 1e-9)]) - 273.15
+        say(f"  {time:4d}  {tb_:6.2f} {tf_:6.2f}     {tf_ - tb_:+.2f}")
+    say("")
+    say("The bare radiator against its rating, 980 ((55 C - room)/50)^1.3 W/m")
+    for lo, hi in ((25, 40), (0, 60), (60, 120), (120, 180), (180, 240), (240, 300)):
+        say(f"  {lo:3d}-{hi:3d} s  {mean(b, 'output_W', lo, hi):6.1f} against {mean(b, 'catalogue_W', lo, hi):6.1f}  "
+            f"{mean(b, 'output_W', lo, hi) / mean(b, 'catalogue_W', lo, hi):.3f}")
+    say("")
+    say(f"The air through the fan zone's bottom face and the convector, net upward, L/s per metre (rated {RATED:.3f})")
+    say("  window      fan face: bare   fans  fans/rated | into the convector: bare   fans | out of its top: bare   fans")
+    for lo, hi in ((7.5, 30), (0, 60), (60, 120), (120, 180), (180, 240), (240, 300), (8, 300)):
+        v = {k: (mean(b, k, lo, hi), mean(f, k, lo, hi)) for k in ("fan_air_Ls", "conv_in_Ls", "conv_out_Ls")}
+        say(f"  {lo:5g}-{hi:3g}          {v['fan_air_Ls'][0]:5.2f}  {v['fan_air_Ls'][1]:5.2f}       "
+            f"{v['fan_air_Ls'][1] / RATED:5.3f} |                {v['conv_in_Ls'][0]:5.2f}  {v['conv_in_Ls'][1]:5.2f} |"
+            f"             {v['conv_out_Ls'][0]:5.2f}  {v['conv_out_Ls'][1]:5.2f}")
+    say("  of the fans' extra air (fans less bare through the fan face), the share that enters the convector")
+    say("  and the share that leaves its top:")
+    for lo, hi in ((0, 60), (60, 120), (120, 180), (180, 240), (240, 300)):
+        extra = mean(f, "fan_air_Ls", lo, hi) - mean(b, "fan_air_Ls", lo, hi)
+        say(f"  {lo:3d}-{hi:3d} s  {(mean(f, 'conv_in_Ls', lo, hi) - mean(b, 'conv_in_Ls', lo, hi)) / extra:5.3f}  "
+            f"{(mean(f, 'conv_out_Ls', lo, hi) - mean(b, 'conv_out_Ls', lo, hi)) / extra:5.3f}")
+    say("")
+    say(f"The fins' zone: its energy balance against hv V (55 C - its mean temperature), hv {FINS_HV:g} W/m3/K, W/m")
+    say("  minute    bare: balance  hv V dT  zone C | fans: balance  hv V dT  zone C")
+    for lo in range(0, 300, 60):
+        say(f"  {lo:3d}-{lo + 60:3d}         {mean(b, 'zone_W', lo, lo + 60):6.1f}   {mean(b, 'fins_W', lo, lo + 60):6.1f} "
+            f"{mean(b, 'zone_K', lo, lo + 60) - 273.15:7.2f} |        {mean(f, 'zone_W', lo, lo + 60):6.1f}   "
+            f"{mean(f, 'fins_W', lo, lo + 60):6.1f} {mean(f, 'zone_K', lo, lo + 60) - 273.15:7.2f}")
+    say("")
+    say("Where the heat went, 0-300 s, kJ/m (into the air +, out of it -)")
+    say("                                                bare    fans")
+    for label, k, sign in (("the radiator's output", "output_W", 1), ("lost through the glass", "glass_W", -1),
+                           ("into the ceiling and inner wall, held at 20 C", "ceiling_inner_W", -1)):
+        say(f"  {label:46s} {sign * kJ(b, k):6.1f}  {sign * kJ(f, k):6.1f}")
+    say(f"  {'rise of the air':46s} {kJ(b, 'energy_rate_W'):6.1f}  {kJ(f, 'energy_rate_W'):6.1f}")
+    say(f"  {'residual (closure)':46s} {kJ(b, 'closure_W'):6.2f}  {kJ(f, 'closure_W'):6.2f}")
+    say("")
+    say("The room's heat budget, radiator + walls - rise of the air's energy")
+    for r, rr in (("bare", b), ("fans", f)):
+        iv = [mean(rr, "closure_W", lo, lo + 7.5) for lo in np.arange(0, 300, 7.5)]
+        mn = [mean(rr, "closure_W", lo, lo + 60) for lo in range(0, 300, 60)]
+        say(f"  {r:5s} over each minute {min(mn):+.2f} to {max(mn):+.2f} W/m; over each 7.5 s {min(iv):+.2f} to "
+            f"{max(iv):+.2f} W/m; 0-300 s {mean(rr, 'closure_W', 0, 300):+.3f} W/m")
+    (out / "finsFans/summary.txt").write_text("\n".join(lines) + "\n")
+    print("\n".join(lines))
+
+
+def cover_results(runs, out):
+    """results/summary.txt, minutes.csv, bare/ and cover/, and results/sofa/ if sofa has solved."""
     data = {r: series(read(runs / r)) for r in ("bare", "cover")}
     for r, (t, dt, s) in data.items():
         if t[-1] < 300 - 1e-6:
@@ -365,6 +528,21 @@ def main():
     if (runs / "sofa/postProcessing/heatAccounting/heat.csv").exists():
         print()
         sofa_results(runs, out)
+
+
+def main():
+    runs, out = Path(sys.argv[1]), Path(sys.argv[2])
+
+    def have(r):
+        return (runs / r / "postProcessing/heatAccounting/heat.csv").exists()
+
+    if not (have("bare") and have("cover")) and not (have("finsBare") and have("finsFans")):
+        raise SystemExit(f"{runs}: neither bare and cover nor finsBare and finsFans have a monitor")
+    if have("bare") and have("cover"):
+        cover_results(runs, out)
+    if have("finsBare") and have("finsFans"):
+        print()
+        fins_results(runs, out)
 
 
 if __name__ == "__main__":

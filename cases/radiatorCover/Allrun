@@ -1,10 +1,11 @@
 #!/bin/bash
 # A radiator under a cold window, bare, inside a wooden radiator cover, or with a sofa standing
 # 15 cm in front of it, held at 55 C from switch-on to 300 s, in radiatorUnderWindow's room
-# section with radiation.
+# section with radiation; and the same radiator with an open fin-gap convector, bare or with
+# small fans under it.
 #
-#   ./Allrun bare|cover|sofa [nProcs]
-#   ./Allrun --setup-only bare|cover|sofa [nProcs]
+#   ./Allrun bare|cover|sofa|finsBare|finsFans [nProcs]
+#   ./Allrun --setup-only bare|cover|sofa|finsBare|finsFans [nProcs]
 #
 # bare     the Stelrad K1's steel front panel and its convector, nothing round them.
 # cover    the same radiator inside a B&Q horizontal-grill MDF cover: a solid top, a front
@@ -12,15 +13,22 @@
 # sofa     the bare radiator with an IKEA BACKSAELEN 3-seat sofa's side profile cut out of
 #          the bare run's mesh 15 cm in front of it, the cells along the sofa refined twice,
 #          the sofa's surface a thin layer of fabric over foam with heat capacity.
-# nProcs   MPI ranks, default 16 (all three solved runs used 16).
+# finsBare the bare radiator with its convector changed: the upward resistance of a 6.31 mm
+#          fin gap, its air heated by the fins through a fitted conductance instead of held
+#          at 55 C (config/finsSettings).
+# finsFans finsBare with a row of small fans under the radiator, a meanVelocityForce zone
+#          driven at about the fans' rated 2 x 30 m3/h per metre.
+# nProcs   MPI ranks, default 16 (all five solved runs used 16).
 # --setup-only writes the run, checks the mesh, decomposes the run and writes the t = 0
 #          plane, and stops before the solve.
 #
 # scripts/make_case.py writes the run into runs/<run>/: the mesh (written directly, not by
 # blockMesh), 0/T with the cover's baffles or the sofa's shell, and template/'s other fields
-# and dictionaries. Every dictionary #includes ../../../config/caseSettings, and the sofa
-# run's controlDict config/sofaSettings too. When bare and cover have solved,
-# scripts/extract_results.py writes results/, and results/sofa/ once sofa has solved too.
+# and dictionaries. Every dictionary #includes ../../../config/caseSettings, the sofa
+# run's controlDict config/sofaSettings too, and the fins runs' controlDict and fvOptions
+# config/finsSettings. When bare and cover have solved, scripts/extract_results.py writes
+# results/, and results/sofa/ once sofa has solved too; when finsBare and finsFans have
+# solved, results/finsBare/ and results/finsFans/.
 cd "${0%/*}" || exit 1
 set -euo pipefail
 command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
@@ -30,8 +38,8 @@ setupOnly=false
 if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
 run=${1:-}; nproc=${2:-16}
 case "$run" in
-  bare|cover|sofa) ;;
-  *) echo "usage: $0 [--setup-only] bare|cover|sofa [nProcs]" >&2; exit 2 ;;
+  bare|cover|sofa|finsBare|finsFans) ;;
+  *) echo "usage: $0 [--setup-only] bare|cover|sofa|finsBare|finsFans [nProcs]" >&2; exit 2 ;;
 esac
 
 r=runs/$run
@@ -59,6 +67,10 @@ if [ "$run" = sofa ]; then
     makeFaMesh > log.makeFaMesh 2>&1
   )
 fi
+if [ "$run" = finsBare ] || [ "$run" = finsFans ]; then
+  # the fan's cell zone and the face zones under the fan and at the convector's bottom and top
+  (cd "$r" && topoSet -dict system/topoSetDict.fan > log.topoSet.fan 2>&1)
+fi
 (
   cd "$r"
   checkMesh -constant > log.checkMesh 2>&1
@@ -76,6 +88,7 @@ $setupOnly && { echo "set up, not solved: $r"; exit 0; }
   grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
 )
 echo "solved: $r"
-if [ -f runs/bare/postProcessing/heatAccounting/heat.csv ] && [ -f runs/cover/postProcessing/heatAccounting/heat.csv ]; then
+solved() { [ -f "runs/$1/postProcessing/heatAccounting/heat.csv" ]; }
+if { solved bare && solved cover; } || { solved finsBare && solved finsFans; }; then
   python3 scripts/extract_results.py runs results
 fi

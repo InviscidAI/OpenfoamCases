@@ -6,11 +6,14 @@ on twice under a cold window, once bare and once inside a typical MDF cover, and
 much of the bare radiator's heat the covered one still gets into the room in the first five
 minutes, and where its warm air goes. It is about the heat that reaches the room, not about
 comfort or energy bills. A third run, added later, puts a sofa 15 cm in front of the bare
-radiator and asks whether the room warms more slowly.
+radiator and asks whether the room warms more slowly. A pair added after that gives the
+radiator a more open convector and asks how much more heat a row of small fans under it adds.
 
     ./Allrun bare      # the radiator bare, 0-300 s from switch-on
     ./Allrun cover     # the same radiator inside the cover
     ./Allrun sofa      # the bare radiator with a sofa standing 15 cm in front of it
+    ./Allrun finsBare  # the bare radiator with a fin-gap convector heated through a conductance
+    ./Allrun finsFans  # the same with a row of small fans under the radiator
 
 **The result.** Over the 300 s from switch-on, the heat that crossed the cover's outside
 into the room was **114.9 kJ per metre, 69.9% of the 164.4 kJ/m the bare radiator gave**: on
@@ -30,6 +33,15 @@ absorb 10 kJ/m, because the sofa's back catches the radiation and gives most of 
 In a room whose ceiling and walls warm up, part of that 37 kJ/m would come back, and the answer
 could change. [The sofa in front of the radiator](#the-sofa-in-front-of-the-radiator) has the
 run and its limits.
+
+**With fans under the radiator** the radiator gave 173.1 kJ/m over the five minutes against
+162.6 kJ/m without them, **106.45%**, and the room's air ended 0.78 K warmer. The gain is all
+convection: radiation is a third of the output and the fans do not touch it. These two runs
+have a convector of their own, with the resistance of a published 6.31 mm fin gap and a
+fitted heat transfer from the fins to the air, so their bare radiator is not the `bare` run
+above. [Fans under the radiator](#fans-under-the-radiator) has the runs and their limits, the
+main one being that the fitted heat transfer is about a tenth of a physical fin's, which
+probably understates the gain.
 
 The room is [`radiatorUnderWindow`](../radiatorUnderWindow)'s 2-D section, its window and
 its radiator box, but this is a case of its own, not a third run of that case: the radiator
@@ -406,6 +418,194 @@ averages about 3 K warmer in the run with heat capacity than in the run without 
 would be expected. The cause was not found. It does not enter the room's mean or the budget
 above.
 
+## Fans under the radiator
+
+Small fans that clip under a radiator and blow room air up past it are sold to get more heat
+from the same radiator. The `finsBare` and `finsFans` runs switch the same radiator on from
+cold, bare and with a row of such fans under it, and ask how much more heat the radiator gives
+the room in the first five minutes. Not energy bills: the fans' own electricity, about 1 W, is
+left out, and whether a boiler would burn less is a question about the heating system.
+
+### Why the convector is changed for these runs
+
+The convector of the runs above is a porous zone whose air is held at 55 C, with one upward
+resistance fitted to the catalogue rating (d_y = 1.63e7 1/m2). That resistance is about what
+laminar flow between plates about a millimetre apart would give, which no convector has; it
+passes almost no air, and forced air would go round the radiator rather than through its
+fins. A first pair of fan runs with that convector gave 112.6% of the bare radiator's heat and
+is not in this case. For these two runs the convector is rebuilt from a fin gap instead, with
+two changes; the mesh, the room, the panel at 55 C, radiation and the numerics are `bare`'s.
+
+1. **Its upward resistance is a 6.31 mm fin gap's.** That gap, with a 4 mm base and a 12 mm tip,
+   is the optimum that Calisir, Baskaya, Yazar and Yucedag (2015) found when they started from a
+   production panel radiator's convector and varied it for the most heat, as summarised by
+   Dalkilic, Acikgoz, Ekici and Wongwises (2019, Journal of Thermal Engineering 5(4), p. 252):
+   "the maximum heat transfer was achieved for 6.31 mm, 4 mm and 12 mm, correspondingly". **It
+   is not Stelrad's figure**: Stelrad publishes no fin gap for the Compact K1 that we could
+   find, and a gap tuned for output is, if anything, more open than a stock one. The fins are
+   the zone as built, 63 mm deep and 600 mm tall. Laminar flow between parallel vertical plates
+   6.31 mm apart, with a 0.5 mm sheet (ours, porosity 0.927), gives a Darcy resistance d_y =
+   12/(phi s^2) = **325,267 1/m2**, 50 times less than the fitted one, and a Forchheimer f_y =
+   0.674/(L phi^2) = **1.308 1/m** for the developing flow over the 0.6 m (Shah and London's
+   K_inf for plates). Sideways the zone stays closed (1e8). The trapezoidal profile and the
+   channels' finite depth are left out; a rectangular duct of aspect 0.1 would give a d_y about
+   12% lower.
+2. **The fins heat the air through a conductance instead of holding it at 55 C.** A
+   `scalarSemiImplicitSource` on the zone's enthalpy gives S = hv (55 C - T) per unit volume,
+   with **hv = 448.855 W/m3 K**. With the resistance now set by the gap, hv is the one fitted
+   setting, fitted as d_y was: bare pilots from rest to 40 s, their output over 25-40 s against
+   980 ((55 C - T_room)/50)^1.3 W/m at that interval's mean room temperature.
+
+| hv (W/m3 K) | output (W/m) | rating at the room's temperature (W/m) | ratio |
+|---:|---:|---:|---:|
+| 20 | 354.3 | 600.3 | 0.590 |
+| 100 | 415.7 | 595.0 | 0.699 |
+| 500 | 595.1 | 582.2 | 1.022 |
+| 2,500 | 803.8 | 565.1 | 1.422 |
+| **448.855** (interpolated in log hv, a confirming pilot on 16 ranks) | **579.7** | **583.6** | **0.993** |
+
+The four were run side by side on 4 ranks each. Fully developed laminar flow between plates at
+55 C (Nu 7.54 on twice the gap, both faces of every fin wetted, fin efficiency 1) would give hv
+of about 4,650 W/m3 K, **about ten times the fitted value**; at 2,500 the bare radiator already
+gives 42% more than its rating. So the fit buys the catalogue output by making the fins heat the
+air less well than real fins would. The radiator's output is defined as for the runs above; the
+zone's energy balance now is the heat the fins give, and it matches hv V (55 C - the zone's
+mean temperature) from the `convT` monitor to within 0.15 W/m in every minute of both runs.
+
+### The fans
+
+**SpeedComfort's Duo set**, two fans, the maker's recommendation for radiators 70 to 120 cm
+long: 30 m3/h and 0.55 W per fan, each 34 x 7 x 2.2 cm, held under the radiator by magnets,
+switching on at 33 C (speedcomfort.com, read 31 Oct 2026). Two fans on the 1 m radiator move
+60 m3/h, **16.667 L/s per metre of section**. The maker gives no pressure curve, so the run
+drives the fans at that free-air rating.
+
+- **Where.** The cell zone `fan`, the 192 cells with centres at x = 0.0465-0.1165 m and y =
+  0.126-0.150 m (`template/fins/system/topoSetDict.fan`): a bar 71 mm deep and 24 mm tall, eight
+  rows of 3 mm cells, the nearest the mesh comes to 22 mm, its top against the radiator's bottom
+  at y = 0.150 m, under the convector and the panel. The zone has no walls: the fans' housing is
+  not in the model.
+- **How.** OpenFOAM's `meanVelocityForce`, upward, holds the zone's mean cell velocity at
+  `fanUbar` = **0.233898 m/s**. That is not the air the fans move, so the air through the zone's
+  bottom face is measured from the face flux (`fanIn`) and Ubar was set from it: a 0-15 s pilot at
+  0.143663 m/s and two production starts at 0.267093 and 0.221387 m/s, stopped at 30 s at 1.21
+  and 0.92 of rated over 7.5-30 s, then 0.233898 m/s by interpolation, which gave 0.997 of rated
+  over 7.5-30 s and was solved from rest; none of the stopped starts is in it.
+- **When.** The radiator is at 55 C from t = 0, above the fans' 33 C, so they run from t = 0.
+- **The fans' air was not held at the rating.** Through the fan's face it was 1.03, 1.00, 1.05,
+  1.11 and 1.16 of rated minute by minute, **1.068 over 8-300 s**, rising as the room warmed:
+  the controller holds the zone's mean velocity, not the air through it.
+- In `finsBare` the zone is plain air and the monitors run the same.
+
+`config/finsSettings` holds d_y, f_y, hv and fanUbar, replacing `caseSettings`' d_y, and the two
+runs' field writes (every 30 s, the last two kept) and flow monitors: the net air through the fan
+zone's bottom face (`fanInSum`, `fanInMag`, and the phi-weighted temperature and density on it,
+`fanInT`), through the convector's bottom and top (`convInSum`, `convOutSum`) and the convector's
+mean temperature (`convT`), every 5 steps. The two runs differ only in `constant/fanSettings`
+(`fanOn 1` or `0`), which `scripts/make_case.py` writes. The run with fans took 78,360 steps
+and the bare one 55,471.
+
+### What the fans give
+
+`scripts/extract_results.py` writes `results/finsBare/history.csv` and
+`results/finsFans/history.csv` (every 2.5 s, with the flows) and `results/finsFans/summary.txt`,
+the run with fans against the bare one.
+
+| | 0-60 s | 60-120 | 120-180 | 180-240 | 240-300 |
+|---|---:|---:|---:|---:|---:|
+| bare: radiator's output, W/m | 583.6 | 571.4 | 551.2 | 514.4 | 489.5 |
+| fans: radiator's output, W/m | 626.1 | 606.4 | 583.0 | 546.6 | 522.7 |
+| **fans / bare** | **107.3%** | **106.1%** | **105.8%** | **106.3%** | **106.8%** |
+| at the bare room's temperature | 108.1% | 108.0% | 108.4% | 109.6% | 110.6% |
+| convection only, fans / bare | 111.0% | 109.4% | 109.2% | 110.4% | 111.3% |
+| bare room, C | 21.31 | 23.36 | 25.09 | 26.46 | 27.41 |
+| fans room, C | 21.50 | 23.78 | 25.66 | 27.12 | 28.15 |
+
+Over the whole 300 s, in kJ per metre:
+
+| | bare | fans |
+|---|---:|---:|
+| **the radiator's output** | **162.6** | **173.1 (106.45%)** |
+| of which convection | 105.3 | 116.1 |
+| of which the fins' zone | 71.3 | 79.1 |
+| of which radiation | 57.3 | 57.0 |
+| lost through the glass | -26.1 | -25.9 |
+| into the ceiling and inner wall, held at 20 C | -72.8 | -77.1 |
+| rise of the air's energy | 63.7 | 70.0 |
+
+The rooms' mass-weighted mean air is 0.07 K apart at 10 s, 0.33 K at 60 s and **0.78 K at
+300 s**, 28.56 against 27.79 C. The minute-by-minute share stays at 106-107% because the room
+with fans warms faster and a radiator held at 55 C gives less into warmer air; rescaled to the
+bare room's temperature by EN 442's exponent it rises from 108% to 111%.
+
+**Why the gain is small.** The monitors give the air (litres per second per metre, net upward,
+at the density on the fan's face):
+
+| | 0-60 s | 60-120 | 120-180 | 180-240 | 240-300 |
+|---|---:|---:|---:|---:|---:|
+| through the fan's face: bare | 5.50 | 5.88 | 5.50 | 5.18 | 4.83 |
+| through the fan's face: fans | 17.13 | 16.72 | 17.45 | 18.49 | 19.38 |
+| into the convector: bare | 7.47 | 7.67 | 7.26 | 6.87 | 6.49 |
+| into the convector: fans | 11.12 | 11.21 | 10.62 | 10.16 | 9.88 |
+| out of its top: bare | 7.26 | 7.43 | 7.15 | 7.04 | 6.90 |
+| out of its top: fans | 8.90 | 8.95 | 8.58 | 8.40 | 8.23 |
+
+The bare radiator already draws its own air, about 7 L/s per metre into the convector's bottom
+alone, and the fans add about 12 L/s per metre through their face. Of that extra air, 23-33%
+enters the convector and 9-14% leaves its top; the rest turns back under the radiator or
+leaves the zone through its sides (the monitors do not say where along them). The air that goes
+through is warmed by fins that in this model heat it about ten times less well than real ones,
+so the fins' zone gives only about 11% more heat with the fans (79.1 against 71.3 kJ/m, 10-12%
+by minute), while the panel's convection rises from 34.0 to 37.0 kJ/m. And a third of the
+output is radiation, which the fans leave alone: 57.0 against 57.3 kJ/m.
+
+**The bare radiator against its rating.** 0.993 of it over 25-40 s, where it was fitted, and
+then 1.06-1.10 as the room warms, much as the `bare` run's 1.04-1.09.
+
+**Against the sources.** None is a measured figure we could read in full. Bayram and Koç
+measured add-on fans under panel radiators in a test room (Case Studies in Thermal Engineering
+50, 103432, 2023); their abstract says the fans raised the output while natural convection and
+radiation fell, which agrees with these runs in kind, but we could not read the full text for a
+figure.
+Johansson and Wollerstrand's simulation of a flat panel with fans (Lund University, 2010), read
+by eye from its Figure 9, needs about 57/42 C with their smallest fan, 25 L/s per metre, where
+the radiator alone needs 60/45 C for the same output; with an exponent of 1.3 that is roughly
+15% more at equal temperatures (our conversion), at 1.5 times the air here. The "about 20% more
+heat" attributed to Milieu Centraal in Dutch retail blogs we have only second-hand.
+
+**The budget closes.** Radiator plus walls less the rise of the air's energy closes over 0-300 s
+to +0.13 W/m (bare) and +0.25 W/m (fans), to within 0.5 W/m in every minute and 1.3 W/m in every
+7.5 s. With the convector's air no longer raised to 55 C at t = 0, the first 7.5 s close to
+within about 1 W/m, where the other runs' are off by 22 W/m. Both solves end in `End` at 300 s
+with no fatal error; `k` is held at its 1e-15 floor in some steps, as in the other runs.
+
+### What the fins runs show, and what they cannot
+
+They show that in this room, with this convector, a row of fans driven at about their rated
+air adds about 6% to what a radiator held at 55 C gives the room in the first five minutes, and
+8-11% at equal room temperature, all of it convection. They have all the limits of the runs
+above but the fitted convector's, and more of their own:
+
+- **A fin gap that is not Stelrad's.** 6.31 mm is Calisir et al.'s optimised gap as summarised
+  by Dalkilic et al., not a measured K1. A tighter stock gap would pass less of the fans' air.
+- **A fitted fin conductance, about a tenth of a physical fin's.** hv is fitted so the bare
+  radiator gives the catalogue 980 W at dT50 in still air; a physical value gives far too much
+  (804 W/m at hv 2,500 against a 565 W/m rating), so there is nothing sourced to put in its
+  place. A real fin keeps more of its effect as the air through it rises, so the runs probably
+  understate the fans' gain, by an amount no run here measures.
+- **Fans above their rating.** On average about 7% above SpeedComfort Duo's rated 2 x 30 m3/h,
+  16% above in the last minute, which flatters the fans.
+- **Two fans spread over the whole metre.** The section spreads two 34 cm fans, which cover
+  68 cm of the 1 m radiator, over its whole length, with no housing, driven at their free-air
+  rating whatever the pressure, and without their own heat.
+- **The radiator held at 55 C.** With fans more heat leaves it; a real radiator on a fixed water
+  flow would cool a little and give back part of the gain. Holding it at 55 C is the boiler
+  keeping up, so on this count the runs show the upper end of the gain, against the fitted
+  conductance, which probably shows less than the whole.
+- **Five minutes from cold.** The share by minute had settled near 106-107%, but the same-room
+  share was still rising, and the rooms warm about 8 K in five minutes because the section has
+  almost no losses.
+
 ## How the case got here
 
 The first attempt solved both runs 0-30 s side by side on 8 ranks each and restarted them
@@ -486,6 +686,8 @@ The sofa run has all of these, and more of its own:
 - **Five minutes.** The sofa's surface had all but stopped storing heat by 300 s; an evening
   would run on with walls, ceiling and sofa all warming, which this room does not have.
 
+The fins runs' own limits are in [Fans under the radiator](#fans-under-the-radiator).
+
 ## Sources
 
 - Stelrad Compact K1 600 x 1000: 980 W at dT50 to EN 442, and EN 442's exponent of 1.3, as in
@@ -509,6 +711,20 @@ The sofa run has all of these, and more of its own:
   verbraucherzentrale.de/wissen/energie/heizen-und-warmwasser/heizung-10-einfache-tipps-zum-heizkosten-sparen-13892
   (30 cm).
 - EngineerFix, engineerfix.com/how-close-can-furniture-be-to-a-radiator (30 cm).
+- M. K. Dalkilic, O. Acikgoz, B. Ekici, S. Wongwises, review of panel radiators, Journal of
+  Thermal Engineering 5(4) (2019) 251-270, p. 252, open PDF at
+  pdfs.semanticscholar.org/f6b5/33b077c4441620dd28a9d0d3dc2b008e7f31.pdf; it summarises
+  Calisir, Baskaya, Yazar and Yucedag, "Parametric numerical investigation of heat transfer from
+  convectors to improve efficiency of panel radiators" (2015, ICHMT Digital Library), the 6.31 mm
+  gap.
+- R. K. Shah, A. L. London, Laminar Flow Forced Convection in Ducts (1978): fRe = 24, Nu = 7.54 and
+  K_inf = 0.674 for parallel plates.
+- SpeedComfort, product pages of the Mono, Duo and Trio sets, speedcomfort.com, read 31 Oct 2026
+  (30 m3/h and 0.55 W per fan, 34 x 7 x 2.2 cm, on at 33 C, the Duo set for 70-120 cm).
+- Bayram and Koç, add-on fans under panel radiators in a test room, Case Studies in Thermal
+  Engineering 50 (2023) 103432, doi:10.1016/j.csite.2023.103432 (abstract only).
+- Johansson and Wollerstrand, a simulation of a panel radiator with fans, Lund University, 2010
+  (Figure 9, read by eye).
 
 ## Running it
 
@@ -519,20 +735,26 @@ NumPy (PyVista too for `results/section_means.csv`).
     ./Allrun bare            # [nProcs], default 16
     ./Allrun cover
     ./Allrun sofa
+    ./Allrun finsBare
+    ./Allrun finsFans
     python3 scripts/extract_results.py runs results
 
 `Allrun` writes the run into `runs/<run>/` with `scripts/make_case.py`, checks the mesh,
 decomposes it, writes the t = 0 section, solves and, once bare and cover have solved, writes
 `results/`, and `results/sofa/` once sofa has solved too. For the sofa run it first cuts the
 sofa out of the bare run's mesh and refines along it with OpenFOAM's `topoSet`, `subsetMesh`,
-`foamDictionary` and `refineMesh`, then makes the shell's area mesh with `makeFaMesh`.
+`foamDictionary` and `refineMesh`, then makes the shell's area mesh with `makeFaMesh`. For
+the fins runs it makes the fan's cell zone and the face zones that measure the air with
+`topoSet`, and once both have solved `scripts/extract_results.py` writes `results/finsBare/`
+and `results/finsFans/`; they need neither `bare` nor `cover`.
 `./Allrun --setup-only <run> [nProcs]` stops before the solve; `./Allclean`
 removes the runs. The coded function object is compiled by OpenFOAM at the solve's start.
 
-The bare run took 26,712 s (7.4 h), the covered run 36,896 s (10.2 h) and the sofa run
-29,974 s (8.3 h) of wall time, each alone on 16 ranks. Each writes 481 sections of about
-10-11 MB, about 5 GB a run (gzip takes them to about 2 MB each); the fields are written once,
-at 300 s, in bare and cover, and every 30 s in sofa.
+The bare run took 26,712 s (7.4 h), the covered run 36,896 s (10.2 h), the sofa run
+29,974 s (8.3 h), finsBare 18,344 s (5.1 h) and finsFans 28,342 s (7.9 h) of wall time,
+each alone on 16 ranks. Each writes 481 sections of about 10-11 MB, about 5 GB a run (gzip
+takes them to about 2 MB each); the fields are written once, at 300 s, in bare and cover,
+and every 30 s in sofa and the fins runs.
 
 The case was set up by an agent and checked by us; the runs were solved on our own machine.
 The files in `results/` are what `scripts/extract_results.py` wrote from those runs.
@@ -555,3 +777,15 @@ its field writes from a `system/stageSettings`, where this case has `config/sofa
 scotch decomposition differs. `scripts/extract_results.py` on the solved monitors writes
 `results/sofa/` byte for byte and leaves the bare and cover results as they were. Adding the
 sofa run changes nothing that `./Allrun bare` or `cover` writes.
+
+The fins runs were built by hand from the bare run and are checked the same way:
+`./Allrun --setup-only finsBare` and `finsFans` write the solved runs' meshes (points, faces,
+owner, neighbour, boundary, the cell, face and point zones and all eight sets) and every 0/
+field byte for byte; `checkMesh` passes at 148,240 cells. Their dictionaries are the solved
+runs' once expanded, comments aside, with the unused entries of the older `config/caseSettings`
+gone; the solved runs read d_y and f_y from their own copy of that file, hv and the fan from
+`constant/convectorSettings` and `constant/fanSettings`, and their field writes and monitors
+from a `system/stageSettings`, where this case has `config/finsSettings`. The t = 0 section and
+the decomposition were not compared. `scripts/extract_results.py` on the solved monitors writes
+`results/finsBare/` and `results/finsFans/` and leaves the other results as they were. Adding
+the fins runs changes nothing that `./Allrun bare`, `cover` or `sofa` writes.

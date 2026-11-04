@@ -1,6 +1,6 @@
 """Write one run of the radiator cover case: its mesh, its fields and its dictionaries.
 
-    python3 scripts/make_case.py bare|cover|sofa <runDir> [--nprocs N]
+    python3 scripts/make_case.py bare|cover|sofa|finsBare|finsFans <runDir> [--nprocs N]
 
 The mesh is written directly as a polyMesh, one cell thick (z = 0 to 1 m), from a Cartesian
 grid with lines on every edge of the radiator, the cover and its slots. Both runs share the
@@ -18,6 +18,12 @@ fields and its dictionaries (template/sofa/, and a controlDict that also #includ
 config/sofaSettings); ../Allrun then cuts the sofa out of the mesh with topoSet and
 subsetMesh, refines the cells along its faces twice with refineMesh and makes its shell's
 finite-area mesh with makeFaMesh, with the fields set aside meanwhile.
+
+The finsBare and finsFans runs are the bare run's grid and fields with template/fins/'s
+convector (the fin gap's resistance, the fins heating the air through hv) and fan, a
+constant/fanSettings (fanOn 1 in finsFans, 0 in finsBare) and a controlDict that also
+#includes config/finsSettings; ../Allrun then makes the fan's cell zone and the face zones
+that measure its air with topoSet.
 """
 import argparse
 import json
@@ -245,7 +251,7 @@ def fields(case, bounds, run):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("run", choices=["bare", "cover", "sofa"])
+    ap.add_argument("run", choices=["bare", "cover", "sofa", "finsBare", "finsFans"])
     ap.add_argument("dir")
     ap.add_argument("--nprocs", type=int, default=16)
     a = ap.parse_args()
@@ -257,6 +263,15 @@ def main():
     shutil.copytree(TEMPLATE / "0.orig", case / "0")
     cc, nx, ny, conv, bounds = mesh(a.run, case)
     fields(case, bounds, a.run)
+    if a.run in ("finsBare", "finsFans"):
+        shutil.copytree(TEMPLATE / "fins", case, dirs_exist_ok=True)
+        (case / "constant/fanSettings").write_text(f"fanOn {1 if a.run == 'finsFans' else 0};\n")
+        (case / "system/controlDict").write_text(
+            "FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}\n"
+            '#include "../../../config/caseSettings"\n'
+            "// the fins runs' field writes and flow monitors, merged into the shared control dictionary\n"
+            '#include "../../../config/finsSettings"\n'
+            "$sharedControl;\n")
     if a.run == "sofa":
         shutil.copytree(TEMPLATE / "sofa/system", case / "system", dirs_exist_ok=True)
         (case / "system/controlDict").write_text(
