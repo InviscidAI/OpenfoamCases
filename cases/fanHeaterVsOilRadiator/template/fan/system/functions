@@ -1,0 +1,178 @@
+FoamFile { version 2.0; format ascii; class dictionary; object functions; }
+makeAirEnergy
+{
+type exprField; libs (fieldFunctionObjects); field airEnergyDensity; useNamePrefix false; autowrite false; store true; expression "1005*rho*(T-289.15)"; dimensions [1 -1 -2 0 0 0 0]; executeControl timeStep; executeInterval 1; writeControl none; log false;
+}
+
+airEnergy
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType all; operation volIntegrate; fields (airEnergyDensity); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+energyCheck
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType all; operation volIntegrate; fields (p rho); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+roomMeanT
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType all; operation volAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+occ_ankle
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType cellZone; name occ_ankle; operation volAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+occ_knee
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType cellZone; name occ_knee; operation volAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+occ_head
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType cellZone; name occ_head; operation volAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+occ_standing
+{
+type volFieldValue; libs (fieldFunctionObjects); regionType cellZone; name occ_standing; operation volAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+wallHeatFlux
+{
+type wallHeatFlux; libs (fieldFunctionObjects); executeControl adjustableRunTime; executeInterval 0.625; writeControl writeTime; log false; writePrecision 12;
+}
+
+qr_glass
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name glass; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_glass
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name glass; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_windowWall
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name windowWall; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_windowWall
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name windowWall; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_innerWall
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name innerWall; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_innerWall
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name innerWall; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_floor
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name floor; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_floor
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name floor; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_ceiling
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name ceiling; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_ceiling
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name ceiling; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_sideWalls
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name sideWalls; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_sideWalls
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name sideWalls; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_fanCasing
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name fanCasing; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_fanCasing
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name fanCasing; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_intake
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name intake; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_intake
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name intake; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+qr_outlet
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name outlet; operation areaIntegrate; fields (qr); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+T_outlet
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name outlet; operation areaAverage; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+flow_intake
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name intake; operation sum; fields (phi); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+flowT_intake
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name intake; operation weightedAverage; weightField phi; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+flow_outlet
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name outlet; operation sum; fields (phi); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+flowT_outlet
+{
+type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name outlet; operation weightedAverage; weightField phi; fields (T); writeFields false; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+minMax
+{
+type fieldMinMax; libs (fieldFunctionObjects); fields (T U); mode magnitude; writeControl adjustableRunTime; writeInterval 0.625; executeControl timeStep; executeInterval 1; log false; writePrecision 12;
+}
+
+planes
+{
+type surfaces;
+libs (sampling);
+writeControl adjustableRunTime;
+writeInterval 0.625;
+surfaceFormat vtk;
+formatOptions { vtk { format binary; } }
+interpolate false;
+fields (T U);
+surfaces
+{
+ section { type cuttingPlane; point (0 0 0.005); normal (0 0 1); interpolate false; }
+ ankle { type cuttingPlane; point (0 0.095 0); normal (0 1 0); interpolate false; }
+}
+
+}

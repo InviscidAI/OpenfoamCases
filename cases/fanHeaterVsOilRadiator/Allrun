@@ -1,0 +1,102 @@
+#!/bin/bash
+# A 1500 W fan heater against an oil-filled radiator already hot at 95 C, each switched on in
+# ceilingVsUnderfloor's room at a 16 C setback on a still 0 C morning, 0-300 s, with radiation.
+#
+#   ./Allrun fan|oilHot [nProcs]
+#   ./Allrun --setup-only fan|oilHot [nProcs]
+#
+# fan      a fan heater on the floor 15 cm from the window wall, 0.0301 kg/s through it and 1500 W
+#          added to that air (outletMappedUniformInletHeatAddition), on the rework mesh
+#          (scripts/mesh_rework.py), 426,285 cells.
+# oilHot   a seven-fin oil radiator in the same place, its fins held at 95 C (368.15 K) from t = 0 by
+#          the coded condition in template/oilHot/system/radiatorLumped, which logs the heat it gives
+#          by convection and radiation every step, on the regraded mesh (scripts/mesh_regrade.py),
+#          442,671 cells.
+# nProcs   MPI ranks, default 16 (the solved runs used 10 for fan and 16 for oilHot).
+# --setup-only compiles the wall condition if needed, meshes, writes the run, writes the t = 0
+#          planes, decomposes it, and stops before the solve.
+#
+# Every room surface is radLayerWall (src/radLayerWall, ceilingVsUnderfloor's condition, the same
+# code), compiled into $FOAM_USER_LIBBIN as libradLayerWall.so. Each run's mesh is a Cartesian
+# background written by its Python builder, with the heater's solid cut out by topoSet and
+# subsetMesh and its faces sorted into patches by topoSet and createPatch, as for the solved runs.
+# When both runs have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c 'import numpy' 2> /dev/null || { echo "the mesh builders need python3 with numpy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-16}
+case "$run" in
+  fan)    builder=scripts/mesh_rework.py ;;
+  oilHot) builder=scripts/mesh_regrade.py ;;
+  *) echo "usage: $0 [--setup-only] fan|oilHot [nProcs]" >&2; exit 2 ;;
+esac
+
+# the wall condition (wmake does nothing if it is up to date)
+wmake libso src/radLayerWall > log.wmake.radLayerWall 2>&1 || { echo "src/radLayerWall did not compile: log.wmake.radLayerWall" >&2; exit 1; }
+
+r=runs/$run
+rm -rf "$r"
+mkdir -p "$r"
+cp -r template/common/. "$r"/
+cp -r template/$run/. "$r"/
+sed -i "s|run RUN|run $run|" "$r"/system/controlDict
+cat > "$r"/system/decomposeParDict <<EOF
+FoamFile { version 2.0; format ascii; class dictionary; object decomposeParDict; }
+numberOfSubdomains $nproc;
+method scotch;
+EOF
+touch "$r"/room.foam
+
+# the background mesh, then the heater's solid cut out of it. The mesh tools write ascii, as for
+# the solved runs; the solve writes binary.
+python3 $builder "$r" > "$r"/log.mesh 2>&1 || { echo "$r: $builder failed, see log.mesh" >&2; exit 1; }
+(
+  cd "$r"
+  sed -i 's/^writeFormat binary;/writeFormat ascii;/' system/controlDict
+  topoSet -dict system/topoSetDict.cut > log.topoSet.cut 2>&1
+  subsetMesh fluid -patch solids -overwrite > log.subsetMesh 2>&1
+  # subsetMesh puts the exposed faces in a new patch "solids"; make it a wall before splitting it
+  python3 - <<'EOF'
+import re
+p = "constant/polyMesh/boundary"
+b = open(p).read()
+def wall(m):
+    body = re.sub(r"type\s+\w+;", "type wall;", m[1])
+    body = re.sub(r"inGroups\s+[^;]+;", "inGroups 1(wall);", body)
+    if "inGroups" not in body:
+        body = "\n inGroups 1(wall);" + body
+    return "solids\n{" + body + "}"
+b, n = re.subn(r"\bsolids\s*\{([^{}]*)\}", wall, b)
+assert n == 1, "no solids patch after subsetMesh"
+open(p, "w").write(b)
+EOF
+  topoSet -dict system/topoSetDict.patches > log.topoSet.patches 2>&1
+  createPatch -overwrite > log.createPatch 2>&1
+  rm -rf constant/polyMesh/sets
+  sed -i 's/^writeFormat ascii;/writeFormat binary;/' system/controlDict
+  checkMesh -constant -allTopology > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$PWD: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  cp -r 0.orig 0
+  # the planes at t = 0 from the initial fields, which the solver does not write
+  postProcess -dict system/planesT0 -fields '(T U)' -time 0 > log.planesT0 2>&1
+  decomposePar > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel > log.buoyantPimpleFoam 2>&1
+  # a parallel log ends with "End" and then "Finalising parallel run"
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+if [ -f runs/fan/log.buoyantPimpleFoam ] && [ -f runs/oilHot/log.buoyantPimpleFoam ] \
+   && grep -q '^End' runs/fan/log.buoyantPimpleFoam && grep -q '^End' runs/oilHot/log.buoyantPimpleFoam; then
+  python3 scripts/extract_results.py runs results
+fi

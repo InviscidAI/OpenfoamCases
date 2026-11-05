@@ -1,0 +1,5 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict.cut; }
+actions (
+{ name fluid; type cellSet; action new; source boxToCell; box (0.1500000 0.0000000 -0.0890000) (0.3000000 0.2340000 0.0890000); }
+{ name fluid; type cellSet; action invert; }
+);

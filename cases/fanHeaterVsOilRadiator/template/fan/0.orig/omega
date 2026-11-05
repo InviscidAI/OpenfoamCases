@@ -1,0 +1,9 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object omega; }
+dimensions [0 0 -1 0 0 0 0];
+internalField uniform 1.0;
+boundaryField
+{
+    "(glass|windowWall|innerWall|floor|ceiling|sideWalls|fanCasing)" { type omegaWallFunction; value uniform 1.0; }
+intake { type zeroGradient; }
+outlet { type turbulentMixingLengthFrequencyInlet; mixingLength 0.01; value uniform 1; }
+}

@@ -1,0 +1,12 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict.cut; }
+actions (
+{ name fluid; type cellSet; action new; source boxToCell; box (0.1500000 0.0600000 -0.1340000) (0.3000000 0.6300000 -0.1180000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 -0.0980000) (0.3000000 0.6300000 -0.0820000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 -0.0620000) (0.3000000 0.6300000 -0.0460000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 -0.0260000) (0.3000000 0.6300000 -0.0100000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 0.0100000) (0.3000000 0.6300000 0.0260000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 0.0460000) (0.3000000 0.6300000 0.0620000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 0.0820000) (0.3000000 0.6300000 0.0980000); }
+{ name fluid; type cellSet; action add; source boxToCell; box (0.1500000 0.0600000 0.0980000) (0.3000000 0.6300000 0.1880000); }
+{ name fluid; type cellSet; action invert; }
+);

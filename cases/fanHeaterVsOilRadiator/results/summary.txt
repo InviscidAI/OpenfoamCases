@@ -1,0 +1,33 @@
+fanHeaterVsOilRadiator: figures from the two runs' monitors and the radiator's log (scripts/extract_results.py)
+ceilingVsUnderfloor's room from a 16 C setback on a still 0 C morning, 0-300 s
+
+fan: to t = 300 s in 49676 steps, mean step 0.0060 s, 46897 s of wall time (13.03 h)
+oilHot: to t = 300 s in 6627 steps, mean step 0.0453 s, 3827 s of wall time (1.06 h)
+
+Heat into the room, W (fan: mass flow x cp x (outlet - intake); radiator: Qconv + Qrad)
+  t s      fan   radiator  of which radiation
+      5   1500.0      618.9               241.1
+     60   1499.9      613.8               238.6
+    120   1499.9      613.2               237.3
+    180   1499.8      613.5               236.2
+    240   1499.8      611.7               235.4
+    300   1499.9      610.2               234.6
+  radiator's first logged step, t = 0.00132 s: 744.8 W (500.5 convection, 244.3 radiation)
+  radiator at 300 s: 375.6 W convection + 234.6 W radiation, 38.5% radiant
+  fan heater over 10-300 s: 1499.9 W mean, 1499.4-1500.3
+  heat over 0-300 s: fan heater 450.0 kJ, radiator 184.0 kJ
+
+Air, C (room: mean of every cell; bands as in the README)
+  t s     room fan  room rad  ankle fan  ankle rad  head fan  head rad
+      5     16.26     16.07     16.08     16.03     16.41     16.02
+     60     18.33     16.54     16.62     16.16     17.63     16.16
+    120     20.13     16.98     17.04     16.24     20.39     16.29
+    180     21.56     17.36     17.44     16.29     21.89     16.47
+    240     22.68     17.67     18.27     16.35     22.96     16.69
+    300     23.54     17.94     19.69     16.38     23.84     17.16
+
+oilHot, every step (6627 monitor rows):
+  air 13.47 to 57.09 C; glass's coldest face at least 9.10 C; fins 95.000 to 95.000 C
+  steps with air colder than the glass's coldest face: 0; hotter than the fins: 0
+  air in front of the heater (frontOfHeater zone) never below 15.68 C
+fan, every 0.625 s: air 9.28 to 70.70 C

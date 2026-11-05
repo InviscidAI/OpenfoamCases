@@ -1,0 +1,8 @@
+FoamFile { version 2.0; format ascii; class dictionary; object createPatchDict; }
+pointSync false;
+patches
+(
+{ name intake; patchInfo { type patch; } constructFrom set; set intakeF; }
+{ name outlet; patchInfo { type patch; } constructFrom set; set outletF; }
+{ name fanCasing; patchInfo { type wall; } constructFrom set; set casingF; }
+);

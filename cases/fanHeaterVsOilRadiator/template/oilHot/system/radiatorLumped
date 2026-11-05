@@ -1,0 +1,53 @@
+// Oil-filled radiator already hot (operator, 4 Nov 2026): the regrade's lumped radiator with its
+// oil and steel held at 95 C from t = 0, in the room at 16 C, as if it had heated itself first and its
+// thermostat now holds it. 95 C is within the 85-104 C a Garage Journal owner measured on a 1500 W unit
+// after an hour on full. Qconv and Qrad are logged as before; P and C no longer enter.
+type            codedFixedValue;
+value           uniform 368.15;   // already hot, 95 C
+name            radiatorHeld;
+codeInclude
+#{
+    #include "turbulentFluidThermoModel.H"
+#};
+codeOptions
+#{
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+    -I$(LIB_SRC)/transportModels/compressible/lnInclude
+#};
+codeLibs
+#{
+    -lfiniteVolume -lmeshTools -lfluidThermophysicalModels -lcompressibleTransportModels \
+    -lturbulenceModels -lcompressibleTurbulenceModels
+#};
+code
+#{
+    static label lastIndex = -1;
+    static scalar Ts = -1;
+    const fvPatch& p = this->patch();
+    const label patchi = p.index();
+    if (Ts < 0) { Ts = 368.15; }
+    const label ti = this->db().time().timeIndex();
+    if (ti != lastIndex)
+    {
+        const auto& turb = this->db().lookupObject<compressible::turbulenceModel>
+            (turbulenceModel::propertiesName);
+        const scalarField kEff(turb.kappaEff(patchi));
+        const scalarField Tc(this->patchInternalField());
+        scalarField q(kEff*(scalarField(*this) - Tc)*p.deltaCoeffs());
+        scalar Qrad = 0;
+        if (this->db().foundObject<volScalarField>("qr"))
+        {
+            const volScalarField& qr = this->db().lookupObject<volScalarField>("qr");
+            Qrad = -gSum(qr.boundaryField()[patchi]*p.magSf());
+        }
+        const scalar Qconv = gSum(q*p.magSf());
+        lastIndex = ti;
+        Info<< "radiatorLumped: t " << this->db().time().value() << " Ts " << Ts
+            << " Qconv " << Qconv << " Qrad " << Qrad << endl;
+    }
+    operator==(scalarField(this->size(), Ts));
+#};

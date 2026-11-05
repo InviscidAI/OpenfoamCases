@@ -1,0 +1,4 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object IDefault; }
+dimensions [1 0 -3 0 0 0 0];
+internalField uniform 126.18;
+boundaryField { "(glass|windowWall|innerWall|floor|ceiling|sideWalls|fanCasing|intake|outlet)" { type greyDiffusiveRadiation; value uniform 126.18; } }

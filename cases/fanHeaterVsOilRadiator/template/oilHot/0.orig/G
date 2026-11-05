@@ -1,0 +1,4 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object G; }
+dimensions [1 0 -3 0 0 0 0];
+internalField uniform 1585.5;
+boundaryField { "(glass|windowWall|innerWall|floor|ceiling|sideWalls|radiator|column)" { type calculated; value uniform 1585.5; } }

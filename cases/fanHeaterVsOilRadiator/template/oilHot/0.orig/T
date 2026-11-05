@@ -1,0 +1,108 @@
+FoamFile { version 2.0; format ascii; class volScalarField; object T; }
+dimensions [0 0 0 1 0 0 0];
+internalField uniform 289.15;
+boundaryField
+{
+    glass
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 4.403;
+        Ta 273.15;
+        emissivity 0.837;
+        Tinit 289.15;
+        value uniform 289.15;
+    }
+    windowWall
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 0;
+        Ta 0;
+        emissivity 0.9;
+        Tinit 289.15;
+        nLayers 24;
+        thickness 0.0127;
+        conductivity 0.1587;
+        rhoCp 723991.0;
+        value uniform 289.15;
+    }
+    innerWall
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 0;
+        Ta 0;
+        emissivity 0.9;
+        Tinit 289.15;
+        nLayers 24;
+        thickness 0.0127;
+        conductivity 0.1587;
+        rhoCp 723991.0;
+        value uniform 289.15;
+    }
+    floor
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 0;
+        Ta 0;
+        emissivity 0.9;
+        Tinit 289.15;
+        nLayers 24;
+        thickness 0.019;
+        conductivity 0.106;
+        rhoCp 1237411.2;
+        value uniform 289.15;
+    }
+    ceiling
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 0;
+        Ta 0;
+        emissivity 0.9;
+        Tinit 289.15;
+        nLayers 24;
+        thickness 0.0127;
+        conductivity 0.1587;
+        rhoCp 723991.0;
+        value uniform 289.15;
+    }
+    sideWalls
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 0;
+        Ta 0;
+        emissivity 0.9;
+        Tinit 289.15;
+        nLayers 24;
+        thickness 0.0127;
+        conductivity 0.1587;
+        rhoCp 723991.0;
+        value uniform 289.15;
+    }
+    column
+    {
+        type radLayerWall;
+        kappaMethod fluidThermo;
+        Q 0.0;
+        h 0.0;
+        Ta 0.0;
+        emissivity 0.9;
+        Tinit 289.15;
+        value uniform 289.15;
+    }
+radiator
+{
+ #include "<system>/radiatorLumped"
+}
+
+}

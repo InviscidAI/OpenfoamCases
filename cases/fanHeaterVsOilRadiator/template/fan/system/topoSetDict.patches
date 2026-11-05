@@ -1,0 +1,10 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict.patches; }
+actions (
+{ name intakeF; type faceSet; action new; source patchToFace; patch solids; }
+{ name intakeF; type faceSet; action subset; source boxToFace; box (0.1499999 0.0300000 -0.0575000) (0.1500001 0.1900000 0.0575000); }
+{ name outletF; type faceSet; action new; source patchToFace; patch solids; }
+{ name outletF; type faceSet; action subset; source boxToFace; box (0.2999999 0.0300000 -0.0575000) (0.3000001 0.1900000 0.0575000); }
+{ name casingF; type faceSet; action new; source patchToFace; patch solids; }
+{ name casingF; type faceSet; action delete; source faceToFace; set intakeF; }
+{ name casingF; type faceSet; action delete; source faceToFace; set outletF; }
+);
