@@ -1,0 +1,62 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object k;}
+dimensions [0 2 -2 0 0 0 0];
+internalField uniform 1e-4;
+boundaryField
+{
+roomFloor
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+hallFloor
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+roomCeiling
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+hallCeiling
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+glass
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+outerWall
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+frontDoor
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+hallWall
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+leafRoom
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+leafHall
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+wallRoom
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+wallHall
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+adiabaticEdges
+{
+type kLowReWallFunction; value uniform 1e-4;
+}
+frontAndBack
+{
+type empty;
+}
+}

@@ -1,0 +1,62 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object nut;}
+dimensions [0 2 -1 0 0 0 0];
+internalField uniform 0;
+boundaryField
+{
+roomFloor
+{
+type nutkWallFunction; value uniform 0;
+}
+hallFloor
+{
+type nutkWallFunction; value uniform 0;
+}
+roomCeiling
+{
+type nutkWallFunction; value uniform 0;
+}
+hallCeiling
+{
+type nutkWallFunction; value uniform 0;
+}
+glass
+{
+type nutkWallFunction; value uniform 0;
+}
+outerWall
+{
+type nutkWallFunction; value uniform 0;
+}
+frontDoor
+{
+type nutkWallFunction; value uniform 0;
+}
+hallWall
+{
+type nutkWallFunction; value uniform 0;
+}
+leafRoom
+{
+type nutkWallFunction; value uniform 0;
+}
+leafHall
+{
+type nutkWallFunction; value uniform 0;
+}
+wallRoom
+{
+type nutkWallFunction; value uniform 0;
+}
+wallHall
+{
+type nutkWallFunction; value uniform 0;
+}
+adiabaticEdges
+{
+type nutkWallFunction; value uniform 0;
+}
+frontAndBack
+{
+type empty;
+}
+}

@@ -1,0 +1,6 @@
+FoamFile {version 2.0; format ascii; class dictionary; object topoSetDict;}
+actions
+(
+ {name radiatorCells; type cellSet; action new; source boxToCell; box (.040 .150 -1) (.123 .750 2);}
+ {name radiator; type cellZoneSet; action new; source setToCellZone; set radiatorCells;}
+);

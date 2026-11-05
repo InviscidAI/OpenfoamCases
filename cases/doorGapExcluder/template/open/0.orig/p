@@ -1,0 +1,62 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object p;}
+dimensions [1 -1 -2 0 0 0 0];
+internalField uniform 100000;
+boundaryField
+{
+roomFloor
+{
+type calculated; value uniform 100000;
+}
+hallFloor
+{
+type calculated; value uniform 100000;
+}
+roomCeiling
+{
+type calculated; value uniform 100000;
+}
+hallCeiling
+{
+type calculated; value uniform 100000;
+}
+glass
+{
+type calculated; value uniform 100000;
+}
+outerWall
+{
+type calculated; value uniform 100000;
+}
+frontDoor
+{
+type calculated; value uniform 100000;
+}
+hallWall
+{
+type calculated; value uniform 100000;
+}
+leafRoom
+{
+type calculated; value uniform 100000;
+}
+leafHall
+{
+type calculated; value uniform 100000;
+}
+wallRoom
+{
+type calculated; value uniform 100000;
+}
+wallHall
+{
+type calculated; value uniform 100000;
+}
+adiabaticEdges
+{
+type calculated; value uniform 100000;
+}
+frontAndBack
+{
+type empty;
+}
+}

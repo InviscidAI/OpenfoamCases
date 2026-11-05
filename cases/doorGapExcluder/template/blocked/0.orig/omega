@@ -1,0 +1,66 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object omega;}
+dimensions [0 0 -1 0 0 0 0];
+internalField uniform 1;
+boundaryField
+{
+roomFloor
+{
+type omegaWallFunction; value uniform 1;
+}
+hallFloor
+{
+type omegaWallFunction; value uniform 1;
+}
+roomCeiling
+{
+type omegaWallFunction; value uniform 1;
+}
+hallCeiling
+{
+type omegaWallFunction; value uniform 1;
+}
+glass
+{
+type omegaWallFunction; value uniform 1;
+}
+outerWall
+{
+type omegaWallFunction; value uniform 1;
+}
+frontDoor
+{
+type omegaWallFunction; value uniform 1;
+}
+hallWall
+{
+type omegaWallFunction; value uniform 1;
+}
+leafRoom
+{
+type omegaWallFunction; value uniform 1;
+}
+leafHall
+{
+type omegaWallFunction; value uniform 1;
+}
+wallRoom
+{
+type omegaWallFunction; value uniform 1;
+}
+wallHall
+{
+type omegaWallFunction; value uniform 1;
+}
+adiabaticEdges
+{
+type omegaWallFunction; value uniform 1;
+}
+frontAndBack
+{
+type empty;
+}
+excluder
+{
+type omegaWallFunction; value uniform 1;
+}
+}

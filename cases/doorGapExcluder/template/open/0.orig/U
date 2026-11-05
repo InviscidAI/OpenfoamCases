@@ -1,0 +1,62 @@
+FoamFile {version 2.0; format ascii; class volVectorField; object U;}
+dimensions [0 1 -1 0 0 0 0];
+internalField uniform (0 0 0);
+boundaryField
+{
+roomFloor
+{
+type noSlip;
+}
+hallFloor
+{
+type noSlip;
+}
+roomCeiling
+{
+type noSlip;
+}
+hallCeiling
+{
+type noSlip;
+}
+glass
+{
+type noSlip;
+}
+outerWall
+{
+type noSlip;
+}
+frontDoor
+{
+type noSlip;
+}
+hallWall
+{
+type noSlip;
+}
+leafRoom
+{
+type noSlip;
+}
+leafHall
+{
+type noSlip;
+}
+wallRoom
+{
+type noSlip;
+}
+wallHall
+{
+type noSlip;
+}
+adiabaticEdges
+{
+type noSlip;
+}
+frontAndBack
+{
+type empty;
+}
+}

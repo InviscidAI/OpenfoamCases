@@ -1,0 +1,66 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object hallAir;}
+dimensions [0 0 0 0 0 0 0];
+internalField uniform 0;
+boundaryField
+{
+roomFloor
+{
+type zeroGradient;
+}
+hallFloor
+{
+type zeroGradient;
+}
+roomCeiling
+{
+type zeroGradient;
+}
+hallCeiling
+{
+type zeroGradient;
+}
+glass
+{
+type zeroGradient;
+}
+outerWall
+{
+type zeroGradient;
+}
+frontDoor
+{
+type zeroGradient;
+}
+hallWall
+{
+type zeroGradient;
+}
+leafRoom
+{
+type zeroGradient;
+}
+leafHall
+{
+type zeroGradient;
+}
+wallRoom
+{
+type zeroGradient;
+}
+wallHall
+{
+type zeroGradient;
+}
+adiabaticEdges
+{
+type zeroGradient;
+}
+frontAndBack
+{
+type empty;
+}
+excluder
+{
+type zeroGradient;
+}
+}

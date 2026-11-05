@@ -1,0 +1,66 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object alphat;}
+dimensions [1 -1 -1 0 0 0 0];
+internalField uniform 0;
+boundaryField
+{
+roomFloor
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+hallFloor
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+roomCeiling
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+hallCeiling
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+glass
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+outerWall
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+frontDoor
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+hallWall
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+leafRoom
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+leafHall
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+wallRoom
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+wallHall
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+adiabaticEdges
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+frontAndBack
+{
+type empty;
+}
+excluder
+{
+type compressible::alphatJayatillekeWallFunction; Prt .85; value uniform 0;
+}
+}

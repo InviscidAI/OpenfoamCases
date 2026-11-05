@@ -1,0 +1,24 @@
+FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}
+application buoyantPimpleFoam;
+libs ("libdoorLayer.so");
+startFrom startTime;
+startTime 0;
+stopAt endTime;
+endTime 240.0;
+deltaT .0001;
+adjustTimeStep yes;
+maxCo 1;
+maxDeltaT .25;
+writeControl adjustableRunTime;
+writeInterval 30;
+purgeWrite 2;
+writeFormat binary;
+writePrecision 12;
+writeCompression on;
+timeFormat general;
+timePrecision 12;
+runTimeModifiable false;
+functions
+{
+ clip {type surfaces; libs (sampling); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval .625; surfaceFormat vtk; formatOptions {vtk {format binary; compression on;}} interpolate false; fields (T U hallAir); surfaces {clip {type cuttingPlane; point (2.8 1.2 .5); normal (0 0 1); interpolate false;}}}
+}

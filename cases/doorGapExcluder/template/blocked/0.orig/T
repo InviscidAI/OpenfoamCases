@@ -1,0 +1,66 @@
+FoamFile {version 2.0; format ascii; class volScalarField; object T;}
+dimensions [0 0 0 1 0 0 0];
+internalField uniform 293.15;
+boundaryField
+{
+roomFloor
+{
+type bedroomLayer; initialTemperature 293.15; kappaMethod fluidThermo; value uniform 293.15;
+}
+hallFloor
+{
+type bedroomLayer; initialTemperature 283.15; kappaMethod fluidThermo; value uniform 283.15;
+}
+roomCeiling
+{
+type bedroomLayer; initialTemperature 293.15; kappaMethod fluidThermo; value uniform 293.15;
+}
+hallCeiling
+{
+type bedroomLayer; initialTemperature 283.15; kappaMethod fluidThermo; value uniform 283.15;
+}
+glass
+{
+type externalWallHeatFluxTemperature; mode coefficient; h uniform 4.403; Ta uniform 273.15; kappaMethod fluidThermo; value uniform 293.15;
+}
+outerWall
+{
+type zeroGradient;
+}
+frontDoor
+{
+type externalWallHeatFluxTemperature; mode coefficient; h uniform 2.33; Ta uniform 273.15; kappaMethod fluidThermo; value uniform 283.15;
+}
+hallWall
+{
+type zeroGradient;
+}
+leafRoom
+{
+type externalWallHeatFluxTemperature; mode coefficient; h uniform 2.33; Ta uniform 283.15; kappaMethod fluidThermo; value uniform 293.15;
+}
+leafHall
+{
+type externalWallHeatFluxTemperature; mode coefficient; h uniform 2.33; Ta uniform 293.15; kappaMethod fluidThermo; value uniform 283.15;
+}
+wallRoom
+{
+type externalWallHeatFluxTemperature; mode coefficient; h uniform 2.33; Ta uniform 283.15; kappaMethod fluidThermo; value uniform 293.15;
+}
+wallHall
+{
+type externalWallHeatFluxTemperature; mode coefficient; h uniform 2.33; Ta uniform 293.15; kappaMethod fluidThermo; value uniform 283.15;
+}
+adiabaticEdges
+{
+type zeroGradient;
+}
+frontAndBack
+{
+type empty;
+}
+excluder
+{
+type zeroGradient;
+}
+}

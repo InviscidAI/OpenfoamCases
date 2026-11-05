@@ -1,0 +1,4 @@
+wallLayer.C
+doorMonitor.C
+
+LIB = $(FOAM_USER_LIBBIN)/libdoorLayer

@@ -1,0 +1,98 @@
+#!/bin/bash
+# The gap under an inner door between a heated room at 20 C and a cold hall at 10 C on a 0 C day,
+# left open or blocked with a draught excluder, in a 2-D section through radiatorUnderWindow's
+# room, the door and the hall, 0-240 s from rest.
+#
+#   ./Allrun open|blocked [nProcs]
+#   ./Allrun --setup-only open|blocked [nProcs]
+#
+# open     a 10 mm undercut and a 3 mm head gap, both open; 139,030 cells.
+# blocked  the same with a draught excluder 95 mm across on the floor against the leaf's room
+#          face, cut out of the same mesh (scripts/block_gap.py, subsetMesh); 138,072 cells.
+# nProcs   MPI ranks, default 8 (both solved runs used 8, side by side).
+# --setup-only compiles the library and the tool if needed, meshes, writes the run, sets its
+#          hydrostatic start and the hall's tracer, checks the mesh, writes the t = 0 plane,
+#          decomposes it, and stops before the solve.
+#
+# src/doorLayer is ceilingVsFloorVent's wall layer (bedroomLayer) with a starting temperature
+# for each floor and ceiling, and the door's monitor (doorMonitor), compiled into
+# $FOAM_USER_LIBBIN as libdoorLayer.so; src/doorTools is the tool that sets each room's
+# hydrostatic pressure at t = 0. scripts/make_mesh.py writes the blockMesh case both runs share
+# into runs/mesh. When both runs have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c 'import numpy' 2> /dev/null || { echo "the mesh scripts need python3 with numpy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  open|blocked) ;;
+  *) echo "usage: $0 [--setup-only] open|blocked [nProcs]" >&2; exit 2 ;;
+esac
+
+# the library and the tool (wmake does nothing if they are up to date)
+wmake libso src/doorLayer > log.wmake.doorLayer 2>&1 || { echo "src/doorLayer did not compile: log.wmake.doorLayer" >&2; exit 1; }
+wmake src/doorTools > log.wmake.doorTools 2>&1 || { echo "src/doorTools did not compile: log.wmake.doorTools" >&2; exit 1; }
+
+# the mesh both runs share, 10 cells across each gap
+mkdir -p runs
+if [ ! -f runs/mesh/constant/polyMesh/owner ]; then
+  rm -rf runs/mesh
+  python3 scripts/make_mesh.py 10 runs/mesh > /dev/null
+  blockMesh -case runs/mesh > runs/mesh/log.blockMesh 2>&1
+fi
+
+r=runs/$run
+rm -rf "$r"
+mkdir -p "$r"/constant
+cp -r template/common/. "$r"/
+cp -r template/$run/. "$r"/
+cp -r runs/mesh/constant/polyMesh "$r"/constant/
+cat > "$r"/system/decomposeParDict <<EOF
+FoamFile {version 2.0; format ascii; class dictionary; object decomposeParDict;}
+numberOfSubdomains $nproc; method scotch;
+EOF
+touch "$r"/$run.foam
+
+(
+  cd "$r"
+  if [ "$run" = blocked ]; then
+    # an empty wall patch to receive the excluder's faces, the excluder's cells (read from the
+    # ascii blockMesh case; createPatch clears sets/), then the cells taken out
+    createPatch -overwrite > log.createPatch 2>&1
+    python3 ../../scripts/block_gap.py ../mesh . > log.block_gap 2>&1
+    topoSet -dict system/blockSetDict > log.topoSet.blocked 2>&1
+    subsetMesh kept -patch excluder -overwrite > log.subsetMesh 2>&1
+    grep -A3 -E '^ +excluder$' constant/polyMesh/boundary | grep -qE 'type +wall;' \
+      || { echo "$PWD: no excluder wall after subsetMesh" >&2; exit 1; }
+  fi
+  # the radiator's zone, 60 W per metre (constant/fvOptions)
+  topoSet > log.topoSet 2>&1
+  cp -r 0.orig 0
+  # each room's air at rest in its own hydrostatic balance: 20 C at x < 4 m, 10 C beyond,
+  # 1e5 Pa at y = 1.174 m in both; then the hall's tracer, 1 at x >= 4 m
+  doorTools -prepare > log.prepare 2>&1
+  grep -E '^INITIAL_MASS' log.prepare
+  setFields > log.setFields 2>&1
+  checkMesh -allTopology -allGeometry > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$PWD: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  # the section at t = 0, before the solve writes its first
+  postProcess -dict system/plane0Dict -time 0 -fields '(T U hallAir)' > log.plane0 2>&1
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+if [ -f runs/open/postProcessing/monitor/0/history.csv ] && [ -f runs/blocked/postProcessing/monitor/0/history.csv ] \
+   && grep -q '^End' runs/open/log.buoyantPimpleFoam && grep -q '^End' runs/blocked/log.buoyantPimpleFoam; then
+  python3 scripts/extract_results.py runs results
+fi

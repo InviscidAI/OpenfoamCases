@@ -1,0 +1,6 @@
+FoamFile {version 2.0; format ascii; class dictionary; object blockSetDict;}
+actions
+(
+{ name kept; type cellSet; action new; source boxToCell; box (-1 -1 -1) (7 4 2); }
+{ name kept; type cellSet; action subtract; source cellToCell; set excluderCells; }
+);

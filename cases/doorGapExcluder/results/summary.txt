@@ -1,0 +1,31 @@
+doorGapExcluder: a 10 mm undercut and a 3 mm head gap between a room at 20 C and a hall at
+10 C on a 0 C day, open and blocked with a draught excluder; 2-D section, per metre of door.
+From scripts/extract_results.py on runs/open and runs/blocked.
+
+Means over 10-240 s                                   open      blocked
+  undercut, into the room (l/s per m)               1.522      0.006
+  undercut, into the hall (l/s per m)               0.000      0.006
+  head gap, into the hall (l/s per m)               1.530      0.000
+  head gap, into the room (l/s per m)               0.000      0.009
+  heat the room loses through the gaps (W per m)    15.20       0.04
+  heat the room loses through the leaf (W per m)    20.84      18.60
+  the door, gaps and leaf (W per m)                 36.04      18.64
+  the wall above the door (W per m)                  5.08       5.05
+
+Open: the undercut takes 1.471-1.596 l/s per m into the room over 10-240 s; the leaf is 58% of
+the door's loss. Blocked: the undercut's gross flow is 0.38% of the open run's, a recirculation
+in the stub on the hall's side of the excluder. Hall air into the room by 240 s: 0.3657 m3 per m open,
+3.81% of the room's section.
+
+Hall air (>= 10%) along the floor, 20 mm up, metres from the leaf, the monitor's cells:
+  t (s)              10      30      60     120     180     240
+  open     now     0.753   2.750   2.990   2.070   3.992   3.661
+  open     max     0.753   2.750   3.923   3.923   3.992   3.998
+  blocked  now     0.007   0.007   0.007   0.007   0.007   0.007
+  blocked  max     0.007   0.007   0.007   0.007   0.007   0.007
+  open, farthest so far first passes 0.5 m at 7.09 s, 1 m at 12.67 s, 2 m at 22.93 s, 3 m at 33.22 s, 3.9 m at 55.08 s, 3.99 m at 179.19 s
+
+open: 478435 steps to 240 s, 7.46 h of wall time on 8 ranks; room 20.000 -> 19.938 C, hall 10.000 -> 10.844 C;
+  air 1.95 to 28.45 C throughout; air mass within 1.2e-14 of its first step's.
+blocked: 161823 steps to 240 s, 3.21 h of wall time on 8 ranks; room 20.000 -> 20.078 C, hall 10.000 -> 10.325 C;
+  air 2.02 to 26.73 C throughout; air mass within 1.2e-14 of its first step's.
