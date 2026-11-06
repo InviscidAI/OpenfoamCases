@@ -1,0 +1,3 @@
+FoamFile { version 2.0; format ascii; class dictionary; object boundaryRadiationProperties; }
+glass { type lookup; emissivity 0.84; absorptivity 0.84; transmissivity 0; }
+".*" { type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0; }

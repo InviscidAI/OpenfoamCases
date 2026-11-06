@@ -1,0 +1,21 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+#include "../../../config/caseSettings"
+convectorTemperature { type fixedTemperatureConstraint; selectionMode cellZone; cellZone convector; mode uniform; temperature 328.15; }
+convectorResistance
+{
+ type explicitPorositySource; selectionMode cellZone; cellZone convector;
+ explicitPorositySourceCoeffs
+ {
+  selectionMode cellZone; cellZone convector; type DarcyForchheimer;
+  DarcyForchheimerCoeffs
+  {
+   d (1e8 $dy 1e8); f (0 0 0);
+   coordinateSystem { type cartesian; origin (0 0 0); coordinateRotation { type axesRotation; e1 (1 0 0); e2 (0 1 0); } }
+  }
+ }
+}
+buoyancyTurb { type buoyancyTurbSource; selectionMode all; }
+
+#remove "sharedSolution"
+#remove "sharedSchemes"
+#remove "sharedControl"

@@ -1,0 +1,50 @@
+sofaLegsVsFlat: figures from the runs' monitors (scripts/extract_results.py)
+A sofa on legs and the same sofa flat on the floor, its back 15 cm from a radiator held at 55 C,
+0-300 s from switch-on, W and J per metre of section
+
+legs: monitored to t = 300 s, 33621 steps, 6905 s of wall time on 8 ranks, 124 final pressure solves at 100 iterations
+flat: monitored to t = 300 s, 30024 steps, 5276 s of wall time on 8 ranks, 111 final pressure solves at 100 iterations
+
+The radiator's heat from switch-on to 300 s, kJ/m
+            output  convection  radiation
+  legs      196.05      129.24      66.81
+  flat      173.94      108.82      65.13
+  flat / legs  88.73%   convection 84.2%   radiation 97.5%
+
+Since switch-on, flat as a share of legs
+   10 s  96.2%   30 s  88.0%   60 s  89.4%  120 s  88.5%  180 s  88.5%  240 s  89.3%  300 s  88.7%
+Each minute on its own (mean W/m)
+    0- 60 s  legs  714.2  flat  638.5   89.4%
+   60-120 s  legs  661.3  flat  578.7   87.5%
+  120-180 s  legs  653.9  flat  578.3   88.4%
+  180-240 s  legs  632.6  flat  581.1   91.9%
+  240-300 s  legs  605.4  flat  522.4   86.3%
+
+At each time: the radiator's output now (W/m), the gross flows (l/s per metre), the air
+(mass-weighted, the convector's cells left out) and the sofa's back (area mean), C
+     t   output        under sofa,      slot top, legs     slot top, flat     room air       sofa back
+         legs  flat    legs to rad.     up     down        up     down        legs   flat    legs   flat
+    10  689.7 623.3     31.26         17.06   0.00        9.84  16.53      16.40  16.36   24.88  23.82
+    30  669.4 531.0     23.98         11.57   1.43        8.42  15.15      16.96  16.71   28.14  27.39
+    60  669.0 600.1     25.15         12.57   1.27        7.70  17.73      17.67  17.29   29.98  28.74
+   120  654.2 627.8     26.81         13.49   0.57        4.40  18.35      18.97  18.21   31.70  30.53
+   180  645.0 550.9     27.26         14.04   0.64        6.75  20.16      20.19  19.06   32.52  31.49
+   240  618.4 551.1     24.26         12.01   0.79        8.01  17.79      21.20  19.85   33.10  31.92
+   300  594.3 538.3     23.17         11.81   0.72        5.72  18.07      22.00  20.36   33.72  33.02
+  Under the legged sofa the flow away from the radiator stays at 0.02 l/s or less at these times; flat has no air there.
+
+Heat budget over 10-300 s, kJ/m: the radiator's heat = rise of the air's internal energy,
+(cv/R) integral p dV, + heat stored in the wall and sofa layers + heat out through the glass
+          radiator    air  layers  glass  residual
+  legs    187.395  61.878  96.086 29.482  -0.0512 (-0.027%)
+  flat    165.624  43.634  93.582 28.574  -0.1656 (-0.100%)
+Each layer's stored heat against minus its integrated wall heat flux (convection and the
+radiation it absorbs), from the first per-second row to the last, error %
+  legs  floor -0.009  ceiling -0.004  innerWall -0.003  outerWall -0.005  sofa -0.021
+  flat  floor -0.019  ceiling -0.006  innerWall -0.005  outerWall -0.005  sofa -0.023
+
+legs: air mass within 8.96e-07 of the start's; air 11.26 to 55.00 C (each second, the convector at 55); sofa's surface 15.45 to 35.48 C
+flat: air mass within 8.96e-07 of the start's; air 11.26 to 55.00 C (each second, the convector at 55); sofa's surface 15.35 to 38.05 C
+
+bare, the convector's check (monitored to 40.001 s): over 25-40 s the radiator gives 688.9 W/m with the room's air at 16.985 C,
+  against the catalogue's 686.3 W/m at that temperature, +0.38%

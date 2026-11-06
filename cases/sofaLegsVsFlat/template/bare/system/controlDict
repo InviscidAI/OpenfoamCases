@@ -1,0 +1,14 @@
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+#include "../../../config/caseSettings"
+$sharedControl;
+endTime 40;
+
+functions
+{
+ #remove clip
+}
+
+functions
+{
+ clip { enabled false; }
+}

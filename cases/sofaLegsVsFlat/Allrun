@@ -1,0 +1,64 @@
+#!/bin/bash
+# A sofa on legs against the same sofa flat on the floor, its back 15 cm from a radiator held at
+# 55 C, in a 5.5 m living room on a 0 C day, 0-300 s from switch-on, with radiation.
+#
+#   ./Allrun legs|flat|bare [nProcs]
+#   ./Allrun --setup-only legs|flat|bare [nProcs]
+#
+# legs     an IKEA EKHOLMA 3-seat sofa's side profile, 15 cm of open air under its base.
+# flat     the same outline carried down to the floor: no air under it.
+# bare     the room with no sofa, 0-40 s: the check of the convector's resistance against the
+#          radiator's catalogue rating, used for nothing else.
+# nProcs   MPI ranks, default 8 (all three solved runs used 8).
+# --setup-only compiles the wall condition if needed, writes the run, checks the mesh, writes
+#          the t = 0 plane (legs and flat), decomposes the run and stops before the solve.
+#
+# Every wall but the radiator's panel is radLayerWall (src/radLayerWall), compiled into
+# $FOAM_USER_LIBBIN as libradLayerWall.so. scripts/make_case.py writes the run into
+# runs/<run>/: the mesh (written directly, not by blockMesh), 0/T, 0/IDefault, the hydrostatic
+# 0/p and 0/p_rgh, and template/'s other fields and dictionaries. Every dictionary #includes
+# ../../../config/caseSettings; legs' and flat's controlDict also scripts/surfaceStability59.txt.
+# When legs and flat have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  legs|flat|bare) ;;
+  *) echo "usage: $0 [--setup-only] legs|flat|bare [nProcs]" >&2; exit 2 ;;
+esac
+
+# the wall condition (wmake does nothing if it is up to date)
+wmake libso src/radLayerWall > log.wmake.radLayerWall 2>&1 || { echo "src/radLayerWall did not compile: log.wmake.radLayerWall" >&2; exit 1; }
+
+r=runs/$run
+mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(
+  cd "$r"
+  checkMesh -constant > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  if [ "$run" != bare ]; then
+    # the section at t = 0, before the solve writes its first
+    postProcess -dict system/planeFunctions -fields '(T U G qr)' -time 0 > log.postProcess0 2>&1
+  fi
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+solved() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && grep -q '^End' "runs/$1/log.buoyantPimpleFoam"; }
+if solved legs && solved flat; then
+  python3 scripts/extract_results.py runs results
+fi

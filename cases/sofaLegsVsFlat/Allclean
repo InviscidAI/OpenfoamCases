@@ -1,0 +1,4 @@
+#!/bin/bash
+# Remove every run and the mesh; the committed inputs and results stay.
+cd "${0%/*}" || exit 1
+rm -rf runs log.* scripts/__pycache__

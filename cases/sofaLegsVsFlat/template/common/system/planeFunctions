@@ -1,0 +1,18 @@
+FoamFile { version 2.0; format ascii; class dictionary; object planeFunctions; }
+functions
+{
+ clip
+ {
+  type surfaces; libs (sampling);
+  executeControl timeStep; executeInterval 1;
+  writeControl adjustableRunTime; writeInterval 0.625;
+  surfaceFormat vtk;
+  formatOptions { vtk { format binary; compression true; } }
+  interpolate false; fields (T U G qr);
+  surfaces
+  {
+   clip { type cuttingPlane; point (2 1.2 0.5); normal (0 0 1); interpolate false; }
+  }
+ }
+
+}
