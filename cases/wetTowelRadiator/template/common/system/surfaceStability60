@@ -1,0 +1,21 @@
+ surfaceStability60
+ {
+ type coded; libs (utilityFunctionObjects); name surfaceStability60;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include <fstream>
+ #include <iomanip>
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();const auto& T=m.lookupObject<volScalarField>("T");
+ scalar area=0,sum=0,lo=GREAT,hi=-GREAT;
+ forAll(m.boundary(),b)if(m.boundary()[b].name()=="cloth")
+ {const auto& tp=T.boundaryField()[b];const auto& a=m.magSf().boundaryField()[b];forAll(tp,j){area+=a[j];sum+=a[j]*tp[j];lo=min(lo,tp[j]);hi=max(hi,tp[j]);}}
+ reduce(area,sumOp<scalar>());reduce(sum,sumOp<scalar>());reduce(lo,minOp<scalar>());reduce(hi,maxOp<scalar>());
+ if(Pstream::master())
+ {fileName dir=m.time().globalPath()/"postProcessing/surfaceStability60";mkDir(dir);static bool first=true;std::ofstream out((dir/"surface.csv").c_str(),first?std::ios::out:std::ios::app);out<<std::setprecision(14);if(first)out<<"time,timeIndex,clothMean_K,clothMin_K,clothMax_K\n";out<<m.time().value()<<','<<m.time().timeIndex()<<','<<sum/max(area,SMALL)<<','<<lo<<','<<hi<<'\n';first=false;}
+ #};
+ }

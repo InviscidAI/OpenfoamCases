@@ -1,0 +1,35 @@
+wetTowelRadiator: a wet towel over a radiator held at 55 C against the same radiator bare, in a
+closed 2-D bedroom section on a 0 C day, from switch-on; per metre of section.
+From scripts/extract_results.py on runs/bare and runs/clothes.
+
+Over 0-600 s                                        bare      towel   towel/bare
+  the radiator's heat (kJ/m)                        367.2      251.4     68.5%
+  the heat that reached the room (kJ/m)             367.2      142.8     38.9%
+  kept warming the towel (kJ/m)                                    20.8
+  latent heat still in the vapour (kJ/m)                           87.8
+  of the towelled radiator's heat, reached the room              56.8%
+
+At 600 s                                            bare      towel
+  the room's air, volume mean (C)                   27.93      19.25   (16.00 at the start)
+  the room's relative humidity, mean (%)             31.1       86.6   (61 at the start, at the cells' pressure)
+  air rising past y = 0.9 m, x < 0.6 m (l/s)         23.1       18.2
+  heat it carries above 16 C (W)                    561.8      138.6
+  the radiator's output (W)                         545.0      393.5
+  the glass, mean (C)                               13.24      11.65
+
+Water (g/m), towel run, 0-600 s: 41.47 left the towel, 36.03 still in the air, 5.40 on the glass
+  (5.40 condensed in all); the towel holds 0.2104 kg/m2 of its 0.25 on average, at 27.77 C mean.
+  Drying 214-266 g/m2 h of sheet over 180-600 s (1.0473 m2 of sheet per metre).
+  The glass holds 0.1 g/m2 over half its height from 147.50 s and over all of it from 158.75 s; bare: never.
+
+Minute by minute (cumulative from 0 s): share of the bare run's, heat reached the room / radiator's heat
+  t (s)       60    120    180    240    300    360    420    480    540    600
+  room %    29.5   29.1   30.8   32.5   33.9   35.2   36.2   37.2   38.1   38.9
+  rad. %    67.9   64.9   65.0   65.6   66.3   66.9   67.4   67.9   68.1   68.5
+  over the last minute alone the towel room had 47.2% of the bare room's heat; the bare radiator gave
+  766 W in the first minute and 548 W in the last, the towelled one 521 and 394 W.
+
+bare: 71129 steps to 600.00 s, 5.81 h of wall time on 8 ranks; air 11.22 to 55.00 C throughout;
+  air mass within 1.2e-07 of its first step's.
+clothes: 55654 steps to 600.00 s, 3.38 h of wall time on 8 ranks; air 11.18 to 55.00 C throughout;
+  air mass within 5.4e-08 of its first step's.

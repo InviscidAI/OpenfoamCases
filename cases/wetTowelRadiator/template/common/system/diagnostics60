@@ -1,0 +1,79 @@
+ diagnostics60
+ {
+ type coded; libs (utilityFunctionObjects); name diagnostics60;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include "IStringStream.H"
+ #include "OStringStream.H"
+ #include "basicThermo.H"
+ #include <fstream>
+ #include <iomanip>
+ #};
+ codeOptions
+ #{
+ -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude
+ #};
+ codeLibs
+ #{
+ -lfluidThermophysicalModels
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ const auto& T=m.lookupObject<volScalarField>("T");
+ const auto& Y=m.lookupObject<volScalarField>("H2O");
+ const auto& p=m.lookupObject<volScalarField>("p");
+ const auto& rho=m.lookupObject<volScalarField>("rho");
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ const auto& thermo=m.lookupObject<basicThermo>("thermophysicalProperties");
+ const auto cp=thermo.Cp();
+ auto ys=[](scalar t,scalar pressure){t-=273.15;scalar e=611.21*::exp((18.678-t/234.5)*(t/(257.14+t)));return .622*e/(pressure-.378*e);};
+ static label last=-1; label sec=label(std::floor(m.time().value()+1e-8));
+ if(sec==last)return true;last=sec;
+ const auto rf=fvc::interpolate(rho);const auto tf=fvc::interpolate(T);const auto yf=fvc::interpolate(Y);const auto cpf=fvc::interpolate(cp());
+ scalarList flow(8,0);scalar mass=0,vap=0,vol=0,meanT=0,meanY=0,meanRH=0,tlo=GREAT,thi=-GREAT,ke=0;
+ const auto& U=m.lookupObject<volVectorField>("U");
+ forAll(T,i){scalar v=m.V()[i];mass+=rho[i]*v;vap+=rho[i]*v*Y[i];vol+=v;meanT+=v*T[i];meanY+=v*Y[i];meanRH+=v*Y[i]/ys(T[i],p[i]);tlo=min(tlo,T[i]);thi=max(thi,T[i]);ke+=.5*rho[i]*magSqr(U[i])*v;}
+ auto addFace=[&](const vector& c,const vector& sf,scalar flux,scalar density,scalar temp,scalar y,scalar cp,scalar weight)
+ {
+ if(mag(c.y()-.90)>1e-7 || c.x()>.60 || mag(sf.y())<SMALL)return;
+ scalar mf=weight*flux*(sf.y()>0?1:-1);label k=mf>=0?0:1;
+ flow[k]+=mag(mf)/density;flow[2+k]+=mag(mf);flow[4+k]+=mag(mf)*cp*(temp-289.15);flow[6+k]+=mag(mf)*y;
+ };
+ forAll(m.neighbour(),f)addFace(m.Cf()[f],m.Sf()[f],phi[f],rf()[f],tf()[f],yf()[f],cpf()[f],1);
+ const wordList walls({"glass","floor","ceiling","innerWall","outerWall","bed","cloth"});
+ scalarList storage(7,0),area(7,0),tsum(7,0),tmin(7,GREAT),tmax(7,-GREAT),mould(7,0);
+ forAll(m.boundary(),b)
+ {
+ const auto& patch=m.boundary()[b];if(patch.type()=="empty")continue;
+ if(patch.coupled()){forAll(patch,j)addFace(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j],rf().boundaryField()[b][j],tf().boundaryField()[b][j],yf().boundaryField()[b][j],cpf().boundaryField()[b][j],.5);continue;}
+ forAll(walls,k)if(patch.name()==walls[k])
+ {
+ const auto& tp=T.boundaryField()[b];const auto& a=m.magSf().boundaryField()[b];
+ OStringStream os;tp.write(os);IStringStream is(os.str());dictionary d(is);
+ label n=d.getOrDefault<label>("nLayers",0);scalar capacity=n?d.get<scalar>("rhoCp")*d.get<scalar>("thickness")/n:0;
+ for(label l=0;l<n;l++){scalarField layer("layer"+Foam::name(l),d,patch.size());forAll(layer,j)storage[k]+=capacity*a[j]*(layer[j]-289.15);}
+ forAll(tp,j){area[k]+=a[j];tsum[k]+=a[j]*tp[j];tmin[k]=min(tmin[k],tp[j]);tmax[k]=max(tmax[k],tp[j]);label cell=patch.faceCells()[j];if(Y[cell]/ys(tp[j],p[cell])>=.8)mould[k]+=a[j];}
+ }
+ }
+ scalarList probe(27,0);label k=0;
+ for(scalar xx: {0.4,1.5,2.9})for(scalar yy: {0.1,1.2,2.3}){
+ scalar dist=GREAT;label near=-1;
+ forAll(T,i){scalar ds=magSqr(m.C()[i]-vector(xx,yy,.5));if(ds<dist){dist=ds;near=i;}}
+ scalar dmin=dist;reduce(dmin,minOp<scalar>());
+ if(near>=0 && dist==dmin){probe[k]=T[near];probe[k+1]=Y[near];probe[k+2]=Y[near]/ys(T[near],p[near]);}k+=3;
+ }
+ forAll(probe,i)reduce(probe[i],maxOp<scalar>());
+ forAll(flow,i)reduce(flow[i],sumOp<scalar>());
+ forAll(storage,k){reduce(storage[k],sumOp<scalar>());reduce(area[k],sumOp<scalar>());reduce(tsum[k],sumOp<scalar>());reduce(tmin[k],minOp<scalar>());reduce(tmax[k],maxOp<scalar>());reduce(mould[k],sumOp<scalar>());}
+ scalarList values({mass,vap,vol,meanT,meanY,meanRH,ke});forAll(values,i)reduce(values[i],sumOp<scalar>());
+ reduce(tlo,minOp<scalar>());reduce(thi,maxOp<scalar>());
+ if(Pstream::master()){
+ fileName dir=m.time().globalPath()/"postProcessing/diagnostics60";mkDir(dir);static bool first=true;std::ofstream out((dir/"diagnostics.csv").c_str(),first?std::ios::out:std::ios::app);out<<std::setprecision(14);
+ if(first){out<<"time,up_m3s,down_m3s,up_kgs,down_kgs,up_W,down_W,up_vap_kgs,down_vap_kgs,mass,vapour,volume,roomT_K,roomY,roomRH,airMin_K,airMax_K,KE_J,deltaT_s,wall_s";forAll(walls,k)out<<","<<walls[k]<<"Storage_J,"<<walls[k]<<"Mean_K,"<<walls[k]<<"Min_K,"<<walls[k]<<"Max_K,"<<walls[k]<<"MouldShare";for(label j=0;j<9;j++)out<<",probe"<<j<<"T,probe"<<j<<"Y,probe"<<j<<"RH";out<<'\n';}
+ out<<m.time().value();forAll(flow,k)out<<','<<flow[k];out<<','<<values[0]<<','<<values[1]<<','<<values[2]<<','<<values[3]/values[2]<<','<<values[4]/values[2]<<','<<values[5]/values[2]<<','<<tlo<<','<<thi<<','<<values[6]<<','<<m.time().deltaTValue()<<','<<m.time().elapsedClockTime();forAll(walls,k)out<<','<<storage[k]<<','<<tsum[k]/max(area[k],SMALL)<<','<<tmin[k]<<','<<tmax[k]<<','<<mould[k]/max(area[k],SMALL);forAll(probe,k)out<<','<<probe[k];out<<'\n';first=false;
+ }
+ #};
+ }

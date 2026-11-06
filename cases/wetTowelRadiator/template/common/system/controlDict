@@ -1,0 +1,20 @@
+FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}
+libs (radiationModels fvOptions radLayerWall);
+application moistBuoyantFoam; startFrom startTime; startTime 0; stopAt endTime;
+endTime 600; deltaT 0.001; adjustTimeStep yes; maxCo 1; maxDeltaT 0.25;
+writeControl adjustableRunTime; writeInterval 60; purgeWrite 2; writeFormat binary; writePrecision 10; writeCompression on;
+timeFormat general; timePrecision 10; runTimeModifiable false;
+functions
+{
+ #include "wetWalls"
+ #include "heatAccounting"
+ #include "diagnostics60"
+ #include "surfaceStability60"
+ wallHeatFlux {type wallHeatFlux; libs (fieldFunctionObjects); executeControl writeTime; writeControl writeTime;}
+ clip {type surfaces; libs (sampling); executeControl timeStep; executeInterval 1;
+ writeControl adjustableRunTime; writeInterval 1.25; surfaceFormat vtk;
+ formatOptions {vtk {format binary; compression true;}}
+ interpolate false; fields (T U H2O);
+ surfaces {clip {type cuttingPlane; point (1.5 1.2 0.5); normal (0 0 1); interpolate false;}}
+}
+}

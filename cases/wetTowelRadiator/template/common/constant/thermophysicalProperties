@@ -1,0 +1,17 @@
+FoamFile { version 2.0; format ascii; class dictionary; object thermophysicalProperties; }
+// O2, N2 and CO2 as perfect gases with JANAF thermodynamics and Sutherland viscosity (the
+// coefficients of the v2512 tutorials' thermo.compressibleGas); no reactions
+thermoType
+{
+    type            heRhoThermo;
+    mixture         reactingMixture;
+    transport       sutherland;
+    thermo          janaf;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
+}
+inertSpecie         N2;
+chemistryReader     foamChemistryReader;
+foamChemistryFile   "<constant>/reactions";
+foamChemistryThermoFile "<constant>/thermo.compressibleGas";

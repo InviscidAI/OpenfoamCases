@@ -1,0 +1,297 @@
+// wetWalls: the wet cloth and the window of subject 60. Include in system/functions (or controlDict's functions).
+//
+// Cloth: patch "cloth", the outline of a thin strip of cells left out of the mesh. Its two faces are one
+// sheet, so faces at the same place along the sheet share one thermal node, per metre of section:
+//     (Cdry + W cw) dT/dt = sum over its faces of (A/Asheet, Asheet half its faces) [ kappaEff dn(T) + qr - Lv m ],   dW/dt = -sum (A/Asheet) m
+// with m = (mu/0.60 + mut/0.85) (Yw - Ycell) deltaCoeffs, the solver's own flux of H2O off that face, and
+// Yw the saturation mass fraction at the node's temperature.
+// Glass: patch "glass", each face its own node. It takes the air's heat, qr, a film h to the outdoor air and the
+// latent heat of what condenses; it condenses where the next cell holds more vapour than saturation at the face,
+// keeps a film and evaporates it again. Yw is held at saturation while wet; the face is zero-gradient when dry.
+// T on both patches is fixedValue and H2O is mixed; this function object sets them after each step. All explicit:
+// the cloth's C/h is minutes against a step of about 10 ms. Stefan flow is left out so the flux stays the solver's
+// (at most 4% at a 35 C surface). The parameters are the block below.
+wetWalls
+{
+    type            coded;
+    libs            (utilityFunctionObjects);
+    name            wetWallNodes;
+    writeControl    writeTime;
+    codeInclude
+    #{
+        #include "turbulentFluidThermoModel.H"
+        #include "mixedFvPatchFields.H"
+        #include "OFstream.H"
+        #include "IFstream.H"
+        #include "OSspecific.H"
+    #};
+    codeOptions
+    #{
+        -I$(LIB_SRC)/finiteVolume/lnInclude \
+        -I$(LIB_SRC)/meshTools/lnInclude \
+        -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
+        -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+        -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+        -I$(LIB_SRC)/transportModels/compressible/lnInclude \
+        -I$(FOAM_CASE)/system
+    #};
+    codeLibs
+    #{
+        -lfiniteVolume -lmeshTools -lturbulenceModels -lcompressibleTurbulenceModels -lfluidThermophysicalModels
+    #};
+    codeData
+    #{
+        // ---- parameters -------------------------------------------------------------------------------------
+        #include "wetWallsParameters.H"
+        // ---- state ------------------------------------------------------------------------------------------
+        label cid_ = -1, gid_ = -1, nN_ = 0, nCall_ = 0;
+        labelList node_;                 // cloth face -> node
+        scalarField Tn_, Wn_, An_;       // node temperature, water kg/m2 of sheet, sheet area m2
+        scalarField Tg_, Fg_;            // glass face temperature, film kg/m2
+        scalar evapKg_ = 0, condKg_ = 0, latJ_ = 0, clothConvJ_ = 0, clothRadJ_ = 0, glassLatJ_ = 0, t0_ = 0;
+        autoPtr<OFstream> log_, faces_;
+        scalar nextFace_ = 0;
+
+        static scalar Ysat(const scalar T, const scalar p)   // Buck 1981 over water, as 40's wSat
+        {
+            const scalar t = T - 273.15;
+            const scalar e = 611.21*::exp((18.678 - t/234.5)*(t/(257.14 + t)));
+            return 0.622*e/(p - 0.378*e);
+        }
+        static scalar Lv(const scalar T) { return 2.501e6 - 2370.0*(T - 273.15); }
+
+        // arc length along the polyline clothPath of the nearest point to (x, y)
+        static scalar arc(const scalar x, const scalar y)
+        {
+            scalar best = GREAT, s0 = 0, sBest = 0;
+            for (label i = 0; i + 1 < nPath; ++i)
+            {
+                const scalar ax = clothPath[i][0], ay = clothPath[i][1];
+                const scalar bx = clothPath[i+1][0] - ax, by = clothPath[i+1][1] - ay;
+                const scalar L2 = bx*bx + by*by, L = ::sqrt(L2);
+                scalar u = ((x - ax)*bx + (y - ay)*by)/L2;
+                u = u < 0 ? 0 : (u > 1 ? 1 : u);
+                const scalar dx = x - ax - u*bx, dy = y - ay - u*by, d = dx*dx + dy*dy;
+                if (d < best) { best = d; sBest = s0 + u*L; }
+                s0 += L;
+            }
+            return sBest;
+        }
+    #};
+    codeRead
+    #{
+        if (nN_ || gid_ >= 0) return true;
+        const fvMesh& m = mesh();
+        cid_ = m.boundaryMesh().findPatchID("cloth");
+        gid_ = m.boundaryMesh().findPatchID("glass");
+        t0_ = m.time().value();
+        nextFace_ = t0_;
+        scalar total = 0;
+        for (label i = 0; i + 1 < nPath; ++i)
+        {
+            total += ::hypot(clothPath[i+1][0] - clothPath[i][0], clothPath[i+1][1] - clothPath[i][1]);
+        }
+        nN_ = cid_ >= 0 ? label(::ceil(total/dsNode - 1e-9)) : 0;
+        Tn_ = scalarField(nN_, Tcloth0);
+        Wn_ = scalarField(nN_, water0);
+        An_ = scalarField(nN_, 0.0);
+        if (cid_ >= 0)
+        {
+            const fvPatch& fp = m.boundary()[cid_];
+            node_.setSize(fp.size());
+            const vectorField cf(fp.Cf());
+            forAll(cf, f) { node_[f] = min(nN_ - 1, label(arc(cf[f].x(), cf[f].y())/dsNode)); }
+            // a node's sheet is half the faces it actually holds: cells need not match dsNode, and a node may hold none
+            const scalarField Af(fp.magSf());
+            forAll(Af, f) { An_[node_[f]] += 0.5*Af[f]; }
+            Pstream::listCombineReduce(An_, plusEqOp<scalar>());
+        }
+        if (gid_ >= 0)
+        {
+            Tg_ = scalarField(m.boundary()[gid_].size(), Tglass0);
+            Fg_ = scalarField(m.boundary()[gid_].size(), 0.0);
+        }
+        const fileName f(m.time().timePath()/"wetState");
+        if (isFile(f))
+        {
+            IFstream is(f);
+            is >> Tn_ >> Wn_ >> Tg_ >> Fg_ >> evapKg_ >> condKg_ >> latJ_ >> clothConvJ_ >> clothRadJ_ >> glassLatJ_;
+            Info<< "wetWalls: state read from " << f << endl;
+        }
+        Info<< "wetWalls: cloth nodes " << nN_ << ", sheet length " << total << " m, sheet area " << sum(An_) << " m2, glass faces "
+            << returnReduce(Tg_.size(), sumOp<label>()) << endl;
+    #};
+    codeExecute
+    #{
+        const fvMesh& m = mesh();
+        const Time& rt = m.time();
+        const scalar dt = rt.deltaTValue();
+        const volScalarField& T = m.lookupObject<volScalarField>("T");
+        const volScalarField& Y = m.lookupObject<volScalarField>("H2O");
+        const volScalarField& p = m.lookupObject<volScalarField>("p");
+        const auto& turb = m.lookupObject<compressible::turbulenceModel>(turbulenceModel::propertiesName);
+        volScalarField& Tw = const_cast<volScalarField&>(T);
+        volScalarField& Yw = const_cast<volScalarField&>(Y);
+        const volScalarField* qrp = m.findObject<volScalarField>("qr");
+        scalar mdotC = 0, qLat = 0, qConv = 0, qRad = 0, mdotG = 0, qGlassOut = 0, qGlassConv = 0;
+
+        if (cid_ >= 0)
+        {
+            const fvPatch& fp = m.boundary()[cid_];
+            const scalarField dc(fp.deltaCoeffs()), A(fp.magSf());
+            const scalarField kE(turb.kappaEff(cid_)), Dr(turb.mu(cid_)/0.60 + turb.mut(cid_)/0.85);
+            const scalarField Tc(T.boundaryField()[cid_].patchInternalField());
+            const scalarField Yc(Y.boundaryField()[cid_].patchInternalField());
+            const scalarField& Yb = Y.boundaryField()[cid_];
+            const scalarField& Tb = T.boundaryField()[cid_];
+            // sums per node: 0 heat by air, 1 radiation, 2 latent, 3 water
+            scalarField a(4*nN_, 0.0);
+            forAll(Tb, f)
+            {
+                const label n = node_[f];
+                const scalar mf = Wn_[n] > 0 ? Dr[f]*(Yb[f] - Yc[f])*dc[f] : 0.0;
+                a[4*n]     += A[f]*kE[f]*(Tc[f] - Tb[f])*dc[f];
+                a[4*n + 1] += A[f]*(qrp ? qrp->boundaryField()[cid_][f] : 0.0);
+                a[4*n + 2] -= A[f]*Lv(Tb[f])*mf;
+                a[4*n + 3] += A[f]*mf;
+            }
+            Pstream::listCombineReduce(a, plusEqOp<scalar>());
+            if (nCall_ > 0)
+            {
+                forAll(Tn_, n)
+                {
+                    if (An_[n] <= 0) continue;
+                    const scalar C = Cdry + Wn_[n]*cWater;
+                    Tn_[n] += dt*(a[4*n] + a[4*n + 1] + a[4*n + 2])/(An_[n]*C);
+                    Wn_[n] = max(Wn_[n] - dt*a[4*n + 3]/An_[n], 0.0);
+                    qConv += a[4*n]; qRad += a[4*n + 1]; qLat += a[4*n + 2]; mdotC += a[4*n + 3];
+                }
+                evapKg_ += dt*mdotC; latJ_ -= dt*qLat; clothConvJ_ += dt*qConv; clothRadJ_ += dt*qRad;
+            }
+            scalarField& Tbr = Tw.boundaryFieldRef()[cid_];
+            auto& Ybr = refCast<mixedFvPatchScalarField>(Yw.boundaryFieldRef()[cid_]);
+            const scalarField& pb = p.boundaryField()[cid_];
+            forAll(Tbr, f)
+            {
+                const label n = node_[f];
+                Tbr[f] = Tn_[n];
+                Ybr.refValue()[f] = Ysat(Tn_[n], pb[f]);
+                Ybr.refGrad()[f] = 0;
+                Ybr.valueFraction()[f] = Wn_[n] > 0 ? 1 : 0;
+            }
+            Ybr.evaluate();
+        }
+
+        if (gid_ >= 0)
+        {
+            const fvPatch& fp = m.boundary()[gid_];
+            const scalarField dc(fp.deltaCoeffs()), A(fp.magSf());
+            const scalarField kE(turb.kappaEff(gid_)), Dr(turb.mu(gid_)/0.60 + turb.mut(gid_)/0.85);
+            const scalarField Tc(T.boundaryField()[gid_].patchInternalField());
+            const scalarField Yc(Y.boundaryField()[gid_].patchInternalField());
+            const scalarField& Yb = Y.boundaryField()[gid_];
+            auto& Ybr = refCast<mixedFvPatchScalarField>(Yw.boundaryFieldRef()[gid_]);
+            scalarField& Tbr = Tw.boundaryFieldRef()[gid_];
+            const scalarField& pb = p.boundaryField()[gid_];
+            forAll(Tg_, f)
+            {
+                const bool wet = Ybr.valueFraction()[f] > 0.5;
+                scalar mc = wet ? Dr[f]*(Yc[f] - Yb[f])*dc[f] : 0.0;      // into the film
+                if (nCall_ > 0)
+                {
+                    if (Fg_[f] + mc*dt < 0) { mc = -Fg_[f]/dt; }
+                    Fg_[f] += mc*dt;
+                    const scalar qa = kE[f]*(Tc[f] - Tg_[f])*dc[f];
+                    const scalar qo = hOut*(Tg_[f] - Tout);
+                    const scalar qrf = qrp ? qrp->boundaryField()[gid_][f] : 0.0;
+                    Tg_[f] += dt*(qa + qrf + Lv(Tg_[f])*mc - qo)/Cglass;
+                    mdotG += A[f]*mc; qGlassOut += A[f]*qo; qGlassConv += A[f]*qa;
+                    glassLatJ_ += dt*A[f]*Lv(Tg_[f])*mc;
+                }
+                Tbr[f] = Tg_[f];
+                const scalar Ys = Ysat(Tg_[f], pb[f]);
+                Ybr.refValue()[f] = Ys;
+                Ybr.refGrad()[f] = 0;
+                Ybr.valueFraction()[f] = (Yc[f] > Ys || Fg_[f] > 0) ? 1 : 0;
+            }
+            Ybr.evaluate();
+            reduce(mdotG, sumOp<scalar>()); reduce(qGlassOut, sumOp<scalar>()); reduce(qGlassConv, sumOp<scalar>());
+            if (nCall_ > 0) condKg_ += dt*mdotG;
+        }
+        nCall_++;
+
+        // every faceEvery seconds, for the render: each glass face's height, film and temperature, each cloth node's state
+        if (rt.value() >= nextFace_ - 0.5*dt)
+        {
+            nextFace_ += faceEvery;
+            List<scalarField> gy(Pstream::nProcs()), gf(Pstream::nProcs()), gt(Pstream::nProcs());
+            if (gid_ >= 0)
+            {
+                const vectorField cf(m.boundary()[gid_].Cf());
+                scalarField y(cf.size());
+                forAll(cf, f) { y[f] = cf[f].y(); }
+                gy[Pstream::myProcNo()] = y; gf[Pstream::myProcNo()] = Fg_; gt[Pstream::myProcNo()] = Tg_;
+            }
+            Pstream::allGatherList(gy); Pstream::allGatherList(gf); Pstream::allGatherList(gt);
+            if (Pstream::master())
+            {
+                if (!faces_)
+                {
+                    mkDir(rt.globalPath()/"postProcessing"/"wetWalls");
+                    faces_.reset(new OFstream(rt.globalPath()/"postProcessing"/"wetWalls"/("faces_" + Foam::name(t0_) + ".dat")));
+                    faces_() << "# glass t y film_kgm2 T ; cloth t s_m T water_kgm2" << nl;
+                }
+                forAll(gy, i) { forAll(gy[i], f) { faces_() << "glass " << rt.value() << ' ' << gy[i][f] << ' ' << gf[i][f] << ' ' << gt[i][f] << nl; } }
+                forAll(Tn_, n) { if (An_[n] > 0) faces_() << "cloth " << rt.value() << ' ' << (n + 0.5)*dsNode << ' ' << Tn_[n] << ' ' << Wn_[n] << nl; }
+                faces_().flush();
+            }
+        }
+
+        if (nCall_ % logEvery == 1)
+        {
+            const volScalarField& rho = m.lookupObject<volScalarField>("rho");
+            const scalar vap = gSum(rho.primitiveField()*Y.primitiveField()*m.V().field());
+            const scalar air = gSum(rho.primitiveField()*m.V().field());
+            const scalar fT = gSum(T.primitiveField()*m.V().field())/gSum(m.V().field());
+            scalar gA = 0, gW = 0, gF = 0, gT = 0;
+            if (gid_ >= 0)
+            {
+                const scalarField A(m.boundary()[gid_].magSf());
+                gA = gSum(A); gF = gSum(A*Fg_); gW = gSum(A*pos(Fg_ - filmSeen)); gT = gSum(A*Tg_);
+            }
+            if (Pstream::master())
+            {
+                if (!log_)
+                {
+                    mkDir(rt.globalPath()/"postProcessing"/"wetWalls");
+                    log_.reset(new OFstream(rt.globalPath()/"postProcessing"/"wetWalls"/("wet_" + Foam::name(t0_) + ".dat")));
+                    log_() << "# t clothTmean clothTmin clothTmax waterMean_kgm2 evap_kgs qLat_W qAir_W qRad_W evapCum_kg "
+                              "latCum_J airCum_J radCum_J glassT glassFilm_kg glassWetShare condRate_kgs condCum_kg "
+                              "glassLatCum_J qGlassOut_W qGlassAir_W vapourAir_kg airMass_kg meanT" << nl;
+                }
+                scalar tm = 0, tmin = GREAT, tmax = -GREAT, wm = 0, as = 0;
+                forAll(Tn_, n)
+                {
+                    if (An_[n] <= 0) continue;
+                    tm += An_[n]*Tn_[n]; wm += An_[n]*Wn_[n]; as += An_[n];
+                    tmin = min(tmin, Tn_[n]); tmax = max(tmax, Tn_[n]);
+                }
+                as = max(as, VSMALL);
+                log_() << rt.value() << ' ' << tm/as << ' ' << tmin << ' ' << tmax << ' ' << wm/as << ' ' << mdotC << ' '
+                       << -qLat << ' ' << qConv << ' ' << qRad << ' ' << evapKg_ << ' ' << latJ_ << ' ' << clothConvJ_ << ' '
+                       << clothRadJ_ << ' ' << (gA > 0 ? gT/gA : 0) << ' ' << gF << ' ' << (gA > 0 ? gW/gA : 0) << ' ' << mdotG
+                       << ' ' << condKg_ << ' ' << glassLatJ_ << ' ' << qGlassOut << ' ' << qGlassConv << ' ' << vap << ' ' << air
+                       << ' ' << fT << nl;
+                log_().flush();
+            }
+        }
+    #};
+    codeWrite
+    #{
+        const fvMesh& m = mesh();
+        mkDir(m.time().timePath());
+        OFstream os(m.time().timePath()/"wetState");
+        os << Tn_ << nl << Wn_ << nl << Tg_ << nl << Fg_ << nl << evapKg_ << ' ' << condKg_ << ' ' << latJ_ << ' '
+           << clothConvJ_ << ' ' << clothRadJ_ << ' ' << glassLatJ_ << nl;
+    #};
+}

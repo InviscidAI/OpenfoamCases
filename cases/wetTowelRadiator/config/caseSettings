@@ -1,0 +1,31 @@
+// -------------------------------------------------------------------------
+// caseSettings - the one settings file both runs, bare and cover, read.
+// Every dictionary #includes it as ../../../config/caseSettings from
+// runs/<run>/<dir>/. Nothing in it differs between the runs; the cover is in
+// the mesh and in 0/T, which scripts/make_case.py writes.
+// -------------------------------------------------------------------------
+
+// ---- temperatures ---------------------------------------------------------
+Tamb            289.15;     // 20 C : initial air, ceiling and inner wall
+Tout            273.15;     // 0 C  : outside air on the far side of the glass
+
+// ---- glass ----------------------------------------------------------------
+// Overall U = 2.8 W/m2K including the inside surface film (Rsi = 0.13 m2K/W).
+// Resistance left for the external BC: 1/2.8 - 0.13 = 0.2271 m2K/W
+// -> external coefficient h = 4.403 W/m2K. The inside film, convection and
+// radiation, is the solver's.
+hGlassExt       4.403;
+
+// ---- time -----------------------------------------------------------------
+tEnd            300;        // from switch-on to 300 s
+maxCoNum        1;
+maxDt           0.25;
+
+// ---- the convector's fin channels -------------------------------------------
+// The upward Darcy resistance (1/m2) of the convector zone, constant/fvOptions:
+// d = (1e8 dy 1e8). The one fitted setting: bare pilots, 0-40 s, matched to
+// Stelrad's 980 W at dT50 scaled by EN 442's exponent 1.3 at the room's mean
+// temperature over 25-40 s (README.md, "The one fitted setting"). Frozen for
+// both runs.
+dy 16308374.6705;
+

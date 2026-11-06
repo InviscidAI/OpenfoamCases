@@ -1,0 +1,67 @@
+#!/bin/bash
+# A wet towel draped over a radiator against the same radiator bare, in a 2-D section of a small
+# bedroom on a 0 C day, from switch-on to 600 s, with humid air, radiation and a window that mists.
+#
+#   ./Allrun bare|clothes [nProcs]
+#   ./Allrun --setup-only bare|clothes [nProcs]
+#
+# bare     the Stelrad K1's front panel at 55 C and its convector, nothing on it.
+# clothes  the same radiator with a wet towel over it: one sheet, 0.25 kg/m2 of water, over the top
+#          and 46 cm down the front and the back, 10 mm off the panel.
+# nProcs   MPI ranks, default 8 (both solved runs used 8).
+# --setup-only builds src/, writes the run, checks the mesh, decomposes it and stops before the solve.
+#
+# The solver is moistBuoyantFoam (src/moistBuoyantFoam): OpenFOAM's rhoReactingBuoyantFoam with
+# one line changed, water vapour diffusing at Sc 0.60 (Sct 0.85) where the stock solver uses Sc 1.
+# Every room surface but the panel, the towel and the glass is radLayerWall (src/radLayerWall, the
+# condition ceilingVsUnderfloor and fanHeaterVsOilRadiator use, the same code), built into
+# $FOAM_USER_LIBBIN as libradLayerWall.so. The towel and the window are the coded function object
+# in system/wetWalls (parameters in system/wetWallsParameters.H), which OpenFOAM compiles into the
+# run's dynamicCode/ when the solve starts, as it does the monitors heatAccounting, diagnostics60
+# and surfaceStability60.
+#
+# scripts/make_case.py writes the run into runs/<run>/: the mesh (written directly, not by
+# blockMesh), 0/ and system/decomposeParDict, with template/common/ and template/<run>/ copied in
+# unchanged. constant/fvOptions #includes ../../../config/caseSettings for the convector's fitted
+# resistance. When both runs have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v rhoReactingBuoyantFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c 'import numpy' 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  bare|clothes) ;;
+  *) echo "usage: $0 [--setup-only] bare|clothes [nProcs]" >&2; exit 2 ;;
+esac
+
+# the wall condition and the solver (wmake does nothing if they are up to date)
+wmake libso src/radLayerWall > log.wmake.radLayerWall 2>&1 || { echo "src/radLayerWall did not compile: log.wmake.radLayerWall" >&2; exit 1; }
+wmake src/moistBuoyantFoam > log.wmake.moistBuoyantFoam 2>&1 || { echo "src/moistBuoyantFoam did not compile: log.wmake.moistBuoyantFoam" >&2; exit 1; }
+
+r=runs/$run
+mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(
+  cd "$r"
+  checkMesh -constant > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  decomposePar -force -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" moistBuoyantFoam -parallel -fileHandler collated > log.moistBuoyantFoam 2>&1
+  # a parallel log ends with "End" and then "Finalising parallel run"
+  grep -q '^End' log.moistBuoyantFoam || { echo "$r: the solve did not end, see log.moistBuoyantFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+if [ -f runs/bare/log.moistBuoyantFoam ] && [ -f runs/clothes/log.moistBuoyantFoam ] \
+   && grep -q '^End' runs/bare/log.moistBuoyantFoam && grep -q '^End' runs/clothes/log.moistBuoyantFoam; then
+  python3 scripts/extract_results.py runs results
+fi
