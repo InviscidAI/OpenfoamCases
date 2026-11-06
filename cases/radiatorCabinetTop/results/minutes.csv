@@ -1,0 +1,5 @@
+start_s,end_s,bare_output_W,solid_output_W,perforated_output_W,solid_out_of_cabinet_W,perforated_out_of_cabinet_W,solid_out_over_bare_block,perforated_out_over_bare_block,solid_out_since_0_kJ,perforated_out_since_0_kJ,solid_like_for_like_since_0,perforated_like_for_like_since_0,bare_glass_out_W,solid_glass_out_W,perforated_glass_out_W,bare_room_C_at_end,solid_room_C_at_end,perforated_room_C_at_end
+0,30,4253.79,2975.95,3326.55,2092.40,2539.97,0.4919,0.5971,62.772,76.199,0.1475,0.1790,422.10,394.71,521.78,21.659,19.135,19.627
+30,60,4021.55,2737.61,3053.34,2203.58,2568.88,0.5479,0.6388,128.879,153.265,0.3028,0.3601,449.30,422.57,542.66,26.796,22.026,23.018
+60,90,3805.78,2684.65,2975.28,2176.08,2504.07,0.5718,0.6580,194.162,228.388,0.4562,0.5366,569.28,453.58,556.33,30.469,24.545,25.825
+90,120,3786.11,2632.63,2909.66,2143.38,2468.69,0.5661,0.6520,258.463,302.448,0.6073,0.7106,497.92,437.05,561.27,34.353,26.863,28.458

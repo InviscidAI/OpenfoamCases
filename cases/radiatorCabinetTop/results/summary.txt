@@ -1,0 +1,79 @@
+radiatorCabinetTop: figures from the runs' monitors (scripts/extract_results.py)
+A steam radiator held at 215 F (374.82 K), bare, in a sheet-steel cabinet with a solid top and in the
+same cabinet with a perforated top, 0-120 s from switch-on, W and J per metre of section
+
+bare: monitored to t = 120 s, 27016 steps, 13151 s of wall time on 5 ranks, 0 final pressure solves at 100 iterations
+solid: monitored to t = 120 s, 28418 steps, 15298 s of wall time on 5 ranks, 0 final pressure solves at 100 iterations
+perforated: monitored to t = 120 s, 29700 steps, 16584 s of wall time on 5 ranks, 0 final pressure solves at 100 iterations
+
+The radiator's heat from switch-on to 120 s, kJ/m
+              output   iron conv.  iron rad.  convector zone   of bare
+  bare         476.02      66.55     115.20     294.27       100.00%
+  solid        330.93      59.25      99.14     172.54        69.52%
+  perforated   367.94      65.01     103.56     199.37        77.30%
+
+The heat out of the cabinet from switch-on to 120 s, kJ/m: carried out of and into the open strips,
+radiation and diffusion through them, and convection and radiation off the sheet's outer faces
+              front out  front in  top out  top in  strips rad.  strips diff.  sheet conv.  sheet rad.    net
+  solid         226.27     14.17     0.00    0.00       19.01         0.18         8.06       19.11   258.46
+  perforated      0.76     22.64   279.29    0.24       24.71         0.68         7.35       12.55   302.45
+  The air through each cabinet over 100-120 s, kg/s per metre: solid front out 0.0312, in 0.0312, top out 0.0000, in 0.0000; perforated front out 0.0005, in 0.0424, top out 0.0421, in 0.0002
+
+Heat stored in the floor and the window wall inside the cabinet's footprint (x < 0.330 m, y < 0.756 m)
+at 120 s, kJ/m, from the layer temperatures in each run's T at 120 s; each patch's whole against its monitor
+  bare        floor  13.25  wall  37.18  together  50.42   (whole patches floor 38.939 against 38.939, outerWall 43.554 against 43.554)
+  solid       floor  14.25  wall  49.26  together  63.52   (whole patches floor 28.261 against 28.261, outerWall 54.483 against 54.483)
+  perforated  floor  14.01  wall  43.44  together  57.45   (whole patches floor 28.445 against 28.445, outerWall 49.904 against 49.904)
+  The radiator's output less the heat out of the cabinet and the footprint's store, kJ/m (the cabinet's
+  air, and what the balance does not account for): solid 8.94 (2.7% of its output), perforated 8.04 (2.2% of its output)
+
+Shares over 0-120 s
+  bare's heat 476.02 kJ/m, of it 50.42 into its own floor and wall in the cabinet's footprint, leaving 425.59
+                                                              solid  perforated   gap (points)
+  heat out of the cabinet / bare's heat less its footprint    60.73%    71.06%     10.33
+  heat out of the cabinet / bare's heat (the brief's count)   54.30%    63.54%      9.24
+  the radiator's output / bare's                              69.52%    77.30%      7.78
+  heat out of the cabinet less the glass / bare's less its glass  49.59%    56.71%      7.12
+  the radiator's output less the glass / bare's less its glass  66.93%    72.39%      5.46
+The clip's count so far, heat out of the cabinet since switch-on / bare's heat at 120 s less its footprint
+   10 s  4.30 /  5.63%   20 s  9.53 / 11.78%   30 s 14.75 / 17.90%   60 s 30.28 / 36.01%   90 s 45.62 / 53.66%  120 s 60.73 / 71.06%
+The brief's count since switch-on, each against bare's heat to the same time, and the gap
+   10 s 40.23 / 52.62% (12.4)   20 s 46.75 / 57.78% (11.0)   30 s 49.19 / 59.71% (10.5)   60 s 51.91 / 61.74% ( 9.8)   90 s 53.57 / 63.02% ( 9.4)  120 s 54.30 / 63.54% ( 9.2)
+Each half minute on its own, heat out of the cabinet / bare's heat in the same half minute
+    0- 30 s  bare  4253.8 W/m  solid  49.2%  perforated  59.7%  gap 10.5
+   30- 60 s  bare  4021.5 W/m  solid  54.8%  perforated  63.9%  gap  9.1
+   60- 90 s  bare  3805.8 W/m  solid  57.2%  perforated  65.8%  gap  8.6
+   90-120 s  bare  3786.1 W/m  solid  56.6%  perforated  65.2%  gap  8.6
+
+The glass, kJ/m lost from switch-on to 120 s, and as a share of the heat that left the cabinet (bare: the radiator's)
+  bare 58.16 (12.2%)   solid 51.24 (19.8%)   perforated 65.46 (21.6%)
+
+At each time: the radiator's output now (W/m) and the air outside the cabinet's box (x < 0.330 m,
+y < 0.756 m), mass-weighted, C (in bare the same box, the radiator's own air, is left out)
+     t      output                     room air
+          bare   solid  perforated     bare   solid  perforated
+    10    4145    2809    3232       18.04   17.18   17.44
+    20    4101    2775    3112       19.84   18.19   18.52
+    30    4063    2762    3094       21.66   19.14   19.63
+    60    4082    2674    2968       26.80   22.03   23.02
+    90    3962    2646    2862       30.47   24.54   25.82
+   120    3736    2597    2884       34.35   26.86   28.46
+
+bare, the convector's check: over 20-30 s the radiator gives 4082.8 W/m with all the air at 21.068 C,
+  against the rating's 4156.8 W/m at that temperature (4,154 W/m x (dT/80.56)^1.3), 98.22%
+
+Heat budget over 10-120 s, kJ/m: the radiator's heat = rise of the air's internal energy,
+(cv/R) integral p dV, + heat stored in the wall layers + heat out through the glass
+              radiator     air   layers   glass  residual
+  bare        430.512 222.441  153.569  54.960  -0.4575 (-0.106%)
+  solid       297.340 132.164  117.048  48.684  -0.5572 (-0.187%)
+  perforated  330.486 150.349  119.422  61.543  -0.8281 (-0.251%)
+Each layer's stored heat against minus its integrated wall heat flux (convection and the
+radiation it absorbs), 1-120 s, error %
+  bare       floor -0.0025  ceiling -0.0026  innerWall -0.0018  outerWall -0.0024
+  solid      floor -0.0031  ceiling -0.0046  innerWall -0.0041  outerWall -0.0025
+  perforated floor -0.0023  ceiling -0.0034  innerWall -0.0020  outerWall -0.0031
+
+bare: air mass within 8.96e-07 of the start's; air 5.85 to 101.69 C (each second; the iron and the convector zone are held at 101.67)
+solid: air mass within 8.96e-07 of the start's; air 4.96 to 101.69 C (each second; the iron and the convector zone are held at 101.67); the sheet's faces 16.51 to 75.49 C
+perforated: air mass within 8.96e-07 of the start's; air 4.92 to 101.69 C (each second; the iron and the convector zone are held at 101.67); the sheet's faces 16.50 to 77.76 C

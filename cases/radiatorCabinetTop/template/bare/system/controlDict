@@ -1,0 +1,6 @@
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+#include "../../../config/caseSettings"
+dy 470488.9431331412;
+$sharedControl;
+endTime 120;
+functions { clip { writeInterval 1; } }
