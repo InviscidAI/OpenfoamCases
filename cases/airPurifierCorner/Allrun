@@ -1,0 +1,72 @@
+#!/bin/bash
+# A small tower air purifier at full speed in a closed 4.5 x 4.5 x 2.4 m bedroom whose air starts
+# evenly full of fine smoke, standing in a corner or in the middle of the room, 3-D, isothermal,
+# 0-1200 s (20 minutes) from rest.
+#
+#   ./Allrun corner|middle [nProcs]
+#   ./Allrun --setup-only corner|middle [nProcs]
+#
+# corner   the purifier's axis at x = z = 0.49 m, 38 cm clear of both walls; 98,840 cells.
+# middle   the same purifier moved by exactly 22 background cells to x = z = 2.257857 m, 8 mm off
+#          the room's centre, so that both sit alike on the grid; 99,260 cells.
+# nProcs   MPI ranks, default 8 (both solved runs used 8, side by side, on separate cores).
+# --setup-only meshes, writes the run, checks the mesh, writes the t = 0 planes, decomposes the
+#          run and stops before the solve.
+#
+# The mesh is blockMesh's 56 x 30 x 56 lattice cut by snappyHexMesh, castellated only, with no
+# snapping and no layers, so the purifier is stair-stepped. template/common holds the dictionaries,
+# 0.orig and the surfaces both runs share; template/<run> the run's snappyHexMeshDict (its refinement
+# boxes follow the purifier) and its roomWalls.stl. The middle run's purifier surfaces are the
+# corner's own, translated (scripts/move_purifier.sh). After meshing, scripts/open_patches.py makes
+# the intake and the outlet plain patches instead of walls. The smoke is a passive scalar C, solved
+# by the scalarTransport function object in system/controlDict, which also holds every monitor. When
+# both runs have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v pimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c 'import numpy' 2> /dev/null || { echo "scripts/extract_results.py needs python3 with numpy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}; nproc=${2:-8}
+case "$run" in
+  corner|middle) ;;
+  *) echo "usage: $0 [--setup-only] corner|middle [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+rm -rf "$r"
+mkdir -p "$r"
+cp -r template/common/constant template/common/system "$r"/
+cp -r template/$run/. "$r"/
+if [ "$run" = middle ]; then
+  sh scripts/move_purifier.sh template/common/constant/triSurface "$r"/constant/triSurface
+fi
+[ "$nproc" = 8 ] || foamDictionary -entry numberOfSubdomains -set "$nproc" "$r"/system/decomposeParDict > /dev/null
+touch "$r"/$run.foam
+
+(
+  cd "$r"
+  blockMesh > log.blockMesh 2>&1
+  snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+  checkMesh > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  python3 ../../scripts/open_patches.py .
+  cp -r ../../template/common/0.orig 0
+  # the two planes at t = 0, before the solve writes its first
+  postProcess -time 0 -func planeInitial > log.initial 2>&1
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" pimpleFoam -parallel -fileHandler collated > log.pimpleFoam 2>&1
+  grep -q '^End' log.pimpleFoam || { echo "$r: the solve did not end, see log.pimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+solved() { [ -f "runs/$1/log.pimpleFoam" ] && grep -q '^End' "runs/$1/log.pimpleFoam"; }
+if solved corner && solved middle; then
+  python3 scripts/extract_results.py runs results
+fi

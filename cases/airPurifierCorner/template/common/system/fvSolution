@@ -1,0 +1,14 @@
+FoamFile
+{
+ version 2.0; format ascii; class dictionary; object fvSolution;
+}
+solvers
+{
+ p { solver GAMG; tolerance 1e-7; relTol 0.05; smoother GaussSeidel; }
+ pFinal { $p; tolerance 1e-7; relTol 0; }
+ "(U|k|omega)" { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-8; relTol 0.05; }
+ "(U|k|omega)Final" { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-8; relTol 0; }
+ C { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-9; relTol 0; }
+}
+PIMPLE { nOuterCorrectors 1; nCorrectors 2; nNonOrthogonalCorrectors 0; pRefPoint (4.1 2.2 0.5); pRefValue 0; }
+relaxationFactors { equations { "(U|k|omega)" 1; } }

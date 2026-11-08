@@ -1,0 +1,14 @@
+FoamFile
+{
+ version 2.0; format ascii; class volScalarField; object k;
+}
+dimensions [0 2 -2 0 0 0 0];
+internalField uniform 1e-8;
+boundaryField
+{
+roomWalls { type kqRWallFunction; value uniform 1e-8; }
+furnitureWalls { type kqRWallFunction; value uniform 1e-8; }
+purifierWall { type kqRWallFunction; value uniform 1e-8; }
+purifierIn { type zeroGradient; }
+purifierOut { type turbulentIntensityKineticEnergyInlet; intensity 0.1; value uniform 1e-8; }
+}

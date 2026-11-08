@@ -1,0 +1,58 @@
+airPurifierCorner: a small tower purifier, 0.0675 m3/s of clean air, in the corner or the middle of a closed
+4.5 x 4.5 x 2.4 m bedroom, the air starting evenly full of smoke (C = 1), isothermal, from rest.
+Fluid volume 44.4276 (corner) and 44.4276 m3 (middle); a perfectly mixed room: C = exp(-t/658 s).
+Monitors every 1 s from 1 to 1200 s, 1200 rows in each run.
+
+Clean-air fraction, 1 - C. Room volume-weighted, intake flux-weighted, pillow the probe at (3.5, 0.75, 4.2).
+  time   mixed | corner room intake pillow | middle room intake pillow
+     30  0.045 | 0.040  0.142  0.000 | 0.044  -0.000  0.000
+     60  0.087 | 0.078  0.180  -0.000 | 0.089  0.037  0.129
+    120  0.167 | 0.150  0.251  0.182 | 0.170  0.149  0.193
+    180  0.239 | 0.219  0.300  0.191 | 0.244  0.228  0.272
+    300  0.366 | 0.340  0.414  0.332 | 0.372  0.372  0.398
+    600  0.598 | 0.562  0.619  0.585 | 0.605  0.597  0.619
+    900  0.745 | 0.713  0.719  0.713 | 0.752  0.750  0.762
+   1200  0.838 | 0.812  0.832  0.805 | 0.844  0.842  0.845
+
+At 1200 s: room C 0.1884 corner, 0.1564 middle, 0.1615 mixed: 81.2%, 84.4% and 83.8% of the smoke gone.
+
+First time C falls to a level, min:s (room corner, middle | pillow corner, middle | mixed)
+   10% clean: 1:17 1:08 | 1:42 0:40 | 1:09
+   50% clean: 8:21 7:28 | 8:41 6:54 | 7:36
+   75% clean: 16:36 14:55 | 16:03 14:20 | 15:12
+   80% clean: 19:18 17:20 | 19:52 16:58 | 17:39
+
+First 1 s reading at which each probe is 1% clean (C <= 0.99), s: corner, middle
+  pillow           95    36
+  farCorner       102    40
+  nearCorner       31    32
+  wardrobeGap      35    28
+  doorSide         32    38
+  roomMiddle       80     2
+  underBedSide     85    47
+  (roomMiddle stands 8 mm off the middle purifier's axis, in its jet: not room air in the middle run)
+
+Share of the rated clean air the room receives
+  corner: time mean of C_intake/C_room 0.9162 (300-1200 s 0.9161); room decay time constant over the run 719 s against 658 mixed, 0.915 of the rating
+  middle: time mean of C_intake/C_room 1.0184 (300-1200 s 1.0166); room decay time constant over the run 647 s against 658 mixed, 1.018 of the rating
+
+Room standard deviation of C: peak (time), and at the end
+  corner: 0.0892 (79 s), 0.0208
+  middle: 0.0605 (31 s), 0.0083
+C at the seven probes at 1200 s
+  corner: pillow 0.195, farCorner 0.197, nearCorner 0.180, wardrobeGap 0.170, doorSide 0.190, roomMiddle 0.192, underBedSide 0.197
+  middle: pillow 0.155, farCorner 0.155, nearCorner 0.155, wardrobeGap 0.149, doorSide 0.154, roomMiddle 0.044, underBedSide 0.161
+
+Checks
+  corner: flow in/out at the end 0.067500/0.067500 m3/s, largest departure from 0.0675 after 3 s 0.00e+00; budget 1-1200 s: room lost 36.0385 m3 of C, intake took 36.0534, -0.041%
+  middle: flow in/out at the end 0.067500/0.067500 m3/s, largest departure from 0.0675 after 3 s 0.00e+00; budget 1-1200 s: room lost 37.4616 m3 of C, intake took 37.4769, -0.041%
+
+C at every time step (smokeBounds); the solved runs were to stop if C left -0.01..1.01
+  corner: 177931 steps; min -0.0017693 at 1.518 s at (0.532, 0.590, 0.532); max 1.00362 at 17.26 s at (0.763, 0.040, 0.442); inside the band: True
+    steps above 1.0003: 2070, the last at 24.43 s
+    steps above 1.001: 215, the last at 17.44 s
+    steps below -0.001: 52, the last at 76 s
+  middle: 177575 steps; min -0.00187072 at 1.544 s at (2.300, 0.590, 2.300); max 1.00307 at 55.27 s at (2.401, 0.250, 2.300); inside the band: True
+    steps above 1.0003: 6222, the last at 61.53 s
+    steps above 1.001: 453, the last at 58.43 s
+    steps below -0.001: 10, the last at 1.848 s

@@ -1,0 +1,14 @@
+FoamFile
+{
+ version 2.0; format ascii; class volScalarField; object p;
+}
+dimensions [0 2 -2 0 0 0 0];
+internalField uniform 0;
+boundaryField
+{
+roomWalls { type fixedFluxPressure; value uniform 0; }
+furnitureWalls { type fixedFluxPressure; value uniform 0; }
+purifierWall { type fixedFluxPressure; value uniform 0; }
+purifierIn { type fixedFluxPressure; value uniform 0; }
+purifierOut { type fixedFluxPressure; value uniform 0; }
+}

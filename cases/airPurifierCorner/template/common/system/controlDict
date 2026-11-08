@@ -1,0 +1,69 @@
+FoamFile
+{
+ version 2.0; format ascii; class dictionary; object controlDict;
+}
+application pimpleFoam;
+startFrom startTime; startTime 0; stopAt endTime; endTime 1200;
+deltaT 0.001; adjustTimeStep yes; maxCo 1.0; maxDeltaT 0.1;
+writeControl adjustableRunTime; writeInterval 60; purgeWrite 2;
+writeFormat ascii; writePrecision 10; writeCompression on;
+timeFormat general; timePrecision 10; runTimeModifiable false;
+functions
+{
+courant { type CourantNo; libs (fieldFunctionObjects); executeControl timeStep; writeControl none; }
+courantMax { type fieldMinMax; libs (fieldFunctionObjects); fields (Co); mode component; executeControl timeStep; writeControl adjustableRunTime; writeInterval 1; }
+smoke { type scalarTransport; libs (solverFunctionObjects); field C; alphaD 1; alphaDt 1.43; bounded01 false; resetOnStartUp false; executeControl timeStep; executeInterval 1; writeControl writeTime; }
+smokeBounds { type fieldMinMax; libs (fieldFunctionObjects); fields (C); mode component; log false; executeControl timeStep; executeInterval 1; writeControl timeStep; writeInterval 1; }
+roomMean { type volFieldValue; libs (fieldFunctionObjects); regionType all; operation volAverage; fields (C); writeFields false; executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+roomIntegral { type volFieldValue; libs (fieldFunctionObjects); regionType all; operation volIntegrate; fields (C); writeFields false; executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+roomCoV { type volFieldValue; libs (fieldFunctionObjects); regionType all; operation CoV; fields (C); writeFields false; executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+flow_purifierIn { type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name purifierIn; operation sumMag; fields (phi); writeFields false; executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+flow_purifierOut { type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name purifierOut; operation sumMag; fields (phi); writeFields false; executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+intakeC { type surfaceFieldValue; libs (fieldFunctionObjects); regionType patch; name purifierIn; operation weightedAverage; weightField phi; fields (C); writeFields false; executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+points { type probes; libs (sampling); fields (C U); probeLocations (
+(3.5 0.75 4.2)
+(4.2 1.1 4.2)
+(0.8 1.1 0.8)
+(1.0 1.1 4.2)
+(4.2 1.1 0.3)
+(2.25 1.1 2.25)
+(2.5 0.2 3.5)
+); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 1; log false; }
+planesEarly {
+type surfaces; libs (sampling); timeStart 0; timeEnd 30;
+executeControl timeStep; executeInterval 1;
+writeControl adjustableRunTime; writeInterval 0.25;
+surfaceFormat vtk; interpolationScheme cellPoint; fields (C U);
+formatOptions { vtk { format ascii; legacy true; } }
+surfaces
+(
+ diagonal { type cuttingPlane; planeType pointAndNormal; pointAndNormalDict { point (0 0 0); normal (1 0 -1); } interpolate true; }
+ plan { type cuttingPlane; planeType pointAndNormal; pointAndNormalDict { point (0 1.1 0); normal (0 1 0); } interpolate true; }
+);
+}
+planesMid {
+type surfaces; libs (sampling); timeStart 30.00000001; timeEnd 120;
+executeControl timeStep; executeInterval 1;
+writeControl adjustableRunTime; writeInterval 1;
+surfaceFormat vtk; interpolationScheme cellPoint; fields (C U);
+formatOptions { vtk { format ascii; legacy true; } }
+surfaces
+(
+ diagonal { type cuttingPlane; planeType pointAndNormal; pointAndNormalDict { point (0 0 0); normal (1 0 -1); } interpolate true; }
+ plan { type cuttingPlane; planeType pointAndNormal; pointAndNormalDict { point (0 1.1 0); normal (0 1 0); } interpolate true; }
+);
+}
+planesLate {
+type surfaces; libs (sampling); timeStart 120.00000001; timeEnd 1200;
+executeControl timeStep; executeInterval 1;
+writeControl adjustableRunTime; writeInterval 4;
+surfaceFormat vtk; interpolationScheme cellPoint; fields (C U);
+formatOptions { vtk { format ascii; legacy true; } }
+surfaces
+(
+ diagonal { type cuttingPlane; planeType pointAndNormal; pointAndNormalDict { point (0 0 0); normal (1 0 -1); } interpolate true; }
+ plan { type cuttingPlane; planeType pointAndNormal; pointAndNormalDict { point (0 1.1 0); normal (0 1 0); } interpolate true; }
+);
+}
+
+}
