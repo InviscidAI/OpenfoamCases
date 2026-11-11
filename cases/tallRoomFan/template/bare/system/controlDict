@@ -1,0 +1,51 @@
+FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}
+#include "../../../config/caseSettings"
+$sharedControl;
+endTime 40;
+functions {
+convectorT
+{
+ type volFieldValue; libs (fieldFunctionObjects); fields (T); operation volIntegrate;
+ regionType cellZone; name convector; writeFields false;
+ writeControl timeStep; writeInterval 1; log false;
+}
+convectorAir
+{
+ type coded; libs (utilityFunctionObjects); name convectorAir;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include <fstream>
+ #include <iomanip>
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ const auto& T=m.lookupObject<volScalarField>("T");
+ const auto& rho=m.lookupObject<volScalarField>("rho");
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ scalar mass=0,mt=0,bottom=0,top=0;
+ const auto& zone=m.cellZones()[m.cellZones().findZoneID("convector")];
+ for(label i:zone){mass+=rho[i]*m.V()[i];mt+=rho[i]*m.V()[i]*T[i];}
+ auto face=[&](const vector& c,const vector& sf,scalar ph,scalar weight){
+ if(c.x()<.040-1e-9||c.x()>.103+1e-9||mag(sf.y())<SMALL)return;
+ scalar up=weight*max(scalar(0),ph*(sf.y()>0?1:-1));
+ if(mag(c.y()-.15)<1e-8)bottom+=up;
+ if(mag(c.y()-.75)<1e-8)top+=up;
+ };
+ forAll(m.neighbour(),f)face(m.Cf()[f],m.Sf()[f],phi[f],1);
+ forAll(m.boundary(),b)if(m.boundary()[b].coupled())forAll(m.boundary()[b],j)face(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j],.5);
+ reduce(mass,sumOp<scalar>());reduce(mt,sumOp<scalar>());reduce(bottom,sumOp<scalar>());reduce(top,sumOp<scalar>());
+ if(Pstream::master()){
+ fileName dir=m.time().globalPath()/"postProcessing/convectorAir";mkDir(dir);
+ static bool first=true;std::ofstream out((dir/"air.csv").c_str(),first?std::ios::out:std::ios::app);out<<std::setprecision(14);
+ if(first)out<<"time,mass_kg,massT_kgK,bottom_up_kgs,top_up_kgs\n";
+ out<<m.time().value()<<','<<mass<<','<<mt<<','<<bottom<<','<<top<<'\n';first=false;
+ }
+ #};
+}
+
+clip {enabled false;}
+}
+writeInterval 40;

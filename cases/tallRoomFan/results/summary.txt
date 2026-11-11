@@ -1,0 +1,89 @@
+tallRoomFan: figures from the runs' monitors (scripts/extract_results.py)
+A 2-D section of a 5.0 x 3.3 m Altbau room, radiatorCover's radiator with its fin-gap convector
+under a box window, 0-300 s from switch-on at 16 C, 0 C outside, W and J per metre of section
+hv 448.85495029225507 W/m3K (config/caseSettings)
+
+nofan: monitored to t = 300 s, 21272 steps, 6197 s of wall time, 58 pressure solves at 100 iterations (final residual 1.05e-08 to 2.46e-07)
+fan_ceiling: monitored to t = 300 s, 116359 steps, 14472 s of wall time, 89 pressure solves at 100 iterations (final residual 1.02e-08 to 5.70e-08)
+fan_radiator: monitored to t = 300 s, 49508 steps, 10367 s of wall time, 69 pressure solves at 100 iterations (final residual 1.00e-08 to 5.93e-08)
+
+The radiator's heat, mean W/m: the panel's convection and radiation and the fins' heat to the
+convector's air, hv (55 C - T) over the zone; against no fan in the same window
+  window s    run                          panel conv  panel rad  convector    total   / no fan
+    0- 60    no fan                           124.6      272.7      295.6     692.9    100.0%
+    0- 60    fan aimed at the ceiling         153.9      272.7      343.7     770.4    111.2%
+    0- 60    fan aimed at the radiator        225.8      272.8      426.7     925.3    133.5%
+   60-120    no fan                           124.7      266.5      300.7     692.0    100.0%
+   60-120    fan aimed at the ceiling         190.7      266.0      366.1     822.8    118.9%
+   60-120    fan aimed at the radiator        252.9      265.6      402.8     921.2    133.1%
+  120-180    no fan                           123.5      263.0      298.6     685.0    100.0%
+  120-180    fan aimed at the ceiling         168.4      261.7      330.0     760.2    111.0%
+  120-180    fan aimed at the radiator        248.6      260.9      391.1     900.5    131.5%
+  180-240    no fan                           120.9      260.0      291.6     672.5    100.0%
+  180-240    fan aimed at the ceiling         162.7      258.2      319.9     740.8    110.2%
+  180-240    fan aimed at the radiator        244.1      257.2      381.7     882.9    131.3%
+  240-300    no fan                           117.8      257.2      276.6     651.5    100.0%
+  240-300    fan aimed at the ceiling         159.8      255.1      314.5     729.4    112.0%
+  240-300    fan aimed at the radiator        240.2      254.0      373.7     867.9    133.2%
+    0-300    no fan                           122.3      263.9      292.6     678.8    100.0%
+    0-300    fan aimed at the ceiling         167.1      262.8      334.8     764.7    112.7%
+    0-300    fan aimed at the radiator        242.3      262.1      395.2     899.6    132.5%
+
+Gain over no fan, 240-300 s: fan aimed at the ceiling +11.95% (by the convector air's own balance +11.95%), fan aimed at the radiator +33.20% (by the convector air's own balance +33.19%)
+  fan aimed at the radiator, 240-300 s, against no fan: panel convection +122.4 W/m, convector +97.2, panel radiation -3.3
+From switch-on to 300 s, kJ/m: nofan 203.64, fan_ceiling 229.41, fan_radiator 269.87
+The fins' heat against the convector air's own balance, every window above after 10 s: largest difference 0.032%
+
+The air, C: the mean along a line across the room (x = 0.5-4.5 m) at each height, and the room's
+air mass-weighted without the convector's cells; instantaneous
+     t   run                            0.1 m    1.1 m    1.5 m    3.2 m     room
+    10   no fan                          16.07    16.21    16.09    16.07    16.20
+    10   fan aimed at the ceiling        16.09    16.09    16.30    16.07    16.25
+    10   fan aimed at the radiator       16.13    16.45    16.26    16.43    16.41
+    30   no fan                          16.21    16.21    16.21    18.32    16.68
+    30   fan aimed at the ceiling        16.94    16.51    16.49    17.02    16.80
+    30   fan aimed at the radiator       17.41    17.06    17.02    18.52    17.25
+    60   no fan                          16.37    16.64    16.81    18.97    17.26
+    60   fan aimed at the ceiling        17.75    17.15    17.09    18.27    17.59
+    60   fan aimed at the radiator       18.80    17.50    17.38    19.92    18.15
+   120   no fan                          16.66    17.12    17.73    20.29    18.34
+   120   fan aimed at the ceiling        18.98    18.27    18.18    19.60    18.88
+   120   fan aimed at the radiator       20.39    18.77    18.61    21.45    19.59
+   180   no fan                          16.93    18.94    19.29    21.64    19.39
+   180   fan aimed at the ceiling        19.80    19.18    19.12    20.40    19.73
+   180   fan aimed at the radiator       21.37    19.98    19.85    22.41    20.72
+   240   no fan                          17.22    19.90    20.37    22.50    20.31
+   240   fan aimed at the ceiling        20.38    19.89    19.84    20.95    20.37
+   240   fan aimed at the radiator       22.10    21.07    20.95    23.17    21.68
+   300   no fan                          17.53    20.77    21.11    23.09    21.07
+   300   fan aimed at the ceiling        20.84    20.44    20.41    21.39    20.87
+   300   fan aimed at the radiator       22.75    21.99    21.89    23.79    22.49
+
+At 300 s, fan aimed at the ceiling minus no fan, K: 0.1 m +3.31, 1.1 m -0.33, 1.5 m -0.69, 3.2 m -1.70, room -0.20
+  0.1 m line, fan aimed at the ceiling minus no fan over every no-fan step: lowest -0.002 K at 0.00 s
+  1.5 m line, mean over 240-300 s: 20.14 C against 20.76 C; room 20.63 against 20.70 C
+At 300 s, fan aimed at the radiator minus no fan, K: 0.1 m +5.21, 1.1 m +1.22, 1.5 m +0.78, 3.2 m +0.70, room +1.43
+  0.1 m line, fan aimed at the radiator minus no fan over every no-fan step: lowest -0.001 K at 0.00 s
+  1.5 m line, mean over 240-300 s: 21.43 C against 20.76 C; room 22.10 against 20.70 C
+
+The fans' air through the zone's outlet and inlet faces, gross, l/s per metre (target at the outlet 226)
+  fan aimed at the ceiling       4- 10 s  out  226.1  in  143.3
+  fan aimed at the ceiling     240-300 s  out  195.0  in  173.7
+  fan aimed at the radiator      4- 10 s  out  223.7  in  170.5
+  fan aimed at the radiator    240-300 s  out  216.7  in  185.8
+The convector's air, 240-300 s: mass-weighted mean C, gross upward flow in at its bottom and out at its top, g/s per metre
+  no fan                         38.5    9.28   10.24
+  fan aimed at the ceiling       36.3   12.02   10.95
+  fan aimed at the radiator      32.9   22.38   18.94
+
+Heat budget over 10-300 s, kJ/m: the radiator's heat (by the convector air's balance) = rise of the
+air's internal energy, (cv/R) integral p dV, + heat stored in the wall layers + heat out through the glass
+                                 radiator      air   layers    glass   residual
+  no fan                         196.980   69.197   91.212   36.567     0.004 (+0.002%)
+      each layer's stored heat against its wall heat flux: floor -0.006%, ceiling -0.006%, innerWall -0.006%, outerWall -0.004%; the air's mass within 9.0e-07 of the start
+  fan aimed at the ceiling       222.110   65.696  124.217   32.090     0.107 (+0.048%)
+      each layer's stored heat against its wall heat flux: floor -0.001%, ceiling -0.001%, innerWall -0.001%, outerWall -0.001%; the air's mass within 9.0e-07 of the start
+  fan aimed at the radiator      260.491   86.699  136.861   35.936     0.995 (+0.382%)
+      each layer's stored heat against its wall heat flux: floor -0.003%, ceiling -0.003%, innerWall -0.003%, outerWall -0.002%; the air's mass within 9.0e-07 of the start
+
+bare, the convector's check, 25-40 s: 701.4 W/m (701.4 by the air's balance) against the catalogue's 691.3 W/m at the room's mean air temperature then, 16.771 C (980 W x ((55 - T)/50)^1.3): 1.015

@@ -1,0 +1,32 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+#include "../../../config/caseSettings"
+// 52's fin-gap convector (rework of 2 Nov 2026). The fins heat the air through a fitted
+// conductance hv instead of holding it at 55 C. hs = Cp (T - Tamb) in this case's thermo
+// (Tref $Tamb, Href 0), so S = hv (328.15 - T) is Su = hv (328.15 - Tamb), Sp = -hv/Cp.
+convectorHeat
+{
+ type scalarSemiImplicitSource; selectionMode cellZone; cellZone convector;
+ volumeMode specific;
+ sources { h ( #eval{ $hv*(328.15 - $Tamb) } #eval{ -$hv/1005.0 } ); }
+}
+convectorResistance
+{
+ type explicitPorositySource; selectionMode cellZone; cellZone convector;
+ explicitPorositySourceCoeffs
+ {
+  selectionMode cellZone; cellZone convector; type DarcyForchheimer;
+  DarcyForchheimerCoeffs
+  {
+   d (1e8 $dy 1e8); f (0 $fy 0);
+   coordinateSystem { type cartesian; origin (0 0 0); coordinateRotation { type axesRotation; e1 (1 0 0); e2 (0 1 0); } }
+  }
+ }
+}
+buoyancyTurb { type buoyancyTurbSource; selectionMode all; }
+
+#remove "sharedSolution"
+#remove "sharedSchemes"
+#remove "sharedControl"
+
+fanForce
+{type meanVelocityForce; selectionMode cellZone; cellZone fan_radiator; fields (U); Ubar (-1.0954888758723818 0 0); relaxation 1.0;}

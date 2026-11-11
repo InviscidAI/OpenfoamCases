@@ -1,0 +1,9 @@
+type surfaces; libs (sampling);
+writeControl timeStep; writeInterval 1;
+surfaceFormat vtk;
+formatOptions { vtk { format binary; compression true; } }
+interpolate false; fields (T U G qr);
+surfaces
+{
+ clip {type cuttingPlane; point (2.5 1.65 0.5); normal (0 0 1); interpolate false;}
+}
