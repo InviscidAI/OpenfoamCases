@@ -1,0 +1,4 @@
+#!/bin/bash
+# Remove every run; the committed inputs and results stay (and geometry/penguin.stl, if drawn).
+cd "${0%/*}" || exit 1
+rm -rf runs log.* scripts/__pycache__

@@ -1,0 +1,45 @@
+{
+  "_comment": "The figures every script reads. The dictionaries under template/ carry the same values written out; scripts/make_case.py and scripts/extract_results.py read this file. Sources: README.md.",
+  "air": {
+    "rho_kg_m3": 1.269,
+    "nu_m2_s": 1.35e-5,
+    "note": "0 C at sea level, 99.5 kPa; incompressible"
+  },
+  "bird": {
+    "mass_kg": 4.8,
+    "weight_N": 47.1,
+    "length_m": 0.70,
+    "depth_m": 0.145,
+    "pitch_deg": 10.0,
+    "pitch_pivot_x_m": 0.30,
+    "stl": "geometry/penguin.stl",
+    "stl_md5": "eaa1768ed745f60f295c5c7a59dda4d8",
+    "profile": "geometry/penguin_profile.csv",
+    "profile_md5": "5a008c34b98569478b706e1c0ff6534b"
+  },
+  "flipperBand": {
+    "_comment": "STL triangles whose centroid (unrotated) lies here are the patch flipper; every other triangle is body",
+    "abs_y_min_m": 0.058,
+    "z_centre_m": 0.015,
+    "abs_dz_max_m": 0.0045,
+    "x_min_m": 0.15,
+    "x_max_m": 0.25
+  },
+  "inflowTurbulence": {
+    "intensity": 0.005,
+    "lengthScale_m": 0.049,
+    "Cmu": 0.09
+  },
+  "runs": {
+    "lift50": {"dims": 3, "speed_m_s": 50.0, "application": "simpleFoam", "model": "kOmegaSST", "nProcs": 4, "iterations": 4421},
+    "lift64": {"dims": 3, "speed_m_s": 64.0, "application": "simpleFoam", "model": "kOmegaSST", "nProcs": 4, "iterations": 1200, "startsFrom": "lift50"},
+    "swim": {"dims": 2, "speed_m_s": 2.0, "fall_g_m_s2": 9.81, "application": "pimpleFoam", "model": "kOmegaSST", "nProcs": 4, "endTime_s": 0.5, "wakeBox": false},
+    "fly": {"dims": 2, "speed_m_s": 64.0, "application": "pimpleFoam", "model": "kOmegaSSTSAS", "nProcs": 8, "endTime_s": 0.5, "wakeBox": true}
+  },
+  "section": {
+    "span_m": 0.01,
+    "_comment": "the 2-D mesh is one cell, 0.01 m, deep; forces per metre are the patch force / 0.01"
+  },
+  "liftWindow_iterations": 300,
+  "flyForceWindow_s": [0.1, 0.5]
+}

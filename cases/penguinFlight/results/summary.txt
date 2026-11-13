@@ -1,0 +1,20 @@
+penguinFlight: figures from the runs' force records (scripts/extract_results.py)
+Adelie penguin, 4.8 kg (47.1 N), pitched 10 deg nose-up; air 1.269 kg/m3, nu 1.35e-05 m2/s
+
+The 3-D half model, whole bird (forces doubled), lift Fz and drag Fx in N; the last 300 iterations
+  run      iters      lift      drag    body L flipper L flipper share   L p-p L drift L/weight
+  lift50    4421   28.9977    6.9680    8.2345   20.7632        71.60%   0.88%  -0.25%  -38.43%
+  lift64    1200   48.1039   11.4181   13.6452   34.4587        71.63%   2.31%  -1.39%   +2.13%
+  flying speed from lift50: 50 sqrt(47.1 / 28.9977) = 63.7233 m/s (229.4 km/h); run at 64 m/s
+  lift50: lift coefficient on the whole bird's planform, 0.0845 m2: 0.2164; the flippers' lift on their own 0.0198 m2: 0.6616
+  lift64: lift coefficient on the whole bird's planform, 0.0845 m2: 0.2191; the flippers' lift on their own 0.0198 m2: 0.6702
+
+fly: 97433 steps to t = 0.500002517 s; 1 ms window means in results/fly_forces.csv
+swim: rho g A = 0.7803 N/m taken off Fz (A = 0.062676 m2, the profile's polygon as meshed); lift and drag across and along the relative wind (2, 9.81 t) m/s
+swim: the prescribed fall at 0.5 s is 0.5 g t^2 = 1.2263 m; the relative wind then comes from 67.8 deg below horizontal
+swim: 5951 steps to t = 0.500000000 s; 1 ms window means in results/swim_forces.csv
+fly, 0.1-0.5 s, time-weighted, per metre of section:
+  lift 823.072 N/m, standard deviation 204.712 (24.87% of the mean)
+  drag 253.923 N/m, standard deviation 25.281 (9.96% of the mean)
+  spectrum (0.1 ms resampling, Hann, 2.5 Hz bins): lift peaks at 97.5 Hz, drag at 97.5 Hz; Strouhal number on the 0.145 m depth at 64 m/s: 0.2209
+  (the section's lift per metre is not the bird's lift and is not used for the flying speed)

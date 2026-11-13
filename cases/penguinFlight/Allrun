@@ -1,0 +1,76 @@
+#!/bin/bash
+# How fast an Adelie penguin would have to go to fly: the 3-D steady lift of the whole bird,
+# flippers held out at 10 degrees nose-up, at 50 m/s and at the flying speed found from it,
+# 64 m/s; and the two 2-D side sections from an impulsive start, the bird at its swimming speed
+# of 2 m/s falling freely and the bird at 64 m/s held level, 0-0.5 s.
+#
+#   ./Allrun lift50|lift64|swim|fly [nProcs]
+#   ./Allrun --setup-only lift50|lift64|swim|fly [nProcs]
+#
+# lift50        3-D half model, simpleFoam, k-omega SST, 4421 iterations at 50 m/s. Meshes with
+#               blockMesh and snappyHexMesh (serial) from geometry/penguin.stl, which
+#               scripts/penguin_geometry.py draws if it is missing.
+# lift64        the same mesh, 1200 iterations at 64 m/s, started from lift50's last fields;
+#               needs runs/lift50 solved (it is reconstructed at its last iteration here).
+# swim          2-D section, pimpleFoam, k-omega SST, 72,366 cells when solved (gmsh; README.md
+#               says why a rebuild may differ), the air at (2, 0, 9.81 t) m/s in the bird's
+#               falling frame, 0-0.5 s.
+# fly           2-D section with a fine wake box, pimpleFoam, kOmegaSSTSAS, 130,504 cells, the air
+#               at (64, 0, 0) m/s, 0-0.5 s.
+# nProcs        MPI ranks; by default what the solved run used: 4, but 8 for fly.
+# --setup-only  writes the run, checks the mesh, (2-D) writes the t = 0 planes, decomposes it
+#               and stops before the solve.
+#
+# scripts/make_case.py writes the run into runs/<run>/ from template/; the two 2-D runs and the
+# two lift runs are independent of each other. When all four have solved,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v simpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  lift50|lift64) app=simpleFoam; nproc=${2:-4} ;;
+  swim) app=pimpleFoam; nproc=${2:-4} ;;
+  fly) app=pimpleFoam; nproc=${2:-8} ;;
+  *) echo "usage: $0 [--setup-only] lift50|lift64|swim|fly [nProcs]" >&2; exit 2 ;;
+esac
+case "$run" in
+  swim|fly) python3 -c "import gmsh" 2> /dev/null || { echo "the 2-D runs need the gmsh Python module" >&2; exit 1; } ;;
+esac
+[ "$run" = swim ] && { python3 -c "import pyvista" 2> /dev/null || { echo "swim needs PyVista for its 0/p" >&2; exit 1; }; }
+
+solved() { [ -f "runs/$1/log.$2" ] && grep -q '^End' "runs/$1/log.$2"; }
+if [ "$run" = lift64 ]; then
+  solved lift50 simpleFoam || { echo "lift64 starts from lift50's fields: ./Allrun lift50 first" >&2; exit 1; }
+  (cd runs/lift50 && reconstructPar -latestTime -fileHandler collated > log.reconstructPar 2>&1)
+fi
+
+r=runs/$run
+mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc"
+(
+  cd "$r"
+  checkMesh -constant > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  if [ "$app" = pimpleFoam ]; then
+    # the t = 0 plane and vorticity, the function objects only, no time step
+    pimpleFoam -postProcess -time 0 > log.initialPlanes 2>&1
+  fi
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" "$app" -parallel -fileHandler collated > "log.$app" 2>&1
+  grep -q '^End' "log.$app" || { echo "$r: the solve did not end, see log.$app" >&2; exit 1; }
+)
+echo "solved: $r"
+if solved lift50 simpleFoam && solved lift64 simpleFoam && solved swim pimpleFoam && solved fly pimpleFoam; then
+  python3 scripts/extract_results.py runs results
+fi

@@ -1,0 +1,113 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2512                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    object          controlDict;
+}
+
+application     pimpleFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         0.5;
+
+deltaT          1e-06;
+
+writeControl    adjustableRunTime;
+
+writeInterval   0.05;
+
+adjustTimeStep  yes;
+
+maxCo           0.75;
+
+maxDeltaT       0.0002;
+
+purgeWrite      0;
+
+writeFormat     binary;
+
+writePrecision  10;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   9;
+
+runTimeModifiable true;
+
+functions
+{
+    forces
+    {
+        type            forces;
+        libs            ( "libforces.so" );
+        patches         ( bird );
+        rho             rhoInf;
+        rhoInf          1.269;
+        CofR            ( 0.3 0 0 );
+        log             true;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+    vorticity
+    {
+        type            vorticity;
+        libs            ( "libfieldFunctionObjects.so" );
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    none;
+    }
+    clipPlane
+    {
+        type            surfaces;
+        libs            ( "libsampling.so" );
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    adjustableRunTime;
+        writeInterval   0.001;
+        surfaceFormat   vtk;
+        formatOptions
+        {
+            vtk
+            {
+                format          ascii;
+            }
+        }
+        fields          ( U p vorticity );
+        interpolationScheme cellPoint;
+        surfaces
+        {
+            clip
+            {
+                type            plane;
+                planeType       pointAndNormal;
+                pointAndNormalDict
+                {
+                    point           ( 0 0.005 0 );
+                    normal          ( 0 1 0 );
+                }
+                bounds          ( -0.7 0 -1 ) ( 2.8 0.01 2.5 );
+                interpolate     true;
+                triangulate     true;
+            }
+        }
+    }
+}
+
+
+// ************************************************************************* //

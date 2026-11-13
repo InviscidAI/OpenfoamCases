@@ -1,0 +1,17 @@
+{
+ "length_m": 0.699999988079071,
+ "depth_max_m": 0.14492500000000003,
+ "width_max_m": 0.14025,
+ "span_m": 0.5261898040771484,
+ "flipper_exposed_span_m": 0.205,
+ "flipper_area_each_m2": 0.009892059315252694,
+ "flipper_mean_chord_m": 0.04825394787928144,
+ "flipper_aspect_ratio": 4.248357056978127,
+ "planform_area_whole_bird_m2": 0.08446911695366602,
+ "wing_area_pennycuick_m2": 0.027349779759674533,
+ "aspect_ratio_pennycuick": 10.12350784348849,
+ "side_section_area_m2": 0.06267891738732963,
+ "volume_m3": 0.005570912122797276,
+ "surface_area_m2": 0.24559799720124675,
+ "stl_triangles": 75556
+}

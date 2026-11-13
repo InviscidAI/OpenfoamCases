@@ -1,0 +1,7 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+# drawn by scripts/penguin_geometry.py (3.8 MB); its md5 is in config/caseSettings.json
+geometry/penguin.stl
+geometry/penguin_views.png

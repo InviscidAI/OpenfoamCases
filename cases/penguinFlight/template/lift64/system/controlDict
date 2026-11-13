@@ -1,0 +1,101 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2512                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    object          controlDict;
+}
+
+application     simpleFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         1200;
+
+deltaT          1;
+
+writeControl    timeStep;
+
+writeInterval   150;
+
+purgeWrite      0;
+
+writeFormat     binary;
+
+writePrecision  10;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   9;
+
+runTimeModifiable true;
+
+functions
+{
+    forces
+    {
+        type            forces;
+        libs            ( "libforces.so" );
+        patches         ( body flipper );
+        rho             rhoInf;
+        rhoInf          1.269;
+        CofR            ( 0.3 0 0 );
+        log             true;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+    bodyForces
+    {
+        type            forces;
+        libs            ( "libforces.so" );
+        patches         ( body );
+        rho             rhoInf;
+        rhoInf          1.269;
+        CofR            ( 0.3 0 0 );
+        log             true;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+    flipperForces
+    {
+        type            forces;
+        libs            ( "libforces.so" );
+        patches         ( flipper );
+        rho             rhoInf;
+        rhoInf          1.269;
+        CofR            ( 0.3 0 0 );
+        log             true;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+    yPlus
+    {
+        type            yPlus;
+        libs            ( "libfieldFunctionObjects.so" );
+        writeControl    writeTime;
+    }
+    wallShearStress
+    {
+        type            wallShearStress;
+        libs            ( "libfieldFunctionObjects.so" );
+        patches         ( body flipper );
+        writeControl    writeTime;
+    }
+}
+
+
+// ************************************************************************* //
