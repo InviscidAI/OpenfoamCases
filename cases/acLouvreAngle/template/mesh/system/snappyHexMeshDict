@@ -1,0 +1,40 @@
+FoamFile { version 2.0; format ascii; class dictionary; object snappyHexMeshDict; }
+
+castellatedMesh true; snap false; addLayers false;
+geometry {
+unit.stl { type triSurfaceMesh; name unitWall; }
+sofa.stl { type triSurfaceMesh; name sofa; }
+fine { type searchableBox; min (0 1.76 0); max (0.56 2.4 0.56); }
+ceilingBox { type searchableBox; min (0 2 0); max (4.64 2.4 2); }
+frontBox { type searchableBox; min (0 0 0); max (1.92 2.4 0.8); }
+floorBox { type searchableBox; min (0 0 0); max (4.64 0.24 2); }
+sofaBox { type searchableBox; min (3.2 0 0); max (4.64 1.36 1.2); }
+}
+castellatedMeshControls {
+ maxLocalCells 400000; maxGlobalCells 400000; minRefinementCells 0;
+ nCellsBetweenLevels 2; maxLoadUnbalance 0.1;
+ features ();
+ refinementSurfaces {
+ unitWall { level (2 2); patchInfo { type wall; } }
+ sofa { level (1 1); patchInfo { type wall; } }
+ }
+ resolveFeatureAngle 30;
+ refinementRegions {
+fine { mode inside; levels ((1e15 2)); }
+ceilingBox { mode inside; levels ((1e15 1)); }
+frontBox { mode inside; levels ((1e15 1)); }
+floorBox { mode inside; levels ((1e15 1)); }
+sofaBox { mode inside; levels ((1e15 1)); }
+ }
+ locationInMesh (2.32 1.20 1.00); allowFreeStandingZoneFaces true;
+}
+snapControls { nSmoothPatch 3; tolerance 1.2; nSolveIter 40; nRelaxIter 5;
+ nFeatureSnapIter 15; implicitFeatureSnap false; explicitFeatureSnap true; multiRegionFeatureSnap true; }
+addLayersControls { relativeSizes true; layers {}; expansionRatio 1; finalLayerThickness 0.3; minThickness 0.1; nGrow 0; featureAngle 60; nRelaxIter 3; nSmoothSurfaceNormals 1; nSmoothNormals 3; nSmoothThickness 10; maxFaceThicknessRatio 0.5; maxThicknessToMedialRatio 0.3; minMedianAxisAngle 90; nBufferCellsNoExtrude 0; nLayerIter 0; }
+meshQualityControls {
+ maxNonOrtho 65; maxBoundarySkewness 20; maxInternalSkewness 4; maxConcave 80;
+ minVol 1e-12; minTetQuality 1e-20; minArea -1; minTwist 0.02;
+ minDeterminant 0.001; minFaceWeight 0.05; minVolRatio 0.01; minTriangleTwist -1;
+ nSmoothScale 4; errorReduction 0.75;
+}
+mergeTolerance 1e-6;

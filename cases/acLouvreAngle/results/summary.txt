@@ -1,0 +1,48 @@
+Subject: a wall-mounted split unit cooling a 30 C room, vane up (15 deg) or down (60 deg)
+3-D half room, 0-180 s from rest; figures for the half room unless noted
+
+The unit                         up          down
+  mass flow in, kg/s (min-max)     0.09424999-0.09425000  0.09424995-0.09424996
+  intake out, kg/s at 180 s                   0.09425000             0.09425000
+  cooling, W (min-max)                     1353.9-1354.0          1354.0-1354.0
+  supply, C at 3 s                                 15.23                  15.64
+  supply, C at 180 s                               10.69                  10.32
+  jet angle, deg (min-max)                15.37 to 15.97       -60.56 to -60.47
+  time step, ms at 180 s                           3.378                  3.289
+
+The rooms, C                 t s      up      down   up-down
+  room mean                     3   29.790   29.783   +0.007
+  room mean                     9   29.417   29.414   +0.003
+  room mean                    30   28.323   28.279   +0.043
+  room mean                    60   27.079   26.984   +0.095
+  room mean                    90   26.095   25.988   +0.107
+  room mean                   120   25.316   25.182   +0.134
+  room mean                   150   24.683   24.558   +0.125
+  room mean                   180   24.198   24.073   +0.125
+  largest |up - down| of the room means at any write: 0.142 K at 129 s
+  |up - down| at 180 s: 0.125 K
+
+Seated zones, 120-180 s means      up       down    up-down
+  head  air, C                   24.814   24.682   +0.132
+  head  speed, m/s               0.1038   0.1218  -0.0179
+  ankle air, C                   24.529   22.974   +1.555
+  ankle speed, m/s               0.1572   0.5447  -0.3876
+  ankle air at 180 s, C             24.156   22.411   (rounded 24 and 22)
+  head air at 180 s, C              24.243   24.145
+  writes at which down's rounded ankle is above up's: 0 of 480
+
+Walls' heat into the air, W at 180 s   up       down
+  unitSideWall                      71.05   111.22
+  farWall                          179.47    63.13
+  sideWall                         205.08   245.96
+  floor                            204.01   578.40
+  ceiling                          414.02   104.14
+  total                           1073.63  1102.85
+
+Checks                                         up            down
+  10-180 s change of internal energy, J    -92619.281     -94815.221
+  10-180 s walls less cooling, J           -92705.793     -94830.711
+  unaccounted, % of the cooling                0.0376         0.0067
+  air mass, kg (first and last write)   24.9947848130/24.9947848130  24.9947848130/24.9947848130
+  coldest air below the supply, K (max)         0.030          0.030
+  warmest air above 30 C, K (max)               0.000          0.007
