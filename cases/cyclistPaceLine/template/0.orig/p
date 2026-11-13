@@ -1,0 +1,11 @@
+FoamFile { format ascii; class volScalarField; object p; }
+dimensions [0 2 -2 0 0 0 0];
+internalField uniform 0;
+boundaryField
+{
+ inlet { type zeroGradient; }
+ outlet { type fixedValue; value uniform 0; }
+ ground { type zeroGradient; }
+ "(rider[1-5]|rider[1-5]_wheels.*)" { type zeroGradient; }
+ "(sideA|sideB|top)" { type symmetryPlane; }
+}

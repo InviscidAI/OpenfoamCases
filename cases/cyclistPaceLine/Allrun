@@ -1,0 +1,66 @@
+#!/bin/bash
+# Four identical road riders in single file at 40 km/h, 0.3 m from each rear tyre to the next
+# front tyre, against the same rider alone, 3-D, from rest to 1.71 s (pimpleFoam, k-omega
+# SST-SAS).
+#
+#   ./Allrun line|alone [nProcs]
+#   ./Allrun --setup-only line|alone [nProcs]
+#
+# line          four riders, the leader's front tyre at x = 0, the others 1.96 m apart behind him.
+# alone         one rider where the leader is, in the same domain and with the same refinement.
+# nProcs        MPI ranks; by default 8, what both solved runs used.
+# --setup-only  writes the run, meshes it, checks the mesh, writes the t = 0 monitors and
+#               decomposes it, and stops before the solve.
+#
+# The rider and the bike's wheels are cyclistBehindLorry's (rider.stl, bike_wheels.stl). If they
+# are not in ../cyclistBehindLorry/geometry/ yet, ../cyclistBehindLorry/scripts/build_rider.py
+# builds them there, downloading MakeHuman's CC0 files on its first run. scripts/make_case.py then
+# writes runs/<run>/ from template/ and config/case.json. snappyHexMesh runs serially, as for the
+# solved meshes (about 4-5 minutes each on one core). When both runs have solved,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v pimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  line|alone) nproc=${2:-8} ;;
+  *) echo "usage: $0 [--setup-only] line|alone [nProcs]" >&2; exit 2 ;;
+esac
+
+geom=../cyclistBehindLorry/geometry
+if [ ! -f "$geom/rider.stl" ] || [ ! -f "$geom/bike_wheels.stl" ]; then
+  (cd ../cyclistBehindLorry && python3 scripts/build_rider.py) > log.build_rider 2>&1 \
+    || { echo "the rider did not build, see log.build_rider" >&2; exit 1; }
+fi
+
+r=runs/$run
+mkdir -p runs
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc" --geometry "$geom"
+(
+  cd "$r"
+  blockMesh > log.blockMesh 2>&1
+  snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+  checkMesh > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  # the forces and the plan plane at t = 0, before the solve
+  pimpleFoam -postProcess -time 0 > log.sample0 2>&1
+  decomposePar > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" pimpleFoam -parallel > log.pimpleFoam 2>&1
+  grep -q '^End' log.pimpleFoam || { echo "$r: the solve did not end, see log.pimpleFoam" >&2; exit 1; }
+  reconstructPar -latestTime > log.reconstructPar 2>&1
+)
+echo "solved: $r"
+solved() { [ -f "runs/$1/log.pimpleFoam" ] && grep -q '^End' "runs/$1/log.pimpleFoam"; }
+if solved line && solved alone; then
+  python3 scripts/extract_results.py runs results
+fi

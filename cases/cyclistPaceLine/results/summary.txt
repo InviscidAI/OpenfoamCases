@@ -1,0 +1,40 @@
+Mean drag over 1-1.71 s, the rider and both wheels, -Fx (time-weighted)
+Cd on Aref 0.448 m2 at 11.1111 m/s, rho 1.225 kg/m3 (q A = 33.876 N)
+
+             drag N      Cd    share   saving       1-1.355   1.355-1.71  2nd-1st
+alone        36.136   1.067   100.0%     0.0%     36.152      36.120   -0.032
+line 1       34.974   1.032    96.8%     3.2%     34.977      34.972   -0.006
+line 2       22.331   0.659    61.8%    38.2%     22.671      21.992   -0.678
+line 3       18.975   0.560    52.5%    47.5%     19.314      18.636   -0.678
+line 4       20.438   0.603    56.6%    43.4%     20.360      20.516   +0.156
+
+riders behind, lowest drag first: rider 3, rider 4, rider 2
+largest force/Cd disagreement: 4.7e-06
+
+Wake probes at z = 1.0 m over 1-1.71 s (rms Uy > 0.01 m/s; peak = the spectral test in this script, resolution 1.41 Hz)
+alone: 12/12 probes unsteady, 12/12 with a peak
+  x   -1.87 y     0  mean Ux   -5.652  rms Uy  0.759  peak 8.45 Hz
+  x   -1.87 y  0.25  mean Ux   -5.193  rms Uy  1.319  peak 7.04 Hz
+  x   -3.83 y     0  mean Ux   -8.888  rms Uy  1.324  peak 7.04 Hz
+  x   -3.83 y  0.25  mean Ux   -9.437  rms Uy  1.152  peak 7.04 Hz
+  x   -5.79 y     0  mean Ux   -9.940  rms Uy  0.868  peak 7.04 Hz
+  x   -5.79 y  0.25  mean Ux  -10.194  rms Uy  0.701  peak 7.04 Hz
+  x   -7.75 y     0  mean Ux  -10.264  rms Uy  0.526  peak 7.04 Hz
+  x   -7.75 y  0.25  mean Ux  -10.297  rms Uy  0.375  peak 7.04 Hz
+  x     -10 y     0  mean Ux  -10.373  rms Uy  0.360  peak 12.68 Hz
+  x     -10 y  0.25  mean Ux  -10.492  rms Uy  0.259  peak 12.68 Hz
+  x     -12 y     0  mean Ux  -10.451  rms Uy  0.265  peak 7.04 Hz
+  x     -12 y  0.25  mean Ux  -10.691  rms Uy  0.184  peak 4.23 Hz
+line: 12/12 probes unsteady, 11/12 with a peak
+  x   -1.87 y     0  mean Ux   -4.758  rms Uy  0.988  peak 7.04 Hz
+  x   -1.87 y  0.25  mean Ux   -5.782  rms Uy  1.277  peak 7.04 Hz
+  x   -3.83 y     0  mean Ux   -5.902  rms Uy  1.096  peak 5.63 Hz
+  x   -3.83 y  0.25  mean Ux   -3.577  rms Uy  0.940  peak 8.45 Hz
+  x   -5.79 y     0  mean Ux   -5.563  rms Uy  1.179  peak 4.23 Hz
+  x   -5.79 y  0.25  mean Ux   -5.374  rms Uy  1.384  peak 8.45 Hz
+  x   -7.75 y     0  mean Ux   -6.855  rms Uy  1.218  peak 8.45 Hz
+  x   -7.75 y  0.25  mean Ux   -7.631  rms Uy  1.131  peak 4.23 Hz
+  x     -10 y     0  mean Ux   -8.807  rms Uy  0.827  peak 5.63 Hz
+  x     -10 y  0.25  mean Ux   -8.705  rms Uy  0.683  peak 5.63 Hz
+  x     -12 y     0  mean Ux   -9.727  rms Uy  0.626  peak none
+  x     -12 y  0.25  mean Ux   -9.457  rms Uy  0.619  peak 4.23 Hz

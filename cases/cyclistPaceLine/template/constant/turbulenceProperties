@@ -1,0 +1,9 @@
+FoamFile { format ascii; class dictionary; object turbulenceProperties; }
+simulationType RAS;
+RAS
+{
+ RASModel kOmegaSSTSAS;
+ delta cubeRootVol;
+ turbulence on;
+ printCoeffs on;
+}

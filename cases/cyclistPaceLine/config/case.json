@@ -1,0 +1,29 @@
+{
+  "_comment": "Read by scripts/make_case.py and scripts/extract_results.py. The values are the solved runs'.",
+  "speed": 11.1111,
+  "rho": 1.225,
+  "nu": 1.5e-05,
+  "Aref": 0.448,
+  "lRef": 1.75,
+  "riders": {"line": 4, "alone": 1},
+  "offsets": [0, -1.96, -3.92, -5.88],
+  "riderLevel": 5,
+  "wheelLevel": 5,
+  "boxes": [
+    [[-22, -3, 0], [4, 3, 5], 2],
+    [[-16, -1.5, 0], [2, 1.5, 2.2], 3],
+    [[-14, -1, 0], [0.6, 1, 1.9], 4],
+    [[-10.5, -0.5, 0.15], [0.2, 0.5, 1.6], 5]
+  ],
+  "deltaT": 0.0001,
+  "maxDeltaT": 0.002,
+  "maxCo": 0.9,
+  "endTime": 1.71,
+  "volumeInterval": 0.5,
+  "purgeWrite": 2,
+  "planeInterval": 0.008333333333333,
+  "probeX": [-1.87, -3.83, -5.79, -7.75, -10.0, -12.0],
+  "probeY": [0, 0.25],
+  "probeZ": 1.0,
+  "window": [1.0, 1.71]
+}

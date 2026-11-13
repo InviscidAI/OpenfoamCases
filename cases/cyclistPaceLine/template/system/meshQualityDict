@@ -1,0 +1,2 @@
+FoamFile { format ascii; class dictionary; object meshQualityDict; }
+#includeEtc "caseDicts/mesh/generation/meshQualityDict.cfg"

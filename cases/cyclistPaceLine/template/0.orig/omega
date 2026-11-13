@@ -1,0 +1,11 @@
+FoamFile { format ascii; class volScalarField; object omega; }
+dimensions [0 0 -1 0 0 0 0];
+internalField uniform 0.49690349809595824;
+boundaryField
+{
+ inlet { type fixedValue; value uniform 0.49690349809595824; }
+ outlet { type inletOutlet; inletValue uniform 0.49690349809595824; value uniform 0.49690349809595824; }
+ ground { type omegaWallFunction; value uniform 0.49690349809595824; }
+ "(rider[1-5]|rider[1-5]_wheels.*)" { type omegaWallFunction; value uniform 0.49690349809595824; }
+ "(sideA|sideB|top)" { type symmetryPlane; }
+}

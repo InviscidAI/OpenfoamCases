@@ -1,0 +1,11 @@
+FoamFile { format ascii; class volScalarField; object k; }
+dimensions [0 2 -2 0 0 0 0];
+internalField uniform 0.0185184814815;
+boundaryField
+{
+ inlet { type fixedValue; value uniform 0.0185184814815; }
+ outlet { type inletOutlet; inletValue uniform 0.0185184814815; value uniform 0.0185184814815; }
+ ground { type kqRWallFunction; value uniform 0.0185184814815; }
+ "(rider[1-5]|rider[1-5]_wheels.*)" { type kqRWallFunction; value uniform 0.0185184814815; }
+ "(sideA|sideB|top)" { type symmetryPlane; }
+}

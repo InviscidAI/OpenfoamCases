@@ -1,0 +1,11 @@
+FoamFile { format ascii; class volVectorField; object U; }
+dimensions [0 1 -1 0 0 0 0];
+internalField uniform (-11.1111 0 0);
+boundaryField
+{
+ inlet { type fixedValue; value uniform (-11.1111 0 0); }
+ outlet { type inletOutlet; inletValue uniform (-11.1111 0 0); value uniform (-11.1111 0 0); }
+ ground { type movingWallVelocity; value uniform (-11.1111 0 0); }
+ "(rider[1-5]|rider[1-5]_wheels.*)" { type noSlip; }
+ "(sideA|sideB|top)" { type symmetryPlane; }
+}
