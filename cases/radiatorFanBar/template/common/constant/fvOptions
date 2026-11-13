@@ -1,0 +1,41 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+#include "../../../config/caseSettings"
+#include "convectorSettings"
+#include "fanSettings"
+// Subject 67. The type 22's fins between its two panels: the fin gap's resistance and a
+// conductance hv to the 55 C fins, S = hv (328.15 - T) per unit volume, written for
+// hs = Cp (T - Tamb) (thermophysicalProperties Tref $Tamb, Cp 1005). Tested 9 Nov 2026 on a
+// copy of 52's rework smoke case with Tamb 289.15 (sourcetest67/).
+convectorHeat
+{
+ type scalarSemiImplicitSource; selectionMode cellZone; cellZone convector;
+ volumeMode specific;
+ sources { h ( #eval{ $hv*(328.15 - $Tamb) } #eval{ -$hv/1005.0 } ); }
+}
+convectorResistance
+{
+ type explicitPorositySource; selectionMode cellZone; cellZone convector;
+ explicitPorositySourceCoeffs
+ {
+  selectionMode cellZone; cellZone convector; type DarcyForchheimer;
+  DarcyForchheimerCoeffs
+  {
+   d (1e8 $dy 1e8); f (0 $fy 0);
+   coordinateSystem { type cartesian; origin (0 0 0); coordinateRotation { type axesRotation; e1 (1 0 0); e2 (0 1 0); } }
+  }
+ }
+}
+buoyancyTurb { type buoyancyTurbSource; selectionMode all; }
+// The fan bar: a meanVelocityForce in the cellZone "fan" inside the bar's channel,
+// blowing level into the room (+x). Only in the fan run (fanOn 1).
+#ifeq $fanOn 1
+fanForce
+{
+ type meanVelocityForce; selectionMode cellZone; cellZone fan;
+ fields (U); Ubar ($fanUbar 0 0); relaxation 1.0;
+}
+#endif
+
+#remove "sharedSolution"
+#remove "sharedSchemes"
+#remove "sharedControl"

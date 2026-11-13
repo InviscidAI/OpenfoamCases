@@ -1,0 +1,8 @@
+FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}
+#include "../../../config/caseSettings"
+$sharedControl;
+endTime 300;
+functions
+{
+#include "../../../scripts/planeFunctions"
+}

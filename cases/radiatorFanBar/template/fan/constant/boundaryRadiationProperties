@@ -1,0 +1,15 @@
+FoamFile { version 2.0; format ascii; class dictionary; object boundaryRadiationProperties; }
+floor
+{type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0;}
+ceiling
+{type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0;}
+innerWall
+{type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0;}
+outerWall
+{type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0;}
+glass
+{type lookup; emissivity 0.84; absorptivity 0.84; transmissivity 0;}
+radiatorPanel
+{type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0;}
+fanBar
+{type lookup; emissivity 0.9; absorptivity 0.9; transmissivity 0;}

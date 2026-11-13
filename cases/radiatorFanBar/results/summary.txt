@@ -1,0 +1,72 @@
+radiatorFanBar: figures from the runs' monitors (scripts/extract_results.py)
+A 2-D section of a 3.4 x 2.7 m study, a Stelrad Compact K2 600 mm double panel at 55 C under a
+tall window, bare and with a fan bar on its top, 0-300 s from switch-on at 16 C, 0 C outside,
+W and J per metre of section
+hv 4000 W/m3K, fin zone 0.0384 m3 (constant/convectorSettings, the mesh)
+
+bare: monitored to t = 300 s, 34959 steps; monitors from runs/bare/postProcessing.before_continue (0-60 s) + runs/bare/postProcessing (60-300 s)
+  joined at 60 s: rows at 60.000000 and 60.006754 s; room 20.5161 -> 20.5165 C, radiator 1122.85 -> 1122.84 W/m, fins 577.619 -> 577.619 W/m
+fan: monitored to t = 300 s, 80660 steps; monitors from one piece
+
+The radiator's heat, mean W/m: the panels' convection and radiation and the fins' heat to the
+fin zone's air; the fan run against the bare one in the same window
+  window s    run                  panel conv  panel rad     fins    total   / bare    glass W/m  / bare
+    0- 60    bare radiator            247.6      304.2    569.3   1121.1   100.0%      121.4  100.0%
+    0- 60    with the fan bar         243.4      283.2    651.4   1177.9   105.1%       84.5   69.6%
+   60-120    bare radiator            237.9      294.8    556.5   1089.2   100.0%      136.3  100.0%
+   60-120    with the fan bar         219.6      273.6    586.9   1080.2    99.2%      106.0   77.8%
+  120-180    bare radiator            217.2      288.6    497.6   1003.5   100.0%      142.9  100.0%
+  120-180    with the fan bar         202.9      267.5    547.5   1017.8   101.4%      134.1   93.8%
+  180-240    bare radiator            195.9      283.3    432.8    912.0   100.0%      147.2  100.0%
+  180-240    with the fan bar         184.3      262.1    500.1    946.5   103.8%      139.2   94.6%
+  240-300    bare radiator            180.2      278.5    378.2    836.9   100.0%      147.3  100.0%
+  240-300    with the fan bar         174.5      257.6    476.3    908.3   108.5%      140.6   95.4%
+    0-120    bare radiator            242.8      299.5    562.9   1105.2   100.0%      128.8  100.0%
+    0-120    with the fan bar         231.5      278.4    619.1   1129.1   102.2%       95.2   73.9%
+    0-300    bare radiator            215.8      289.9    486.9    992.5   100.0%      139.0  100.0%
+    0-300    with the fan bar         204.9      268.8    552.4   1026.1   103.4%      120.9   86.9%
+
+Fan bar's gain in the radiator's heat, 0-120 s: +2.2% (1129.1 against 1105.2 W/m)
+Fan bar's gain in the radiator's heat, 60-120 s: -0.8% (1080.2 against 1089.2 W/m)
+Fan bar's gain in the radiator's heat, 0-300 s: +3.4% (1026.1 against 992.5 W/m)
+Fan bar's gain in the radiator's heat, 240-300 s: +8.5% (908.3 against 836.9 W/m)
+Heat out through the glass since switch-on at  60 s: bare 7.28, fan 5.07 kJ/m, fan / bare 69.6%
+Heat out through the glass since switch-on at 120 s: bare 15.46, fan 11.43 kJ/m, fan / bare 73.9%
+Heat out through the glass since switch-on at 180 s: bare 24.03, fan 19.47 kJ/m, fan / bare 81.0%
+Heat out through the glass since switch-on at 240 s: bare 32.86, fan 27.83 kJ/m, fan / bare 84.7%
+Heat out through the glass since switch-on at 300 s: bare 41.71, fan 36.26 kJ/m, fan / bare 86.9%
+Radiator's heat since switch-on, bare: 132.62 kJ/m at 120 s, 297.76 at 300 s
+Radiator's heat since switch-on, fan: 135.49 kJ/m at 120 s, 307.84 at 300 s
+
+The fins' air flow, gross upward through the zone's bottom face, mean L/s per metre; the fan's outlet
+    0- 60 s   bare fins  12.76   fan fins  14.72   fan outlet  16.56
+   60-120 s   bare fins  13.23   fan fins  14.89   fan outlet  16.53
+  120-180 s   bare fins  12.27   fan fins  15.00   fan outlet  16.51
+  180-240 s   bare fins  11.35   fan fins  15.11   fan outlet  16.48
+  240-300 s   bare fins  10.88   fan fins  15.16   fan outlet  16.46
+
+The air, C: the line means across the room (x = 0.5-3.3 m) at 0.1, 1.1 and 2.6 m, the air beyond
+x = 0.424 m, the room's air mass-weighted, and the glass's mean surface; instantaneous
+     t   run                  0.1 m    1.1 m    2.6 m   beyond    room    glass
+    10   bare radiator         16.28    16.28    16.28    16.60   16.97    12.11
+    10   with the fan bar      16.36    16.93    17.18    17.08   17.25    10.27
+    30   bare radiator         16.73    18.05    21.67    18.34   18.53    18.96
+    30   with the fan bar      17.47    18.79    20.33    18.99   19.24    12.14
+    60   bare radiator         17.26    18.52    24.26    20.28   20.52    19.46
+    60   with the fan bar      18.47    21.94    24.17    21.60   21.84    12.81
+   120   bare radiator         18.39    23.74    28.12    23.76   24.06    19.81
+   120   with the fan bar      21.71    26.06    28.12    25.43   25.80    18.56
+   180   bare radiator         19.64    26.49    30.21    26.39   26.66    20.77
+   180   with the fan bar      25.25    27.95    31.01    28.01   28.35    19.38
+   240   bare radiator         23.78    28.15    31.32    28.10   28.34    20.94
+   240   with the fan bar      26.42    29.68    32.59    29.74   30.06    19.85
+   300   bare radiator         25.47    28.95    32.02    29.10   29.32    20.88
+   300   with the fan bar      27.65    31.03    33.66    31.09   31.38    20.01
+
+Checks
+  bare: the fins' heat against the zone air's own balance, by minute: largest difference 0.069%
+  bare: section's budget 10-300 s, kJ/m: radiator 286.715 = air 97.855 + wall layers 147.840 + glass 40.951 + fan housing 0.000 + residual 0.069 (0.024%)
+  bare: the air's mass against the hydrostatic start: largest drift 9.0e-07; air 11.28-55.01 C outside the fins after 10 s
+  fan: the fins' heat against the zone air's own balance, by minute: largest difference 0.023%
+  fan: section's budget 10-300 s, kJ/m: radiator 294.746 = air 111.861 + wall layers 152.395 + glass 35.544 + fan housing -5.158 + residual 0.105 (0.036%)
+  fan: the air's mass against the hydrostatic start: largest drift 9.0e-07; air 10.43-55.01 C outside the fins after 10 s

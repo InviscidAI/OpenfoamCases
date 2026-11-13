@@ -1,0 +1,4 @@
+// hv held at 4000 (stage 1). dy, fy: 52's laminar plate formulas with a CHOSEN fin gap of 6.86 mm, widened from 52's 6.31 mm so the bare K2 meets its rating; not a published figure.
+hv 4000;
+dy 273581.4917362901;
+fy 1.2930521579727265;

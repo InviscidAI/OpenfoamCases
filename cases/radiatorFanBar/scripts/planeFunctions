@@ -1,0 +1,26 @@
+clip
+{
+ type surfaces; libs (sampling);
+ executeControl timeStep; executeInterval 1;
+ writeControl adjustableRunTime; writeInterval 0.625;
+ surfaceFormat vtk;
+ formatOptions { vtk { format binary; compression true; } }
+ interpolate false; fields (T U G qr);
+ surfaces
+ {
+ clip {type cuttingPlane; point (1.7 1.35 0.5); normal (0 0 1); interpolate false;}
+ }
+}
+glass
+{
+ type surfaces; libs (sampling);
+ executeControl timeStep; executeInterval 1;
+ writeControl adjustableRunTime; writeInterval 0.625;
+ surfaceFormat vtk;
+ formatOptions { vtk { format binary; compression true; } }
+ interpolate false; fields (T qr);
+ surfaces
+ {
+ glass {type patch; patches (glass); interpolate false;}
+ }
+}
