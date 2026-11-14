@@ -1,0 +1,2 @@
+FoamFile { version 2.0; format ascii; class dictionary; object topoSetDict; }
+actions ( { name referenceFaces; type faceSet; action new; source boxToFace; box (5.84 1.52 1.60) (6.16 1.88 2.0); } );

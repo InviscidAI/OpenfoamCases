@@ -1,0 +1,96 @@
+Subject: a wood stove in one room and a box fan in the doorway to the next, high (warm air out) or low (cold air in)
+3-D half house, 0-190 s from the door opening and the fan coming on; figures for the half house unless noted
+Last-window means over 160-190 s
+
+The stove and the fan                         high          low
+  stove, W (min-max over 10-190 s)    1996.0-2004.8  1999.5-2000.6
+  flue, W (min-max over 10-190 s)      499.4- 500.8   499.9- 500.1
+  stove + flue, W, 160-190 s mean     2000.0 + 500.0  2000.0 + 500.0
+  stove + flue, kJ over 0-190 s               474.2          474.2
+  fan, m3/s through its downstream face, 160-190 s  0.2988  0.2955   (fanHighRight +x, fanLowLeft -x; target 0.2950, half a Lasko 3733 on low)
+  face temperature, C, 160-190 s means: area mean (and the face maximum)
+    stove                               1195 ( 1658)     378 ( 1542)
+    flue                                 491 (  849)     210 (  538)
+
+The doorway, 160-190 s means                high        low
+  doorway    into the cold room, m3/s       0.2989     0.2344
+  doorway    into the stove room, m3/s      0.2934     0.2305
+  doorUpper  into the cold room, m3/s       0.2988     0.1719
+  doorUpper  into the stove room, m3/s      0.1063     0.0063
+  doorLower  into the cold room, m3/s       0.0001     0.0626
+  doorLower  into the stove room, m3/s      0.1871     0.2242
+  net heat into the cold room, W           1866.8     1414.2
+  net heat into the cold room, kJ 0-190     383.4      336.7
+  as the study's notes averaged them, the plain mean of the 48 rows after 160 s:
+    net heat into the cold room, W         1867.0     1414.6
+    cold room's walls into the air, W     -1762.6    -1136.5
+
+The cold room, C                  t s     high      low   high-low
+  room mean                    30   16.890   17.473   -0.583
+  room mean                    60   18.392   20.013   -1.622
+  room mean                    90   19.356   21.693   -2.338
+  room mean                   120   20.034   22.755   -2.720
+  room mean                   150   20.510   23.567   -3.057
+  room mean                   190   20.872   24.346   -3.474
+  room mean               160-190   20.760   24.067   -3.306
+  seated, y 0.1-1.1            30   16.746   15.369   +1.377
+  seated, y 0.1-1.1            60   18.366   18.517   -0.151
+  seated, y 0.1-1.1            90   19.338   20.865   -1.527
+  seated, y 0.1-1.1           120   20.031   21.947   -1.916
+  seated, y 0.1-1.1           150   20.491   22.737   -2.246
+  seated, y 0.1-1.1           190   20.951   23.485   -2.535
+  seated, y 0.1-1.1       160-190   20.767   23.227   -2.461
+  head                         30   16.239   17.551   -1.313
+  head                         60   17.867   20.270   -2.403
+  head                         90   18.822   21.543   -2.721
+  head                        120   19.664   22.538   -2.874
+  head                        150   19.964   22.587   -2.623
+  head                        190   20.631   23.138   -2.507
+  head                    160-190   20.448   23.125   -2.677
+  ankles                       30   16.813   14.589   +2.224
+  ankles                       60   18.646   15.044   +3.602
+  ankles                       90   19.953   16.783   +3.170
+  ankles                      120   20.843   18.437   +2.406
+  ankles                      150   21.075   19.940   +1.135
+  ankles                      190   21.453   19.907   +1.546
+  ankles                  160-190   21.446   20.434   +1.012
+  floor, y < 0.1               30   17.207   14.526   +2.681
+  floor, y < 0.1               60   18.401   15.077   +3.324
+  floor, y < 0.1               90   19.310   16.449   +2.861
+  floor, y < 0.1              120   19.959   18.756   +1.203
+  floor, y < 0.1              150   20.360   20.211   +0.149
+  floor, y < 0.1              190   20.621   21.298   -0.677
+  floor, y < 0.1          160-190   20.559   20.809   -0.251
+  ceiling, y > 2.2             30   17.507   21.066   -3.560
+  ceiling, y > 2.2             60   18.716   22.672   -3.956
+  ceiling, y > 2.2             90   19.506   23.368   -3.862
+  ceiling, y > 2.2            120   20.086   24.434   -4.347
+  ceiling, y > 2.2            150   20.633   25.133   -4.500
+  ceiling, y > 2.2            190   20.997   25.828   -4.831
+  ceiling, y > 2.2        160-190   20.829   25.579   -4.750
+  mean air speed, m/s, 160-190 s         0.6079   0.1629
+  air speed at the head, m/s, 160-190 s  0.1314   0.0556
+  ceiling less floor, K, at 190 s         0.376    4.530
+  head rounded at 190 s: high 21, low 23; writes with low's rounded head above high's: 265 of 304, below: 13
+
+The stove room, C, 160-190 s means      high      low
+  warm_mean                          26.517   29.135
+  warm_seated                        23.652   28.930
+  warm_floor                         22.761   26.896
+  warm_ceiling                       31.549   29.577
+
+The walls' heat into the air, W, 160-190 s   high       low
+  stoveRoomWalls                       -369.5     -755.5
+  coldRoomWalls                       -1761.3    -1135.9
+  doorwayReveal                           0.0        0.0
+  coldRoomWalls, kJ over 0-190 s           -261.3     -156.1
+
+Checks                                         high            low
+  10-190 s stove + flue heat, J               450012.9       449999.5
+  10-190 s change of internal energy, J       138754.9       234535.4
+  10-190 s stove, flue and walls, J           138807.2       234566.1
+  unaccounted, % of the stove's heat           -0.0116        -0.0068
+  air mass, kg (first and last row)      45.73321953/45.73321953  45.73321953/45.73321953
+  coldest air, C (min over the run)             13.565         13.741
+  warmest air, C (max over the run)            275.122        138.628
+  time step, ms at 190 s                         4.085          3.634

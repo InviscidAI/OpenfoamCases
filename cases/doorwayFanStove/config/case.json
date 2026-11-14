@@ -1,0 +1,23 @@
+{
+  "_comment": "Read by scripts/make_mesh.py, scripts/house_patches.py and scripts/make_case.py. The values are the solved runs'. Metres, kelvin, watts, m/s.",
+  "solids": [[4, -0.08, 0.44, 4.08, 2.48, 2.08], [4, 2.04, -0.08, 4.08, 2.48, 0.44], [0.6, 0.12, -0.08, 1.12, 0.84, 0.28], [0.8, 0.84, -0.08, 0.96, 2.48, 0.08]],
+  "_solids": "x0 y0 z0 x1 y1 z1: the partition beside the doorway, the partition above it, the stove and the flue, written as one closed STL, their union, by make_mesh.py; each box runs 0.08 m past the house's outer faces so that the castellated mesh cuts it cleanly at the walls and the symmetry plane",
+  "patches": {
+    "stove": {"box": [0.6, 0.12, 0, 1.12, 0.84, 0.28], "area": 1.056},
+    "flue": {"box": [0.8, 0.84, 0, 0.96, 2.4, 0.08], "area": 0.4992},
+    "partition": [4.0, 4.08],
+    "_patches": "house_patches.py sorts snappyHexMesh's boundary faces by face centre: z = 0 symmetry, then stove and flue (their boxes), stoveRoomWalls (x <= 4.0), coldRoomWalls (x >= 4.08), and the faces in between, the doorway's jambs and lintel, doorwayReveal; the areas are checked to 1%"
+  },
+  "doorway": {"zMax": 0.44, "yMax": 2.04, "area": 0.8976, "split": 1.02},
+  "fans": {"fanHigh": 1.52, "fanLow": 0.04, "height": 0.52, "zMax": 0.26, "faceArea": 0.1352},
+  "_fans": "each fan zone is the cells in the partition's thickness, x 4.00-4.08, from y to y + 0.52 m and z < 0.26 m; its two x faces are faceZones <zone>Left (x = 4.00) and <zone>Right (x = 4.08), oriented +x",
+  "Q": {"stove": 2000, "flue": 500},
+  "_Q": "W into the half house: 5 kW, the Charlton & Jenrick Go Eco 5's declared nominal output, halved, 80% on the stove's faces and 20% on the flue's, as uniform heat fluxes",
+  "Ubar": {"high": 2.084022142905876, "low": -2.0270794425125054},
+  "_Ubar": "m/s along x held by meanVelocityForce in the active fan zone (fanHigh in high, fanLow in low), frozen from the pilots so that 0.295 m3/s, half a Lasko 3733 on low (1250 CFM), crosses the zone's downstream face",
+  "T0": {"stoveRoom": 297.15, "coldRoom": 287.15, "split": 4.04},
+  "pRef": 100000,
+  "yRef": 1.02,
+  "molWeight": 28.96,
+  "endTime": 190
+}
