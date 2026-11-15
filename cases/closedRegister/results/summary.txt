@@ -1,0 +1,81 @@
+Subject: a small one-storey house with forced-air heating, warming from a 62 F setback once the blower starts,
+every register open against the spare room's register closed (its door shut in both); the whole house in 3-D, 0-300 s
+
+The registers and the return                    open        closed
+  livingW   mass flow in, kg/s              0.05398     0.05931
+  livingE   mass flow in, kg/s              0.05398     0.05931
+  kitchen   mass flow in, kg/s              0.05398     0.05931
+  bedroom   mass flow in, kg/s              0.05682     0.06244
+  bath      mass flow in, kg/s              0.02557     0.02808
+  spare     mass flow in, kg/s              0.05115     0.00000
+  all registers, kg/s                       0.29548     0.26845
+  supply temperature, C                       43.90       45.08
+  supply's heat, W, 20-30 s mean            8086.15     7664.80
+  the spare room's register, W              1399.78        0.00
+  the other five registers, W               6686.37     7664.80
+  the other five, MJ from 0 to 150 s         1.0030      1.1497
+  the other five, MJ from 0 to 300 s         2.0059      2.2994
+  return, kg/s out at  15 s                  0.48082     0.47882
+  return, kg/s out at 150 s                  0.47727     0.46858
+  return, kg/s out at 300 s                  0.47113     0.46237
+  return, C at  60 s                          17.042      17.039
+  return, C at 150 s                          17.490      17.660
+  return, C at 300 s                          18.541      18.655
+  open: return less registers after 10 s, kg/s: mean 0.01304, at most 7.37% of the inflow
+  closed: return less registers after 10 s, kg/s: mean 0.01207, at most 7.64% of the inflow
+
+The spare room's door (the 5 cm gap under it), kg/s     open (out / in)        closed (out / in)
+  at  15 s                      0.05466 / 0.00000     0.00402 / 0.00401
+  at  60 s                      0.05414 / 0.00000     0.00351 / 0.00355
+  at 150 s                      0.05360 / 0.00000     0.00349 / 0.00353
+  at 300 s                      0.05249 / 0.00000     0.00226 / 0.00227
+
+The rest of the house and the spare room, air at head height (y 1.5-1.8 m) and whole-room means
+   t s   rest head C (F)            spare head C (F)            rest mean C          spare mean C
+         open        closed         open        closed          open    closed      open    closed
+     0  16.670 (62.0)  16.670 (62.0)   16.670 (62.0)  16.670 (62.0)    16.670  16.670    16.670  16.670
+    15  16.965 (62.5)  17.010 (62.6)   17.017 (62.6)  16.668 (62.0)    17.100  17.162    17.158  16.666
+    30  17.371 (63.3)  17.555 (63.6)   17.689 (63.8)  16.668 (62.0)    17.464  17.581    17.570  16.661
+    60  19.089 (66.4)  19.595 (67.3)   19.573 (67.2)  16.668 (62.0)    18.138  18.354    18.341  16.651
+   120  21.209 (70.2)  21.736 (71.1)   21.538 (70.8)  16.667 (62.0)    19.255  19.643    19.712  16.636
+   150  21.708 (71.1)  22.245 (72.0)   22.127 (71.8)  16.666 (62.0)    19.739  20.200    20.333  16.629
+   180  22.103 (71.8)  22.671 (72.8)   22.535 (72.6)  16.666 (62.0)    20.182  20.698    20.908  16.624
+   240  22.736 (72.9)  23.373 (74.1)   23.285 (73.9)  16.668 (62.0)    20.942  21.560    21.914  16.618
+   300  23.231 (73.8)  23.913 (75.0)   23.841 (74.9)  16.670 (62.0)    21.574  22.263    22.704  16.612
+  closed less open, K:  t s   rest head   rest mean   spare head   spare mean
+                         60     +0.506      +0.215       -2.905       -1.689
+                        150     +0.537      +0.461       -5.461       -3.704
+                        300     +0.682      +0.688       -7.172       -6.091
+  rest less spare at head height at 60 s, K: open -0.484  closed +2.927
+  rest of the house at head height, rounded F, at 0, 150, 300 s: open 62, 71, 74; closed 62, 72, 75
+  the two rounded numbers first differ at 11.25 s; closed's below open's at 0 of 481 rows
+
+The heat out of the air into the surfaces, W (positive out of the air)   open      closed
+  floor    at  15 s                                                 3.5        3.3
+  floor    at 150 s                                                 5.2        4.1
+  floor    at 300 s                                                17.9       13.1
+  floor    10-300 s mean                                            6.9        5.0
+  ceiling  at  15 s                                              1174.7     1123.8
+  ceiling  at 150 s                                              2016.6     1899.4
+  ceiling  at 300 s                                              2292.5     2155.4
+  ceiling  10-300 s mean                                         1943.0     1829.0
+  walls    at  15 s                                               516.8      490.2
+  walls    at 150 s                                              1352.0     1287.5
+  walls    at 300 s                                              1861.1     1771.5
+  walls    10-300 s mean                                         1307.2     1246.9
+  windows  at  15 s                                               388.5      351.3
+  windows  at 150 s                                               448.9      410.7
+  windows  at 300 s                                               470.1      430.4
+  windows  10-300 s mean                                          443.9      403.8
+  share of the supply's heat (0-300 s) still in the air at 300 s       48.2%      47.2%
+
+Checks                                       open              closed
+  10-300 s supply's heat, J                      2344983.5         2222791.4
+  10-300 s change of the air's enthalpy, J       1099193.2         1018587.1
+  10-300 s supply less return and surfaces       1099705.2         1018694.2
+  unaccounted, % of the supply's heat              -0.0218           -0.0048
+  air mass, kg (first and last row)       234.2256/230.2159  234.2255/230.5057
+  integral of p dV, relative range                3.14e-05          3.44e-05
+  open: coldest air 15.380 C at 19.375 s, (4.75, 1.45, 8.75) m; warmest 44.202 C at 54.375 s, (1.475, 0.575, 0.075) m (rows every 0.625 s; supply 43.90 C)
+  closed: coldest air 15.359 C at 19.375 s, (4.75, 1.45, 8.75) m; warmest 45.405 C at 1.875 s, (1.975, 0.575, 8.725) m (rows every 0.625 s; supply 45.08 C)
+  time step, ms at 300 s, and the rows' least and largest   13.59 (0.60-17.47)  18.38 (0.60-29.04)

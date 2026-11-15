@@ -1,0 +1,27 @@
+== open: air handler 611.8 CFM, external static 0.500 in w.c., trunk 62.3 Pa
+   living_W  register   95.0 CFM (44.83 L/s)  boot  10.0 Pa  boot leak  5.10 CFM
+   living_E  register   95.0 CFM (44.83 L/s)  boot  10.0 Pa  boot leak  5.10 CFM
+   kitchen   register   95.0 CFM (44.83 L/s)  boot  10.0 Pa  boot leak  5.10 CFM
+   bedroom   register  100.0 CFM (47.19 L/s)  boot  10.0 Pa  boot leak  5.10 CFM
+   bath      register   45.0 CFM (21.24 L/s)  boot  10.0 Pa  boot leak  5.10 CFM
+   spare     register   90.0 CFM (42.48 L/s)  boot  10.0 Pa  boot leak  5.10 CFM
+   plenum leak 61.2 CFM; all leaks 91.8 CFM = 15.0% of the air handler
+   rise 49.0 F -> supply 111.0 F = 43.90 C from a 62.0 F return
+   heat out of the registers 8096 W of the furnace's 9525 W; lost in leaks 1429 W
+== closed: air handler 586.4 CFM, external static 0.532 in w.c., trunk 75.3 Pa
+   living_W  register  104.4 CFM (49.26 L/s)  boot  12.1 Pa  boot leak  5.71 CFM
+   living_E  register  104.4 CFM (49.26 L/s)  boot  12.1 Pa  boot leak  5.71 CFM
+   kitchen   register  104.4 CFM (49.26 L/s)  boot  12.1 Pa  boot leak  5.71 CFM
+   bedroom   register  109.9 CFM (51.86 L/s)  boot  12.1 Pa  boot leak  5.71 CFM
+   bath      register   49.4 CFM (23.32 L/s)  boot  12.1 Pa  boot leak  5.70 CFM
+   spare     register    0.0 CFM ( 0.00 L/s)  boot  73.7 Pa  boot leak 16.89 CFM
+   plenum leak 68.6 CFM; all leaks 114.0 CFM = 19.4% of the air handler
+   rise 51.1 F -> supply 113.1 F = 45.08 C from a 62.0 F return
+   heat out of the registers 7673 W of the furnace's 9525 W; lost in leaks 1851 W
+
+== closing the spare room's register
+   the spare room's register carried 90.0 CFM and 1401 W
+   the other five rooms' air: 430.0 -> 472.4 CFM (+42.4, +9.9%)
+   the other five rooms' heat: 6695 -> 7673 W (+978 W, +14.6%)
+   of the spare room's 1401 W, 978 W (70%) reaches the other rooms and 423 W more leaks
+   air handler flow 612 -> 586 CFM (-4.1%); leaks 92 -> 114 CFM
