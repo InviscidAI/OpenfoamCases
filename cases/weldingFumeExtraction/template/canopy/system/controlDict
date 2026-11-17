@@ -1,0 +1,147 @@
+FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}
+application buoyantPimpleFoam;
+startFrom startTime; startTime 0; stopAt endTime; endTime 40.0; deltaT .001;
+adjustTimeStep yes; maxCo 1; maxDeltaT .02;
+writeControl adjustableRunTime; writeInterval 10; purgeWrite 0;
+writeFormat binary; writePrecision 12; writeCompression on; timeFormat general; timePrecision 10; runTimeModifiable false;
+profiling {active true; sysInfo false;}
+functions
+{
+fumeTransport {type scalarTransport; libs (solverFunctionObjects); field fume; phi phi; rho rho; alphaD 1.40845; alphaDt 1.0; bounded01 false; nCorr 1; tolerance 0; executeControl timeStep; executeInterval 1; writeControl writeTime; fvOptions {arcSource {type scalarSemiImplicitSource; active true; selectionMode cellZone; cellZone arc; volumeMode absolute; injectionRateSuSp {fume (5e-6 0);}}}}
+fumeMass {type volFieldValue; libs (fieldFunctionObjects); fields (fume); operation weightedVolIntegrate; weightField rho; regionType all; writeFields false; log false; writeControl timeStep; writeInterval 1;}
+fumeMinMax {type fieldMinMax; libs (fieldFunctionObjects); fields (fume T U); mode component; location true; log false; writeControl timeStep; writeInterval 1;}
+clip {type surfaces; libs (sampling); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval .1; surfaceFormat vtk; formatOptions {vtk {format binary; compression true;}} fields (T U fume rho); interpolate true;
+ surfaces {section {type cuttingPlane; point (0 0 2); normal (0 0 1); interpolate true;} sectionCells {type cuttingPlane; point (0 0 2); normal (0 0 1); interpolate false;}}}
+frontClip {type surfaces; libs (sampling); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval .5; surfaceFormat vtk; formatOptions {vtk {format binary; compression true;}} fields (T U fume rho); interpolate true; surfaces {front {type cuttingPlane; point (.45 0 0); normal (1 0 0); interpolate true;}}}
+probes {type probes; libs (sampling); fields (fume T U); probeLocations ((.49 1.53 2) (.45 1.45 2) (.45 1.2 2)); writeControl adjustableRunTime; writeInterval .1;}
+diagnostics
+{
+ type coded; libs (utilityFunctionObjects); name diagnostics;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include "turbulentFluidThermoModel.H"
+ #include <fstream>
+ #include <iomanip>
+ #include <algorithm>
+ #include <vector>
+ #};
+ codeOptions
+ #{
+ -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude -I$(LIB_SRC)/transportModels/compressible/lnInclude -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude
+ #};
+ codeLibs
+ #{
+ -lfluidThermophysicalModels -lcompressibleTurbulenceModels
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ if (!m.foundObject<volScalarField>("fume")) return true;
+ const auto& T=m.lookupObject<volScalarField>("T");
+ const auto& rho=m.lookupObject<volScalarField>("rho");
+ const auto& h=m.lookupObject<volScalarField>("h");
+ const auto& s=m.lookupObject<volScalarField>("fume");
+ const auto& U=m.lookupObject<volVectorField>("U");
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ const auto& turb=m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+ auto alpha=turb.alphaEff();auto rf=fvc::interpolate(rho);auto sf=fvc::interpolate(s);auto tf=fvc::interpolate(T);
+ surfaceScalarField fumeflux(fvc::flux(phi,s,"div(phi,fume)"));
+ surfaceScalarField heatflux(fvc::flux(phi,h,"div(phi,h)"));
+ auto diffusion=1.40845*turb.mu()+turb.mut();
+ surfaceScalarField kflux(fvc::flux(phi,m.lookupObject<volScalarField>("K"),"div(phi,K)"));
+ surfaceScalarField fd(-fvc::interpolate(diffusion())*fvc::snGrad(s)*m.magSf());
+ scalarList v(42,0);
+ const bool hasPanel=m.cellZones().findZoneID("grillePanel")>=0;
+ auto pf=fvc::interpolate(m.lookupObject<volScalarField>("p"));
+ // bay fume, enthalpy, breathing volume, concentration integral, temperature integral,
+ // arc volume, arc temperature integral, extractor Q/M/fume/heat, open Qout/Qin/Mout/Min/fumeOut/fumeIn/heatOut/heatIn, welder W, square up/down
+ scalar tmax=-GREAT,smin=GREAT,umax=0,outsideMax=0;vector hot(Zero),outsideAt(Zero);
+ forAll(T,i)
+ {
+  const vector c=m.C()[i];const scalar vol=m.V()[i];
+  const bool isArc=c.x()>.42&&c.x()<.48&&c.y()>.91&&c.y()<.95&&c.z()>1.97&&c.z()<2.03;
+  if(!isArc && mag(U[i])>outsideMax){outsideMax=mag(U[i]);outsideAt=c;}
+  if(hasPanel&&c.x()>.175&&c.x()<.2&&c.y()>.9&&c.y()<1.4&&c.z()>1.4&&c.z()<2.6){v[40]+=vol;v[41]+=T[i]*vol;}
+  if(s[i]<-1e-6)v[27]+=vol;
+  v[0]+=rho[i]*s[i]*vol;v[1]+=rho[i]*1005*(T[i]-293.15)*vol;
+  v[22]+=m.lookupObject<volScalarField>("p")[i]*vol;v[23]+=.5*rho[i]*magSqr(U[i])*vol;v[24]+=rho[i]*(-9.81*U[i].y())*vol;
+  if(m.foundObject<volScalarField>("dpdt"))v[25]+=m.lookupObject<volScalarField>("dpdt")[i]*vol;
+  if(c.x()<.604 && mag(c-vector(.514,1.549,2))<.15){v[2]+=vol;v[3]+=rho[i]*s[i]*1e6*vol;v[4]+=T[i]*vol;}
+  if(c.x()>.42&&c.x()<.48&&c.y()>.91&&c.y()<.95&&c.z()>1.97&&c.z()<2.03){v[5]+=vol;v[6]+=T[i]*vol;}
+  if(T[i]>tmax){tmax=T[i];hot=c;}smin=min(smin,s[i]);umax=max(umax,mag(U[i]));
+ }
+ auto square=[&](const vector& c,const vector& a,scalar f,scalar w)
+ {
+  if(mag(c.y()-1.45)<.006251 && c.x()>.30 && c.x()<.60 && c.z()>1.85 && c.z()<2.15 && mag(a.y())>.9*mag(a))
+  {scalar flux=w*f*(a.y()>0?1:-1);if(flux>0)v[20]+=flux;else v[21]-=flux;}
+ };
+ auto grille=[&](const vector& c,const vector& a,scalar mass,scalar den,scalar fume,scalar temp,scalar pressure,scalar w)
+ {
+  if(!hasPanel||c.y()<.9||c.y()>1.4||c.z()<1.4||c.z()>2.6||mag(a.x())<.9*mag(a))return;
+  scalar area=w*mag(a.x());
+  if(mag(c.x()-.2)<1e-5){v[34]+=area;v[35]+=pressure*area;v[38]+=temp*area;scalar m=w*mass*(a.x()<0?1:-1);if(m>=0){v[28]+=m/den;v[30]+=m;v[32]+=m*fume;}else{v[29]-=m/den;v[31]-=m;v[33]-=m*fume;}}
+  if(mag(c.x()-.175)<1e-5){v[36]+=area;v[37]+=pressure*area;v[39]+=temp*area;}
+ };
+ forAll(m.neighbour(),f){square(m.Cf()[f],m.Sf()[f],phi[f]*sf()[f],1);grille(m.Cf()[f],m.Sf()[f],phi[f],rf()[f],sf()[f],tf()[f],pf()[f],1);}
+
+ forAll(m.boundary(),b)
+ {
+  const auto& p=m.boundary()[b];
+  if(p.coupled()){forAll(p,j){square(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j]*sf().boundaryField()[b][j],.5);grille(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j],rf().boundaryField()[b][j],sf().boundaryField()[b][j],tf().boundaryField()[b][j],pf().boundaryField()[b][j],.5);}continue;}
+  const auto& ph=phi.boundaryField()[b];
+  if(p.name()=="welder")v[19]=sum(alpha().boundaryField()[b]*h.boundaryField()[b].snGrad()*m.magSf().boundaryField()[b]);
+  forAll(p,j)
+  {
+   v[26]+=kflux.boundaryField()[b][j];
+   scalar q=ph[j]/rf().boundaryField()[b][j];scalar f=fumeflux.boundaryField()[b][j]+fd.boundaryField()[b][j];scalar ht=heatflux.boundaryField()[b][j];
+   if(p.name()=="canopyExhaust"||p.name()=="benchGrille"||p.name()=="benchExhaust"){v[7]+=q;v[8]+=ph[j];v[9]+=f;v[10]+=ht;}
+   if(p.name()=="open")
+   {
+    if(ph[j]>=0){v[11]+=q;v[13]+=ph[j];v[15]+=f;v[17]+=ht;}else{v[12]-=q;v[14]-=ph[j];v[16]-=f;v[18]-=ht;}
+   }
+  }
+ }
+ forAll(v,i)reduce(v[i],sumOp<scalar>());
+ scalar gt=tmax;reduce(gt,maxOp<scalar>());label hotRank=(tmax==gt?Pstream::myProcNo():labelMax);reduce(hotRank,minOp<label>());if(Pstream::myProcNo()!=hotRank)hot=Zero;reduce(hot,sumOp<vector>());reduce(smin,minOp<scalar>());reduce(umax,maxOp<scalar>());scalar outsideGlobal=outsideMax;reduce(outsideGlobal,maxOp<scalar>());label outsideRank=(outsideMax==outsideGlobal?Pstream::myProcNo():labelMax);reduce(outsideRank,minOp<label>());if(Pstream::myProcNo()!=outsideRank)outsideAt=Zero;reduce(outsideAt,sumOp<vector>());
+ static scalar accumF=0,accumH=0,accumBody=0,accumUp=0,accumDown=0,accumGravity=0,accumKEOut=0,accumPressure=0,accumExtract=0,accumOpenOut=0,accumOpenIn=0;scalar dt=m.time().deltaTValue();
+ accumF+=dt*(v[9]+v[15]-v[16]);accumH+=dt*(v[10]+v[17]-v[18]);accumBody+=dt*v[19];accumUp+=dt*v[20];accumDown+=dt*v[21];accumGravity+=dt*v[24];accumKEOut+=dt*v[26];accumPressure+=dt*v[25];accumExtract+=dt*v[9];accumOpenOut+=dt*v[15];accumOpenIn+=dt*v[16];
+ auto sumflux=fvc::surfaceSum(mag(phi));auto area=fvc::surfaceSum(m.magSf());
+ std::vector<std::pair<scalar,label>> co;co.reserve(T.size());
+ forAll(T,i)co.push_back({.5*dt*sumflux()[i]/(rho[i]*m.V()[i]),i});
+ std::partial_sort(co.begin(),co.begin()+min(label(12),T.size()),co.end(),[](auto a,auto b){return a.first>b.first;});
+ static scalar next=0;bool emit=false || m.time().value()+1e-8>=next;
+ if(emit)
+ {
+  next=std::floor((m.time().value()+1e-8)*10+1)*.1;
+  fileName dir=m.time().globalPath()/"postProcessing/diagnostics";mkDir(dir);
+  const auto& omega=m.lookupObject<volScalarField>("omega");
+  std::vector<std::pair<scalar,label>> om;forAll(omega,i)om.push_back({omega[i],i});std::partial_sort(om.begin(),om.begin()+min(label(12),omega.size()),om.end());
+  static bool ofirst=true;std::ofstream of((dir/("omega_rank"+Foam::name(Pstream::myProcNo())+".csv")).c_str(),ofirst?std::ios::out:std::ios::app);of<<std::setprecision(14);if(ofirst)of<<"time,rank,omega,x,y,z\n";
+  for(label k=0;k<min(label(12),omega.size());k++){label i=om[k].second;of<<m.time().value()<<','<<Pstream::myProcNo()<<','<<omega[i]<<','<<m.C()[i].x()<<','<<m.C()[i].y()<<','<<m.C()[i].z()<<'\n';}ofirst=false;
+  static bool rankFirst=true;std::ofstream cr((dir/("courant_rank"+Foam::name(Pstream::myProcNo())+".csv")).c_str(),rankFirst?std::ios::out:std::ios::app);cr<<std::setprecision(14);
+  if(rankFirst)cr<<"time,rank,cell,Co,size_m,hydraulic_m,speed_ms,x,y,z\n";
+  for(label k=0;k<min(label(12),T.size());k++){label i=co[k].second;cr<<m.time().value()<<','<<Pstream::myProcNo()<<','<<i<<','<<co[k].first<<','<<cbrt(m.V()[i])<<','<<6*m.V()[i]/area()[i]<<','<<mag(U[i])<<','<<m.C()[i].x()<<','<<m.C()[i].y()<<','<<m.C()[i].z()<<'\n';}rankFirst=false;
+  if(Pstream::master())
+  {
+   static bool first=true;std::ofstream out((dir/"diagnostics.csv").c_str(),first?std::ios::out:std::ios::app);out<<std::setprecision(14);
+   if(first)out<<"time,bay_fume_kg,bay_H_J,bz_volume_m3,bz_C_integral,bz_T_integral,arc_volume_m3,arc_T_integral,extract_Q_m3s,extract_M_kgs,extract_fume_kgs,extract_H_W,open_Qout,open_Qin,open_Mout,open_Min,open_fume_out,open_fume_in,open_Hout,open_Hin,body_W,square_up_kgs,square_down_kgs,pressure_integral_Pam3,KE_J,gravity_W,dpdt_integral_W,KEout_W,negative_fume_volume_m3,grille_Qinto_plenum,grille_Qout_to_bay,grille_Minto_plenum,grille_Mout_to_bay,grille_fume_into_plenum,grille_fume_out_to_bay,grille_front_area_m2,grille_front_p_area,grille_rear_area_m2,grille_rear_p_area,grille_front_T_area,grille_rear_T_area,panel_volume_m3,panel_T_integral,cumulative_fume_out_kg,cumulative_Hout_J,cumulative_body_J,cumulative_square_up_kg,cumulative_square_down_kg,Tmax_K,hot_x,hot_y,hot_z,fume_min,Umax_ms,deltaT_s,wall_s,cumulative_gravity_J,cumulative_KEout_J,cumulative_pressure_J,cumulative_extractor_fume_kg,cumulative_open_fume_out_kg,cumulative_open_fume_in_kg,Umax_outside_arc_ms,outside_x,outside_y,outside_z\n";
+   out<<m.time().value();forAll(v,i)out<<','<<v[i];out<<','<<accumF<<','<<accumH<<','<<accumBody<<','<<accumUp<<','<<accumDown<<','<<gt<<','<<hot.x()<<','<<hot.y()<<','<<hot.z()<<','<<smin<<','<<umax<<','<<dt<<','<<m.time().elapsedClockTime()<<','<<accumGravity<<','<<accumKEOut<<','<<accumPressure<<','<<accumExtract<<','<<accumOpenOut<<','<<accumOpenIn<<','<<outsideGlobal<<','<<outsideAt.x()<<','<<outsideAt.y()<<','<<outsideAt.z()<<'\n';first=false;
+  }
+ }
+ if(outsideGlobal > 4)
+ {
+  if(Pstream::master()){std::ofstream stop((m.time().globalPath()/"log.buoyantPimpleFoam.stopped").c_str());stop<<"Velocity outside arc "<<outsideGlobal<<" m/s at "<<"("<<outsideAt.x()<<" "<<outsideAt.y()<<" "<<outsideAt.z()<<")"<<" and t="<<m.time().value()<<" s exceeds 4 m/s; investigation required before production.\n";}
+  const_cast<Time&>(m.time()).stopAt(Time::saWriteNow);
+ }
+ if(smin < -1e-4)
+ {
+  if(Pstream::master()){std::ofstream stop((m.time().globalPath()/"log.buoyantPimpleFoam.stopped").c_str());stop<<"Fume minimum "<<smin<<" below -1e-4 at "<<m.time().value()<<" s; stopping with next-step writeNow.\n";}
+  const_cast<Time&>(m.time()).stopAt(Time::saWriteNow);
+ }
+ if(false && m.time().timeIndex()>=49)const_cast<Time&>(m.time()).stopAt(Time::saWriteNow);
+ #};
+}
+
+}

@@ -1,0 +1,62 @@
+FoamFile {version 2.0; format ascii; class dictionary; object snappyHexMeshDict;}
+castellatedMesh true;
+snap true;
+addLayers false;
+geometry
+{
+table {type searchableBox; min (0 0.86 1.4); max (0.75 0.9 2.6);}
+leg00 {type searchableBox; min (0.03 0 1.43); max (0.08 0.86 1.48);}
+leg01 {type searchableBox; min (0.03 0 2.52); max (0.08 0.86 2.57);}
+leg10 {type searchableBox; min (0.67 0 1.43); max (0.7200000000000001 0.86 1.48);}
+leg11 {type searchableBox; min (0.67 0 2.52); max (0.7200000000000001 0.86 2.57);}
+plate {type searchableBox; min (0.35 0.9 1.9); max (0.55 0.91 2.1);}
+bodyLegs {type searchableBox; min (0.85 0 1.82); max (1.1 0.95 2.18);}
+torso {type triSurfaceMesh; file "torso.stl"; name torso;}
+helmet {type searchableSphere; centre (0.604 1.656 2); radius 0.14;}
+neck {type searchableCylinder; point1 (0.73 1.476 2); point2 (0.604 1.656 2); radius 0.065;}
+rightArm {type searchableCylinder; point1 (0.73 1.44 2.13); point2 (0.53 1.03 2.06); radius 0.045;}
+leftArm {type searchableCylinder; point1 (0.73 1.44 1.87); point2 (0.52 0.97 1.86); radius 0.045;}
+plenumTop {type searchableBox; min (0 1.4 1.38); max (0.2 1.42 2.62);}
+plenumLeft {type searchableBox; min (0 0.88 1.38); max (0.2 1.42 1.4);}
+plenumRight {type searchableBox; min (0 0.88 2.6); max (0.2 1.42 2.62);}
+plenumFine {type searchableBox; min (0 .9 1.4); max (.2 1.4 2.6);}
+near {type searchableBox; min (0 0 0.9); max (2 2.8 3.1);}
+middle {type searchableBox; min (0 0.8 1.55); max (1.25 2.55 2.45);}
+fine {type searchableBox; min (0.2 0.88 1.82); max (0.8 1.85 2.18);}
+}
+castellatedMeshControls
+{
+ maxLocalCells 1000000; maxGlobalCells 2000000; minRefinementCells 0; maxLoadUnbalance 0.1; nCellsBetweenLevels 2;
+ features (); refinementSurfaces
+ {
+table {level (2 2); patchInfo {type wall;} name bench;}
+leg00 {level (2 2); patchInfo {type wall;} name bench;}
+leg01 {level (2 2); patchInfo {type wall;} name bench;}
+leg10 {level (2 2); patchInfo {type wall;} name bench;}
+leg11 {level (2 2); patchInfo {type wall;} name bench;}
+plate {level (3 3); patchInfo {type wall;} name bench;}
+bodyLegs {level (2 2); patchInfo {type wall;} name welder;}
+torso {level (2 2); name welder; patchInfo {type wall;}}
+helmet {level (2 2); name welder; patchInfo {type wall;}}
+neck {level (2 2); name welder; patchInfo {type wall;}}
+rightArm {level (2 2); name welder; patchInfo {type wall;}}
+leftArm {level (2 2); name welder; patchInfo {type wall;}}
+plenumTop {level (2 2); patchInfo {type wall;} name plenumBody;}
+plenumLeft {level (2 2); patchInfo {type wall;} name plenumBody;}
+plenumRight {level (2 2); patchInfo {type wall;} name plenumBody;}
+ }
+ resolveFeatureAngle 30;
+ refinementRegions
+ {
+ near {mode inside; levels ((1e15 1));}
+ middle {mode inside; levels ((1e15 2));}
+ fine {mode inside; levels ((1e15 3));}
+ plenumFine {mode inside; levels ((1e15 3));}
+ }
+ locationInMesh (4 2 2); allowFreeStandingZoneFaces true;
+}
+snapControls {nSmoothPatch 3; tolerance 1.5; nSolveIter 30; nRelaxIter 5; nFeatureSnapIter 10; implicitFeatureSnap true; explicitFeatureSnap false; multiRegionFeatureSnap true;}
+addLayersControls {}
+meshQualityControls {maxNonOrtho 65; maxBoundarySkewness 20; maxInternalSkewness 4; maxConcave 80; minVol 1e-13; minTetQuality 1e-15; minArea -1; minTwist 0.02; minDeterminant 0.001; minFaceWeight 0.02; minVolRatio 0.01; minTriangleTwist -1; nSmoothScale 4; errorReduction 0.75;}
+writeFlags (scalarLevels);
+mergeTolerance 1e-6;

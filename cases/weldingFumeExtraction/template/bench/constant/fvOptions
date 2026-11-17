@@ -1,0 +1,4 @@
+FoamFile {version 2.0; format ascii; class dictionary; object fvOptions;}
+buoyancyTurb {type buoyancyTurbSource; selectionMode all;}
+arcSource {type scalarSemiImplicitSource; active true; selectionMode cellZone; cellZone arc; volumeMode absolute; injectionRateSuSp {h (500 0);}}
+grilleResistance {type explicitPorositySource; active true; selectionMode cellZone; cellZone grillePanel; explicitPorositySourceCoeffs {selectionMode cellZone; cellZone grillePanel; type DarcyForchheimer; DarcyForchheimerCoeffs {d (4.75e7 4.75e7 4.75e7); f (0 0 0); coordinateSystem {type cartesian; origin (0 0 0); coordinateRotation {type axesRotation; e1 (1 0 0); e2 (0 1 0);}}}}}

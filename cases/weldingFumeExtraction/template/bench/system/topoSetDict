@@ -1,0 +1,13 @@
+FoamFile {version 2.0; format ascii; class dictionary; object topoSetDict;}
+actions
+(
+ {name extractor; type faceSet; action new; source patchToFace; patches (walls benchExhaust);}
+ {name extractor; type faceSet; action subset; source boxToFace; box (-.00001 .9 1.4) (.00001 1.4 2.6);}
+ {name arcCells; type cellSet; action new; source boxToCell; box (.42 .91 1.97) (.48 .95 2.03);}
+ {name arc; type cellZoneSet; action new; source setToCellZone; set arcCells;}
+ {name grillePanelCells; type cellSet; action new; source boxToCell; box (.175 .9 1.4) (.2 1.4 2.6);}
+ {name grillePanel; type cellZoneSet; action new; source setToCellZone; set grillePanelCells;}
+ {name plenumAirCells; type cellSet; action new; source boxToCell; box (-.001 .9 1.4) (.2 1.4 2.6);}
+ {name grilleFaces; type faceSet; action new; source boxToFace; box (.19999 .9 1.4) (.20001 1.4 2.6);}
+ {name grilleFace; type faceZoneSet; action new; source setsToFaceZone; faceSet grilleFaces; cellSet plenumAirCells; flip true;}
+);

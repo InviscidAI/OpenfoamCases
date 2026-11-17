@@ -1,0 +1,84 @@
+#!/bin/bash
+# Welding fume at a bench, an overhead canopy hood against an extractor at the back of the bench:
+# a 3-D bay 5 x 3.5 x 4 m with a welder leaning over a 500 W, 5 mg/s arc, from the strike, at rest,
+# to 40 s (buoyantPimpleFoam, k-omega SST, the fume a passive tracer).
+#
+#   ./Allrun canopy|bench [nProcs]
+#   ./Allrun --setup-only canopy|bench [nProcs]
+#
+# canopy        a canopy hood over the bench, its skirts 1.2 m above the work, drawing 1.701 m3/s.
+# bench         a hollow plenum on the back of the bench top behind a porous grille 25 cm from the
+#               arc, its fan drawing 0.5556 m3/s from the plenum's back.
+# nProcs        MPI ranks; by default 4, what both solved runs used.
+# --setup-only  builds the mesh, writes the fields, the t = 0 planes, decomposes and stops before
+#               the solve.
+#
+# Each run has its own mesh, built in runs/<run>/: blockMesh and a serial snappyHexMesh (snapped,
+# no layers; a few minutes), scripts/merge_patches.py and createPatch (the surfaces' patches into
+# bench, welder and the hood's or the plenum's body), topoSet (the arc's cell zone, the grille's
+# porous zone and the extractor's faces) and createPatch again (the extractor's outlet). On bench,
+# scripts/pin_panel_planes.py then puts the grille panel's cell faces back on their planes and
+# topoSet and the extractor's createPatch run again. scripts/make_fields.py writes 0/. The
+# diagnostics are coded in system/controlDict and compiled into the run's dynamicCode when the
+# solve starts.
+#
+# The two runs stop on different fume-negativity guards, as the solved runs did: canopy when the
+# fume's raw minimum falls below -1e-4 (the solved run stopped there at 38.505 s), bench when the
+# fume concentration falls below -1.0 mg/m3, or below -1% of the breathing zone's mean once that
+# mean exceeds 10 mg/m3 (the solved run ran to 40 s). See the README.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  canopy|bench) nproc=${2:-4} ;;
+  *) echo "usage: $0 [--setup-only] canopy|bench [nProcs]" >&2; exit 2 ;;
+esac
+
+r=runs/$run
+rm -rf "$r"
+mkdir -p "$r/system" "$r/constant/triSurface"
+cp template/system/{fvSchemes,fvSolution,blockMeshDict,initialSurfaces} "$r/system/"
+cp template/system/controlDict.mesh "$r/system/controlDict"
+cp template/$run/system/{snappyHexMeshDict,topoSetDict,createPatchDict.extractor} "$r/system/"
+cp template/constant/{g,thermophysicalProperties,turbulenceProperties} template/$run/constant/fvOptions "$r/constant/"
+cp template/constant/triSurface/torso.stl "$r/constant/triSurface/"
+sed "s/numberOfSubdomains 4;/numberOfSubdomains $nproc;/" template/system/decomposeParDict > "$r/system/decomposeParDict"
+
+extractor() {
+  topoSet > log.topoSet 2>&1
+  createPatch -overwrite -dict system/createPatchDict.extractor > log.createPatch.extractor 2>&1
+}
+(
+  cd "$r"
+  blockMesh > log.blockMesh 2>&1
+  snappyHexMesh -overwrite > log.snappyHexMesh 2>&1
+  python3 ../../scripts/merge_patches.py "$run" .
+  createPatch -overwrite > log.createPatch.merge 2>&1
+  extractor
+  if [ "$run" = bench ]; then
+    python3 ../../scripts/pin_panel_planes.py . > log.pinPanelPlanes 2>&1
+    extractor
+  fi
+  python3 ../../scripts/make_fields.py "$run" . > log.makeFields 2>&1
+  cp ../../template/$run/system/controlDict system/controlDict
+  checkMesh > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  postProcess -time 0 -fields '(T U fume rho)' -dict system/initialSurfaces > log.initialSurfaces 2>&1
+  decomposePar -force -fileHandler collated > log.decomposePar 2>&1
+) || { echo "$r: setting up failed, see its logs" >&2; exit 1; }
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+  [ -f log.buoyantPimpleFoam.stopped ] && echo "$r: stopped early on a guard: $(cat log.buoyantPimpleFoam.stopped)"
+  true
+)
+echo "solved: $r"

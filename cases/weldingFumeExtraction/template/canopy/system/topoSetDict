@@ -1,0 +1,8 @@
+FoamFile {version 2.0; format ascii; class dictionary; object topoSetDict;}
+actions
+(
+ {name extractor; type faceSet; action new; source patchToFace; patches (canopyBody);}
+ {name extractor; type faceSet; action subset; source boxToFace; box (0 2.4699 1.23) (1.07 2.4701 2.77);}
+ {name arcCells; type cellSet; action new; source boxToCell; box (.42 .91 1.97) (.48 .95 2.03);}
+ {name arc; type cellZoneSet; action new; source setToCellZone; set arcCells;}
+);

@@ -1,0 +1,3 @@
+FoamFile {version 2.0; format ascii; class dictionary; object fvOptions;}
+buoyancyTurb {type buoyancyTurbSource; selectionMode all;}
+arcSource {type scalarSemiImplicitSource; active true; selectionMode cellZone; cellZone arc; volumeMode absolute; injectionRateSuSp {h (500 0);}}

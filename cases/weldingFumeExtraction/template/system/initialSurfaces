@@ -1,0 +1,7 @@
+FoamFile {version 2.0; format ascii; class dictionary; object initialSurfaces;}
+functions {
+clip {type surfaces; libs (sampling); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval .1; surfaceFormat vtk; formatOptions {vtk {format binary; compression true;}} fields (T U fume rho); interpolate true;
+ surfaces {section {type cuttingPlane; point (0 0 2); normal (0 0 1); interpolate true;} sectionCells {type cuttingPlane; point (0 0 2); normal (0 0 1); interpolate false;}}}
+frontClip {type surfaces; libs (sampling); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval .5; surfaceFormat vtk; formatOptions {vtk {format binary; compression true;}} fields (T U fume rho); interpolate true; surfaces {front {type cuttingPlane; point (.45 0 0); normal (1 0 0); interpolate true;}}}
+
+}
