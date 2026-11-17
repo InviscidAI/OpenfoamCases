@@ -1,0 +1,47 @@
+{
+  "cells": 88890,
+  "nx": 430,
+  "ny": 247,
+  "patch_areas_m2": {
+    "curtainSlot": 0.060000000000000026,
+    "curtainIntake": 0.20999999999999996,
+    "curtainBody": 0.5799999999999998,
+    "street": 6.0,
+    "sky": 4.999999999999998,
+    "pavement": 4.999999999999998,
+    "facade": 3.8,
+    "doorHead": 0.2,
+    "wallInside": 0.75,
+    "floor": 8.2,
+    "ceiling": 7.999999999999999,
+    "backWall": 3.2,
+    "frontAndBack": 111.93000000001012
+  },
+  "faceZone_areas_m2": {
+    "door": 2.2,
+    "doorInner": 2.2,
+    "doorOuter": 2.2
+  },
+  "min_dx_m": 0.009999999999997511,
+  "min_dy_m": 0.00999999999999579,
+  "max_dx_m": 0.09391930564610274,
+  "max_dy_m": 0.09255557113977542,
+  "max_adjacent_x_ratio": 1.0728124866647897,
+  "max_adjacent_y_ratio": 1.0779007047485172,
+  "slot_dx_m": [
+    0.009999999999997788,
+    0.009999999999997844,
+    0.010000000000001091,
+    0.010000000000001119,
+    0.010000000000001064,
+    0.010000000000001119
+  ],
+  "doorway_dx_max_m": 0.01521545394202836,
+  "doorway_dy_max_m": 0.01897322751161168,
+  "faceZone_outward_normal": [
+    -1,
+    0,
+    0
+  ],
+  "faceZone_orientation_note": "Post-run diagnostic orientation standardized; geometric flow monitors already used -x outward. No flow change."
+}

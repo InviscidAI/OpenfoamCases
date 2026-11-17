@@ -1,0 +1,103 @@
+monitor
+{
+ type coded; libs (utilityFunctionObjects); name monitor;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include <fstream>
+ #include <iomanip>
+ #include <algorithm>
+ #include <array>
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ const auto& T=m.lookupObject<volScalarField>("T");
+ const auto& rho=m.lookupObject<volScalarField>("rho");
+ const auto& p=m.lookupObject<volScalarField>("p");
+ const auto& U=m.lookupObject<volVectorField>("U");
+ const auto& o=m.lookupObject<volScalarField>("outdoor");
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ static scalarField cellDx(m.nCells(),0),cellDy(m.nCells(),0);static bool sized=false;
+ if(!sized){forAll(T,i){scalar ax=0,ay=0;for(label face:m.cells()[i]){ax=max(ax,mag(m.faceAreas()[face].x()));ay=max(ay,mag(m.faceAreas()[face].y()));}cellDx[i]=m.V()[i]/max(ax,SMALL);cellDy[i]=m.V()[i]/max(ay,SMALL);}sized=true;}
+ const auto tf=fvc::interpolate(T); const auto rf=fvc::interpolate(rho); const auto of=fvc::interpolate(o);
+ const auto uf=fvc::interpolate(U);
+ const auto fs=fvc::surfaceSum(mag(phi));
+ const auto& h=m.lookupObject<volScalarField>("h");
+ const auto& at=m.lookupObject<volScalarField>("alphat");
+ const auto hf=fvc::flux(phi,h,"div(phi,h)")+dimensionedScalar("href",h.dimensions(),20100)*phi;
+ const auto dh=-(fvc::interpolate(at)+dimensionedScalar("a",at.dimensions(),1.82e-5/.71))*fvc::snGrad(h)*m.magSf();
+ // Three door planes, street and sky: each carries volume, mass, sensible heat and tracer each way.
+ scalarList v(65,0);scalar lo=GREAT,hi=-GREAT,olo=GREAT,ohi=-GREAT,umax=0,jet=0;
+ vector clo(Zero),chi(Zero),cumax(Zero),cjet(Zero);
+ std::vector<std::pair<scalar,label>> co;
+ forAll(T,i){
+  const vector c=m.C()[i];scalar vol=m.V()[i];
+  if(T[i]<lo){lo=T[i];clo=c;}if(T[i]>hi){hi=T[i];chi=c;}
+  olo=min(olo,o[i]);ohi=max(ohi,o[i]);if(mag(U[i])>umax){umax=mag(U[i]);cumax=c;}
+  
+  bool shop=c.x()>.2 && c.y()<3.2;
+  if(shop){v[40]+=rho[i]*o[i]*vol; scalar wx=max(scalar(0),min(c.x()+.5*cellDx[i],scalar(3.2))-max(c.x()-.5*cellDx[i],scalar(.2)))/cellDx[i];v[41]+=wx*rho[i]*o[i]*vol;v[42]+=rho[i]*1005*(T[i]-273.15)*vol;v[43]+=p[i]*vol;v[44]+=rho[i]*vol;}
+  scalar wx=shop?max(scalar(0),min(c.x()+.5*cellDx[i],scalar(3.2))-max(c.x()-.5*cellDx[i],scalar(.2)))/cellDx[i]:0;
+  scalar wy=shop?max(scalar(0),min(c.y()+.5*cellDy[i],scalar(1.8))-max(c.y()-.5*cellDy[i],scalar(1.5)))/cellDy[i]:0;
+  scalar weights[4]={wx*(c.y()<.3),scalar(shop && c.y()<.3),wy,scalar(shop)};
+  for(label k=0;k<4;k++){v[45+2*k]+=weights[k]*T[i]*vol;v[46+2*k]+=weights[k]*vol;}
+  co.push_back({.5*m.time().deltaTValue()*fs()[i]/(rho[i]*vol),i});
+ }
+ const scalar px[3]={.1,.2,0};
+ const scalar heights[]={0.00681818181818086,0.0204545454545421,0.03409090909090286,0.04772727272726352,0.06136363636362614,0.07499999999999168,0.08863636363635813,0.10227272727272456,0.11590909090908835,0.12954545454545124,0.1431818181818168,0.15681818181818047,0.17045454545454175,0.1840909090909027,0.19772727272726293,0.2113636363636252,0.22499999999999043,0.23863636363635637,0.25227272727272143,0.26590909090908577,0.2795454545454511,0.293181818181817,0.30734932298692297,0.32227146177694155,0.33764739479184747,0.35349092719248065,0.3698162739752121,0.38663809152811734,0.40397148087104706,0.4218319923853633,0.44023565842582085,0.45906185271950317,0.4780350028589135,0.49700823037051806,0.5159814578821222,0.5349546853937263,0.5539279129053303,0.5729011404169342,0.5918743679285385,0.6108475954401433,0.6298208229517479,0.6487940504633527,0.6677672779749573,0.6867405054865621,0.7057137329981668,0.7246869605097714,0.7436601880213762,0.7626334155329808,0.7816066430445856,0.8005798705561902,0.819553098067795,0.8385263255793995,0.8574995530910043,0.876472780602609,0.895446008114213,0.9144192356258163,0.9333924631374195,0.9523656906490228,0.971338918160626,0.9903121456722292,1.0092853731838327,1.028258600695436,1.0472318282070392,1.0662050557186424,1.085178283230246,1.1041515107418491,1.1231247382534524,1.1420979657650556,1.1610711932766589,1.180044420788262,1.1990176482998653,1.2179908758114686,1.2369641033230718,1.255937330834675,1.2749105583462785,1.2938837858578818,1.312857013369485,1.3318302408810883,1.3508034683926915,1.369776695904295,1.3887499234158982,1.4077231509275014,1.4266963784391047,1.445669605950708,1.4646428334623112,1.4836160609739144,1.5025892884855214,1.5215625159971324,1.5405357435087437,1.5595089710203554,1.5784821985319668,1.5974554260435783,1.6164286535551895,1.6354018810668012,1.6543751085784124,1.6733483360900239,1.6923215636016353,1.711294791113247,1.7302680186248582,1.7492412461364697,1.7682144736480812,1.7871877011596924,1.8061609286713038,1.8251341561829153,1.844107383694527,1.8630806112061382,1.8820538387177497,1.9010270662293611,1.9200002937409726,1.938973521252584,1.9579467487641955,1.976919976275807,1.995876128957865,2.0145048444745233,2.0324207223016133,2.049549336669352,2.0659252850599534,2.081581651105746,2.0965500487560025,2.1108606951394995,2.1245425097316586,2.137623119261755,2.150128936904351,2.1620852321981068,2.1735161502482363,2.184444764329862,2.1948931562349716};
+ scalarList profile(127,0);
+ auto add=[&](const vector& c,const vector& sf,scalar flux,scalar r,scalar temp,scalar out,scalar wt,scalar exact,scalar diff,scalar ux){
+  if(c.y()>2.2 || mag(sf.x())<SMALL)return;
+  for(label k=0;k<3;k++)if(mag(c.x()-px[k])<1e-8){
+   scalar a=wt*flux*(sf.x()>0?1:-1);label b=8*k+(a>=0?0:1);
+   if(k==0){label row=0;scalar dist=GREAT;forAll(profile,q)if(mag(heights[q]-c.y())<dist){dist=mag(heights[q]-c.y());row=q;}profile[row]+=wt*mag(sf.x())*ux;}
+   v[b]+=mag(a)/r;v[b+2]+=mag(a);v[b+4]+=mag(a)*1005*(temp-273.15);v[b+6]+=mag(a)*out;
+   if(k==1){v[61]+=wt*exact*(sf.x()>0?1:-1);v[62]+=wt*diff*(sf.x()>0?1:-1);}
+  }
+ };
+ forAll(m.neighbour(),f){const vector pos=m.Cf()[f];if(pos.x()>-1.5 && pos.x()<.5 && mag(pos.y()-.15)<1e-8 && -uf()[f].y()>jet){jet=-uf()[f].y();cjet=pos;}add(m.Cf()[f],m.Sf()[f],phi[f],rf()[f],tf()[f],of()[f],1,hf()[f],dh()[f],uf()[f].x());}
+ forAll(m.boundary(),b){const auto& patch=m.boundary()[b];if(patch.type()=="empty")continue;
+  if(patch.coupled()){forAll(patch,j)add(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j],rf().boundaryField()[b][j],tf().boundaryField()[b][j],of().boundaryField()[b][j],.5,hf().boundaryField()[b][j],dh().boundaryField()[b][j],uf().boundaryField()[b][j].x());continue;}
+  label open=patch.name()=="street"?3:(patch.name()=="sky"?4:-1);
+  forAll(patch,j){scalar a=phi.boundaryField()[b][j],r=rho.boundaryField()[b][j],temp=T.boundaryField()[b][j],out=o.boundaryField()[b][j];
+   if(open>=0){label base=8*open+(a<0?0:1);v[base]+=mag(a)/r;v[base+2]+=mag(a);v[base+4]+=mag(a)*1005*(temp-273.15);v[base+6]+=mag(a)*out;}
+   label k=patch.name()=="curtainSlot"?0:(patch.name()=="curtainIntake"?1:-1);
+   if(k>=0){v[53+4*k]+=a/r;v[54+4*k]+=a;v[55+4*k]+=a*temp;v[56+4*k]+=a*out;v[63]+=hf().boundaryField()[b][j];v[64]+=dh().boundaryField()[b][j];}
+  }
+ }
+ Pstream::listCombineReduce(v,plusEqOp<scalar>());
+ Pstream::listCombineReduce(profile,plusEqOp<scalar>());
+ const scalar rowAreas[]={0.01363636363636172,0.01363636363636076,0.013636363636360747,0.013636363636360588,0.013636363636364647,0.013636363636366444,0.01363636363636643,0.013636363636366444,0.013636363636361129,0.013636363636364668,0.013636363636366416,0.013636363636360949,0.013636363636361615,0.01363636363636031,0.013636363636360088,0.013636363636364501,0.013636363636365945,0.013636363636365945,0.01363636363636414,0.013636363636364612,0.013636363636365945,0.013636363636365945,0.014698645973845903,0.015145631606191312,0.015606234423620469,0.01608083037764596,0.01656986318781689,0.017073771917993585,0.017593006767865904,0.018128016260766544,0.01867931582014859,0.018973072767215993,0.018973227511604684,0.018973227511604462,0.01897322751160402,0.018973227511603907,0.01897322751160402,0.01897322751160402,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604795,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604684,0.018973227511604795,0.018973227511604573,0.018973227511603352,0.018973227511603352,0.01897322751160313,0.018973227511603352,0.01897322751160313,0.018973227511603352,0.018973227511603352,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.018973227511603463,0.01897322751160302,0.018973227511603463,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.018973227511603463,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.018973227511603463,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751160324,0.01897322751161079,0.018973227511611235,0.018973227511611457,0.01897322751161168,0.018973227511611235,0.018973227511611457,0.018973227511611457,0.018973227511611457,0.018973227511611457,0.018973227511611235,0.01897322751161168,0.018973227511611457,0.018973227511611235,0.01897322751161168,0.018973227511611235,0.018973227511611457,0.018973227511611235,0.01897322751161168,0.018973227511611457,0.018973227511611235,0.01897322751161168,0.018973227511611457,0.018973227511611235,0.018973227511611457,0.01897322751161168,0.018973227511611235,0.018939077852504926,0.018318353180811542,0.017513402473368522,0.016743826262108463,0.016008070519094808,0.015304661572490996,0.014632133728020857,0.01398915903897402,0.013374470145343764,0.012786748914849433,0.012224886370342691,0.01168770421716836,0.011174131883090244,0.010683096280161841,0.010213687530057136};forAll(profile,q)profile[q]/=rowAreas[q];
+ scalar neutral=-1;label nCross=0;for(label q=1;q<profile.size();q++)if(profile[q]*profile[q-1]<0){scalar yy=heights[q-1]-profile[q-1]*(heights[q]-heights[q-1])/(profile[q]-profile[q-1]);if(neutral<0)neutral=yy;nCross++;}
+ scalar glo=lo,ghi=hi,gu=umax,gj=jet;
+ reduce(glo,minOp<scalar>());reduce(ghi,maxOp<scalar>());reduce(olo,minOp<scalar>());reduce(ohi,maxOp<scalar>());reduce(gu,maxOp<scalar>());reduce(gj,maxOp<scalar>());
+ if(lo!=glo)clo=Zero;if(hi!=ghi)chi=Zero;if(umax!=gu)cumax=Zero;if(jet!=gj)cjet=Zero;
+ // Tied extrema may have several locations; use one rank's location, not their sum.
+ List<vector> locs(Pstream::nProcs()*4,Zero);
+ locs[4*Pstream::myProcNo()]=lo==glo?clo:vector(GREAT,GREAT,GREAT);locs[4*Pstream::myProcNo()+1]=hi==ghi?chi:vector(GREAT,GREAT,GREAT);locs[4*Pstream::myProcNo()+2]=umax==gu?cumax:vector(GREAT,GREAT,GREAT);locs[4*Pstream::myProcNo()+3]=jet==gj?cjet:vector(GREAT,GREAT,GREAT);
+ Pstream::listCombineReduce(locs,plusEqOp<vector>());
+ static scalar nextDump=0;
+ bool dump=m.time().value()+1e-8>=nextDump || m.time().timeIndex()==50;
+ if(dump)nextDump=.125*(floor(m.time().value()/.125+1e-7)+1);
+ if(Pstream::master()){
+  fileName dir=m.time().globalPath()/"postProcessing/monitor";mkDir(dir);static bool first=true;
+  std::ofstream f((dir/"monitor.csv").c_str(),first?std::ios::out:std::ios::app);f<<std::setprecision(14);
+  if(first){f<<"time,dt,wall";const wordList names({"door","doorInner","doorOuter","street","sky"});forAll(names,k)for(const char* q:{"Qin_m3s","Qout_m3s","Min_kgs","Mout_kgs","Hin_W","Hout_W","Oin_kgs","Oout_kgs"})f<<','<<names[k]<<'_'<<q;
+   f<<",outdoorShop_kg,outdoorNear_kg,shopHeat_J,shopP_Pam3,shopMass_kg,ankleVT,ankleV,floorVT,floorV,headVT,headV,shopVT,shopV,slotQ_m3s,slotM_kgs,slotMT,slotMO,intakeQ_m3s,intakeM_kgs,intakeMT,intakeMO,innerExactH_W,innerDiffH_W,unitExactH_W,unitDiffH_W,Tmin_K,Tmax_K,outdoorMin,outdoorMax,Umax_ms,jetDown_ms,TminX,TminY,TmaxX,TmaxY,UmaxX,UmaxY,jetX,jetY,neutral_m,neutralCrossings\n";}
+  f<<m.time().value()<<','<<m.time().deltaTValue()<<','<<m.time().elapsedClockTime();forAll(v,i)f<<','<<v[i];f<<','<<glo<<','<<ghi<<','<<olo<<','<<ohi<<','<<gu<<','<<gj;
+  for(label k=0;k<4;k++){vector pos(Zero);for(label r=0;r<Pstream::nProcs();r++)if(locs[4*r+k].x()<GREAT/2){pos=locs[4*r+k];break;}f<<','<<pos.x()<<','<<pos.y();}f<<','<<neutral<<','<<nCross<<'\n';first=false;
+ }
+ if(dump){
+  std::sort(co.begin(),co.end(),[](const auto&a,const auto&b){return a.first>b.first;});
+  List<scalarList> tops(Pstream::nProcs());scalarList top(12*8,0);
+  for(label k=0;k<12 && k<label(co.size());k++){label i=co[k].second;vector c=m.C()[i];scalar ax=0,ay=0;for(label face:m.cells()[i]){ax=max(ax,mag(m.faceAreas()[face].x()));ay=max(ay,mag(m.faceAreas()[face].y()));}top[8*k]=co[k].first;top[8*k+1]=mag(U[i]);top[8*k+2]=c.x();top[8*k+3]=c.y();top[8*k+4]=m.V()[i]/max(ax,SMALL);top[8*k+5]=m.V()[i]/max(ay,SMALL);top[8*k+6]=U[i].x();top[8*k+7]=U[i].y();}
+  tops[Pstream::myProcNo()]=top;Pstream::gatherList(tops);
+  if(Pstream::master()){
+   std::vector<std::array<scalar,8>> rows;forAll(tops,r)for(label k=0;k<12;k++){std::array<scalar,8>a;for(label j=0;j<8;j++)a[j]=tops[r][8*k+j];rows.push_back(a);}std::sort(rows.begin(),rows.end(),[](const auto&a,const auto&b){return a[0]>b[0];});
+   fileName dir=m.time().globalPath()/"postProcessing/monitor";static bool first=true;std::ofstream f((dir/"courant.csv").c_str(),first?std::ios::out:std::ios::app);if(first)f<<"time,rankOrder,Co,speed_ms,x_m,y_m,dx_m,dy_m,Ux_ms,Uy_ms\n";f<<std::setprecision(14);for(label k=0;k<12;k++){f<<m.time().value()<<','<<k+1;for(scalar a:rows[k])f<<','<<a;f<<'\n';}first=false;
+  }
+ }
+ #};
+}
