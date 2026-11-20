@@ -1,0 +1,34 @@
+off: 5321 steps to 60.000 s
+   t s   in m3/s  out m3/s   outdoor in kg/s  outdoor out kg/s
+     1    0.1870    0.1871            0.2091            0.0024
+     2    0.3581    0.3581            0.4023            0.0064
+     3    0.4850    0.4849            0.5405            0.0120
+     5    0.5779    0.5779            0.6311            0.0466
+    10    0.3943    0.3944            0.4446            0.0177
+    15    0.4302    0.4302            0.4805            0.0124
+    20    0.4316    0.4317            0.4805            0.0138
+    30    0.4155    0.4155            0.4626            0.0143
+    45    0.3565    0.3564            0.3978            0.0482
+    60    0.2941    0.2941            0.3286            0.1379
+  mean 0-30 s: in 0.4244, out 0.4244 m3/s per metre of door
+  mean 30-60 s: in 0.3691, out 0.3691 m3/s per metre of door
+  outdoor air through the door over 0-60 s: 26.526 kg in, 2.718 kg out, 23.807 kg kept; in the store at 60 s: 23.740 kg (the store starts x = 0.15, the door line 0.075)
+  the same through doorInner (x = 0.15): 26.431 kg in, 2.741 kg out, 23.690 kg kept (advective sums only; the store's own inventory is the measure)
+
+on: 47131 steps to 60.000 s
+   t s   in m3/s  out m3/s   outdoor in kg/s  outdoor out kg/s
+     1    0.2093    0.2025            0.1816            0.0187
+     2    0.5533    0.5511            0.4322            0.0432
+     3    0.4875    0.4926            0.3678            0.2163
+     5    0.3595    0.3601            0.3914            0.2332
+    10    0.3942    0.3961            0.3972            0.3125
+    15    0.3728    0.3752            0.3668            0.2890
+    20    0.3787    0.3812            0.3678            0.3100
+    30    0.3842    0.3863            0.3800            0.3201
+    45    0.3841    0.3862            0.3770            0.3285
+    60    0.3829    0.3850            0.3782            0.3309
+  mean 0-30 s: in 0.3773, out 0.3793 m3/s per metre of door
+  mean 30-60 s: in 0.3831, out 0.3853 m3/s per metre of door
+  outdoor air through the door over 0-60 s: 22.299 kg in, 17.972 kg out, 4.327 kg kept; in the store at 60 s: 7.348 kg (the store starts x = 0.15, the door line 0.075)
+  the same through doorInner (x = 0.15): 22.267 kg in, 18.672 kg out, 3.595 kg kept (advective sums only; the store's own inventory is the measure)
+  slot -0.33829, intake 0.33829 m3/s per metre (mean after 0.2 s); the slot's flow is negative because it leaves the unit

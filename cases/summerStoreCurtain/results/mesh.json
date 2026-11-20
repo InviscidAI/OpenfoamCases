@@ -1,0 +1,118 @@
+{
+  "cells": 79256,
+  "patches": {
+    "street": {
+      "startFace": 157779,
+      "nFaces": 220,
+      "area_m2": 6.0,
+      "type": "patch"
+    },
+    "sky": {
+      "startFace": 157999,
+      "nFaces": 131,
+      "area_m2": 4.999999999999989,
+      "type": "patch"
+    },
+    "sidewalk": {
+      "startFace": 158130,
+      "nFaces": 131,
+      "area_m2": 4.999999999999989,
+      "type": "wall"
+    },
+    "storefront": {
+      "startFace": 158261,
+      "nFaces": 103,
+      "area_m2": 3.87,
+      "type": "wall"
+    },
+    "doorHead": {
+      "startFace": 158364,
+      "nFaces": 13,
+      "area_m2": 0.15,
+      "type": "wall"
+    },
+    "frontInside": {
+      "startFace": 158377,
+      "nFaces": 32,
+      "area_m2": 0.52,
+      "type": "wall"
+    },
+    "floor": {
+      "startFace": 158409,
+      "nFaces": 298,
+      "area_m2": 10.15,
+      "type": "wall"
+    },
+    "ceiling": {
+      "startFace": 158707,
+      "nFaces": 285,
+      "area_m2": 10.0,
+      "type": "wall"
+    },
+    "backWall": {
+      "startFace": 158992,
+      "nFaces": 174,
+      "area_m2": 2.9,
+      "type": "wall"
+    },
+    "curtainSlot": {
+      "startFace": 159166,
+      "nFaces": 6,
+      "area_m2": 0.06,
+      "type": "wall"
+    },
+    "curtainIntake": {
+      "startFace": 159172,
+      "nFaces": 21,
+      "area_m2": 0.20999999999999996,
+      "type": "wall"
+    },
+    "curtainBody": {
+      "startFace": 159193,
+      "nFaces": 52,
+      "area_m2": 0.5800000000000001,
+      "type": "wall"
+    },
+    "frontAndBack": {
+      "startFace": 159245,
+      "nFaces": 158512,
+      "area_m2": 118.48899999996479,
+      "type": "empty"
+    }
+  },
+  "faceZones": {
+    "door": {
+      "area_m2": 2.13,
+      "nFaces": 117,
+      "normal": [
+        1,
+        0,
+        0
+      ]
+    },
+    "doorInner": {
+      "area_m2": 2.13,
+      "nFaces": 117,
+      "normal": [
+        1,
+        0,
+        0
+      ]
+    },
+    "doorOuter": {
+      "area_m2": 2.13,
+      "nFaces": 117,
+      "normal": [
+        1,
+        0,
+        0
+      ]
+    }
+  },
+  "max_adjacent_ratio_x": 1.0995880500889137,
+  "max_adjacent_ratio_y": 1.0638455987369544,
+  "slot_dx_max_m": 0.010695772693902261,
+  "doorway_dx_max_m": 0.013392581608781857,
+  "doorway_dy_max_m": 0.020000000000001128,
+  "volume_m3": 59.24449999999667
+}

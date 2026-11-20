@@ -1,0 +1,33 @@
+{
+  "sampled_planes": 481,
+  "plane_interval_s": 0.125,
+  "time_range_s": [
+    0.0,
+    60.0
+  ],
+  "planes_with_15cm_crossing": 463,
+  "15cm_crossings_store_side": 463,
+  "15cm_crossings_in_door": 0,
+  "15cm_crossings_street_side": 0,
+  "first_15cm_crossing_s": 2.25,
+  "first_15cm_crossing_x_m": 0.9830693308240478,
+  "15cm_crossing_x_range_m": [
+    0.41252884379187355,
+    1.009388030170082
+  ],
+  "closest_approach": {
+    "time_s": 4.625,
+    "first_15cm_x_m": 0.5351518768171994,
+    "first_5cm_x_m": null,
+    "minimum_y_m": 0.05020081307297896,
+    "x_at_minimum_y_m": 1.8638591261486095,
+    "minimum_x_m": 0.16025502928014485,
+    "maximum_x_m": 3.1499736997446433,
+    "termination": "left_window"
+  },
+  "planes_where_streamline_entered_x_negative": 0,
+  "outward_entry_time_range_s": null,
+  "planes_with_5cm_crossing": 0,
+  "wall_s": 57.0275445770003,
+  "method": "Instantaneous mean U streamlines from slot centre (0.19,2.175), 1 cm sampling, 2 mm trace increments; stagnation cutoff 0.015 m/s, window x=-1.5..3.15, y=.005..2.9. Not Lagrangian paths or direct-wall impact proof; intervals below 0.125 s are not resolved."
+}

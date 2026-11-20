@@ -1,0 +1,68 @@
+#!/bin/bash
+# An air curtain over a convenience store's open door on a still summer day, off or on: a 2-D
+# section through the middle of the door, the street at 35 C (95 F) and the air-conditioned store
+# at 21.1 C (70 F), from the moment the door opens to 60 s (buoyantPimpleFoam, k-omega SST with
+# buoyancy production, an outdoor-air tracer).
+#
+#   ./Allrun off|on [nProcs]
+#   ./Allrun --setup-only off|on [nProcs]
+#
+# off           the curtain unit is there, its slot and intake walls.
+# on            the slot blows 6 m/s aimed 20 degrees out, 0.33829 m3/s per metre of door, and the
+#               intake draws the same; the jet is the store air the intake takes in, unheated.
+# nProcs        MPI ranks; by default 4, what both solved runs used.
+# --setup-only  builds the mesh if needed, writes the run, writes the t = 0 planes, decomposes the
+#               run and stops before the solve.
+#
+# Each run is solved as the solved runs were, in two segments from rest: 0-30 s, then on from
+# the 30 s fields to 60 s with only endTime changed (the study checked both runs at 30 s between
+# the two; that check is not repeated here). Both segments append to log.buoyantPimpleFoam.
+#
+# The mesh is shared: the first call writes it in runs/mesh/ (scripts/make_mesh.py, the solved
+# mesh's tensor grid written directly as a polyMesh, no blockMesh) and checks it.
+# scripts/make_case.py writes runs/<run>/ from it and template/. The monitor
+# (template/system/monitor) is coded and compiled into the run's dynamicCode when the solve starts.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  off|on) nproc=${2:-4} ;;
+  *) echo "usage: $0 [--setup-only] off|on [nProcs]" >&2; exit 2 ;;
+esac
+
+mesh=runs/mesh
+mkdir -p runs
+if [ ! -f "$mesh/cells.npz" ]; then
+  rm -rf "$mesh"
+  python3 scripts/make_mesh.py "$mesh" > log.makeMesh 2>&1 || { echo "the mesh was not written: log.makeMesh" >&2; exit 1; }
+  ( cd "$mesh" && checkMesh -allGeometry -allTopology > log.checkMesh 2>&1 )
+  grep -q 'Mesh OK' "$mesh/log.checkMesh" || { rm -f "$mesh/cells.npz"; echo "$mesh: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' "$mesh/log.checkMesh"
+fi
+
+r=runs/$run
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc" --mesh "$mesh" --end 30
+(
+  cd "$r"
+  # the section at t = 0, before the solve writes its first
+  postProcess -dict system/initialSurfaces -fields '(T U outdoor)' -time 0 > log.postProcess.initial 2>&1
+  decomposePar -force -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  rm -f log.buoyantPimpleFoam
+  for end in 30 60; do
+    sed -i "s/endTime [0-9.]*;/endTime $end;/" system/controlDict
+    mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated >> log.buoyantPimpleFoam 2>&1
+    [ "$(grep -c '^End' log.buoyantPimpleFoam)" -eq $(( end / 30 )) ] \
+      || { echo "$r: the solve to $end s did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+  done
+)
+echo "solved: $r"
