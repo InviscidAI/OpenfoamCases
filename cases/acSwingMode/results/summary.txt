@@ -1,0 +1,87 @@
+Subject: a wall-mounted split unit cooling a 32 C bedroom, vane held at 10 deg down or swinging 10-40 deg every 24 s
+3-D half room, 0-180 s from rest; figures for the half room unless noted
+
+The unit                               held                  swing
+  mass flow in, kg/s (min-max)           0.0924000-0.0924000    0.0924000-0.0924000
+  mass flow out of outlet, kg/s (max)               0.00e+00               0.00e+00
+  largest outlet face flux, kg/s                  -3.304e-04             -3.304e-04
+  intake out, kg/s at 180 s                        0.0924000              0.0924000
+  heat removed, W (min-max)                1354.000-1354.000      1354.000-1354.000
+  intake less supply, K at 180 s                      14.581                 14.581
+  supply, C at 3 s                                     17.30                  17.30
+  supply, C at 180 s                                    7.82                   8.03
+  imposed angle, deg down (min-max)           10.00 to 10.00         10.00 to 40.00
+  jet angle, deg down (min-max)                 9.11 to 9.64          9.53 to 39.75
+  jet less imposed, deg, from 1 s             -0.89 to -0.36         -0.65 to -0.23
+  time step, ms at 180 s                               4.261                  3.676
+  (min-max over the rows from 0.375 s; the first-step row at 0.0006 s is left out)
+
+The rooms, C                 t s     held    swing  held-swing
+  room mean                     3   31.639   31.639   +0.000
+  room mean                     9   30.956   30.950   +0.007
+  room mean                    30   28.905   28.886   +0.020
+  room mean                    60   26.532   26.464   +0.068
+  room mean                    90   24.656   24.546   +0.110
+  room mean                   120   23.193   23.017   +0.176
+  room mean                   150   22.016   21.785   +0.231
+  room mean                   180   21.036   20.760   +0.276
+  floor layer, y < 0.1 m    180   21.875   20.880
+  ceiling layer, y > 2.2 m  180   21.988   22.198
+  occupied zone             180   20.706   20.167
+
+The sleeper's zones, 90-180 s means    held    swing  held-swing
+  face  air, C                        21.296   20.180   +1.116   (70.3 and 68.3 F)
+  face  speed, m/s                    0.3948   0.6127  -0.2179
+  torso air, C                        21.725   19.987   +1.738   (71.1 and 68.0 F)
+  torso speed, m/s                    0.3459   0.7836  -0.4377
+  feet  air, C                        21.879   20.355   +1.524   (71.4 and 68.6 F)
+  feet  speed, m/s                    0.2800   0.4694  -0.1894
+  bed   air, C                        21.785   20.660   +1.124   (71.2 and 69.2 F)
+  bed   speed, m/s                    0.3480   0.5673  -0.2193
+
+The sleeper's zones at 180 s, C        held    swing  held-swing
+  face  air                           19.718   19.134   +0.584   (67.5 and 66.4 F)
+  torso air                           20.126   18.781   +1.344   (68.2 and 65.8 F)
+  feet  air                           20.310   16.174   +4.136   (68.6 and 61.1 F)
+
+The face in C, rounded, at t = 0 and every 0.375 s (481 writes)
+  held warmer 320, equal 145, swing warmer 16
+  the two first differ at 4.875 s
+  unrounded, from the first row (0.375 s on):
+    face  swing colder at 427 of 480 rows, 88.9% of 0.375-180 s; the lead changes 18 times; held last as cold or colder at 136.125 s
+          held as cold or colder at 53 rows
+    torso swing colder at 469 of 480 rows, 97.7% of 0.375-180 s; the lead changes 12 times; held last as cold or colder at 110.625 s
+          held as cold or colder at: 3, 22.5, 28.875, 29.25, 71.625, 72, 72.375, 75.75, 76.125, 110.25, 110.625
+    feet  swing colder at 353 of 480 rows, 73.5% of 0.375-180 s; the lead changes 12 times; held last as cold or colder at 147.375 s
+          held as cold or colder at 127 rows
+     0 s   held  32.00 C (32, 89.6 F)   swing  32.00 C (32, 89.6 F)
+     9 s   held  28.66 C (29, 83.6 F)   swing  27.68 C (28, 81.8 F)
+    30 s   held  28.02 C (28, 82.4 F)   swing  26.15 C (26, 79.1 F)
+    60 s   held  25.19 C (25, 77.3 F)   swing  24.83 C (25, 76.7 F)
+    90 s   held  22.89 C (23, 73.2 F)   swing  22.35 C (22, 72.2 F)
+   120 s   held  21.77 C (22, 71.2 F)   swing  20.56 C (21, 69.0 F)
+   150 s   held  20.90 C (21, 69.6 F)   swing  18.53 C (19, 65.4 F)
+   180 s   held  19.72 C (20, 67.5 F)   swing  19.13 C (19, 66.4 F)
+  held  lowest face reading 19.72 C at 180 s, 0.398 m/s
+  swing lowest face reading 17.75 C at 174 s, 0.779 m/s
+
+The surfaces at 180 s       heat into the air, W   mean surface, C     stored, kJ
+                                held    swing       held   swing      held    swing
+  unitSideWall              100.8     89.7     31.15   31.11    -10.93  -11.36
+  farWall                   253.1    238.0     29.42   29.56    -32.35  -30.57
+  sideWall                  285.8    315.7     30.83   30.74    -33.98  -36.02
+  floor                     170.8    226.4     30.71   30.58    -20.72  -21.92
+  ceiling                   210.3    152.0     30.81   31.08    -23.69  -18.74
+  total                    1020.9   1021.9                       -121.67 -118.62
+
+Checks                                         held          swing
+  10-180 s change of the air's internal energy, J     -109289.0      -112307.2
+  10-180 s change of the layers' stored heat, J       -120979.8      -118005.1
+  10-180 s heat removed by the unit, J                 230180.0       230180.0
+  unaccounted, % of the heat removed                    -0.0386        -0.0575
+  air mass, kg (first and last row)     15.512453194/15.512453194  15.512453194/15.512453194
+  air mass, largest relative change between rows       6.45e-14       6.44e-14
+  held: warmest air above the 32 C start, K (max over the rows): 0.149 (first-step row 0.149)
+  held: coldest air below the supply, K (max over the rows): 0.027
+  swing: warmest air above the 32 C start, K (max over the rows): 0.149 (first-step row 0.149)
+  swing: coldest air below the supply, K (max over the rows): 0.067

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Remove every run and the mesh; the committed inputs and results stay. The compiled wall
+# condition in $FOAM_USER_LIBBIN stays too.
+cd "${0%/*}" || exit 1
+rm -rf runs log.* scripts/__pycache__ src/storedLayerWall80/lnInclude src/storedLayerWall80/Make/linux*

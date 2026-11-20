@@ -1,0 +1,32 @@
+{
+  "_comment": "Read by scripts/make_mesh.py, scripts/unit_patches.py and scripts/make_case.py. The values are the solved runs'. Metres, kelvin, kg/s, watts, degrees, seconds.",
+  "unit": [[0, 2, 0, 0.24, 2.3, 0.4]],
+  "bed": [[1.6, 0, 0, 3.6, 0.56, 0.8]],
+  "_boxes": "x0 y0 z0 x1 y1 z1; the unit and the bed are each written as one closed STL by make_mesh.py",
+  "ports": {
+    "intake": {"y": 2.3, "x": [0.02, 0.22], "zMax": 0.38, "area": 0.076},
+    "outletFront": {"x": 0.24, "y": [2.0, 2.06], "zMax": 0.30, "area": 0.018},
+    "outletUnder": {"y": 2.0, "x": [0.20, 0.24], "zMax": 0.24, "area": 0.0096},
+    "outletArea": 0.0276,
+    "bedArea": 3.168,
+    "_ports": "faces of snappyHexMesh's unitWall patch moved into intake and outlet by unit_patches.py, by face centre; the outlet is the front strip and the underside strip as one patch; the areas are checked to 1%"
+  },
+  "massFlow": 0.0924,
+  "_massFlow": "kg/s through the half unit: 343 CFM, the MSZ-GS12NA's top cooling airflow (wet coil), at 32 C, halved",
+  "Q": -1354,
+  "_Q": "W into the half room, negative: the rated 12,000 BTU/h at a sensible heat factor of 0.77 (2.71 kW sensible), halved",
+  "T0": 305.15,
+  "pRef": 100000,
+  "yRef": 1.21,
+  "pRefPoint": "1.21 1.21 1.21",
+  "molWeight": 28.96,
+  "vane": {"top": 10.0, "bottom": 40.0, "period": 24.0, "testPeriod": 0.5},
+  "_vane": "the jet's angle below horizontal: held at the top, 10 degrees, throughout; swing a triangle wave top-bottom-top, 12 s each way, starting at the top at t = 0. The solved runs' 1 s tests used a 0.5 s cycle",
+  "layers": {
+    "walls": {"thickness": ".0127", "conductivity": ".1587", "rhoCp": "723991"},
+    "floor": {"thickness": ".019", "conductivity": ".106", "rhoCp": "1237411.2"},
+    "nLayers": 24,
+    "_layers": "storedLayerWall80 on unitSideWall, farWall, sideWall and ceiling (12.7 mm gypsum) and on the floor (19 mm wood), 24 layers each, starting at T0, adiabatic backs; written into 0/T as given"
+  },
+  "endTime": 180
+}
