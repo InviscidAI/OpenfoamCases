@@ -1,0 +1,79 @@
+Subject: a wall-mounted split unit heating a 15 C home office, vane up (15 deg) or down (60 deg)
+3-D half room, 0-180 s from rest; figures for the half room unless noted
+
+The unit                         up          down
+  mass flow in, kg/s (min-max)       0.1112000-0.1112000    0.1111999-0.1112000
+  intake out, kg/s at 180 s                    0.1112000              0.1112000
+  heat, W (min-max)                      2109.99-2110.01        2109.99-2110.00
+  supply less intake, K at 180 s                  18.880                 18.880
+  supply, C at 3 s                                 34.70                  34.02
+  supply, C at 180 s                               46.42                  46.62
+  jet angle, deg (min-max)                15.73 to 16.47       -60.58 to -60.30
+  time step, ms at 180 s                           2.660                  2.622
+  (min-max over the rows from 0.375 s; the first-step row at 0.0006 s is left out)
+
+The rooms, C                 t s      up      down   up-down
+  room mean                     3   15.495   15.520   -0.025
+  room mean                     9   16.336   16.414   -0.079
+  room mean                    30   18.881   19.015   -0.134
+  room mean                    60   21.698   21.835   -0.136
+  room mean                    90   23.788   23.961   -0.173
+  room mean                   120   25.417   25.601   -0.184
+  room mean                   150   26.697   27.184   -0.487
+  room mean                   180   27.741   28.655   -0.913
+  floor layer, y < 0.1 m    180   25.958   29.673
+  ceiling layer, y > 2.2 m  180   30.565   27.892
+  up   room mean first at or above 70 F (21.11 C): 53.25 s
+  down room mean first at or above 70 F (21.11 C): 51.75 s
+
+Seated zones, 90-180 s means      up       down    up-down
+  torso air, C                   27.263   26.615   +0.649   (81.1 and 79.9 F)
+  torso speed, m/s               0.3783   0.3050  +0.0733
+  head  air, C                   26.994   26.655   +0.339   (80.6 and 80.0 F)
+  head  speed, m/s               0.4526   0.4281  +0.0245
+  feet  air, C                   26.663   29.492   -2.829   (80.0 and 85.1 F)
+  feet  speed, m/s               0.3244   0.8113  -0.4868
+
+Seated zones at 180 s, C           up       down    up-down
+  torso air                      29.133   29.432   -0.299   (84.4 and 85.0 F, rounded 84 and 85)
+  head  air                      28.541   29.436   -0.895   (83.4 and 85.0 F, rounded 83 and 85)
+  feet  air                      28.629   31.876   -3.247   (83.5 and 89.4 F, rounded 84 and 89)
+
+The torso in F, rounded, at t = 0 and every 0.375 s (481 writes)
+  up above down 408, equal 52, down above up 21
+  down above up first at 167.25 s
+  the two first differ at 5.625 s
+  unrounded, which run's air is warmer, from the first row (0.375 s on):
+    torso down from 0.375 s, up from 5.625 s, down from 153.75 s, up from 156.375 s, down from 166.5 s, up from 171 s, down from 174.75 s
+    head  down from 0.375 s, up from 6 s, down from 118.875 s, up from 120.75 s, down from 153.75 s, up from 158.25 s, down from 162.75 s, up from 172.125 s, down from 175.125 s
+    feet  down from 0.375 s
+     0 s   up  59.0 F (59)   down  59.0 F (59)
+     9 s   up  63.4 F (63)   down  59.7 F (60)
+    30 s   up  68.2 F (68)   down  65.4 F (65)
+    60 s   up  73.4 F (73)   down  71.1 F (71)
+    90 s   up  77.2 F (77)   down  75.0 F (75)
+   120 s   up  79.2 F (79)   down  78.6 F (79)
+   150 s   up  83.1 F (83)   down  81.5 F (81)
+   171 s   up  84.0 F (84)   down  83.9 F (84)
+   180 s   up  84.4 F (84)   down  85.0 F (85)
+
+The surfaces at 180 s        heat into it, W     mean surface, C     stored, kJ
+                                up      down        up     down       up     down
+  unitSideWall              104.1    139.2     15.96   16.46     11.44   20.55
+  farWall                   263.6    218.4     17.62   16.97     35.57   25.58
+  sideWall                  403.3    334.8     16.62   16.56     46.84   48.13
+  floor                     203.0    554.3     16.19   18.81     25.22   88.11
+  ceiling                   741.6    298.5     20.16   16.79    108.87   34.56
+  total                    1715.5   1545.1                        227.95  216.91
+
+Checks                                         up            down
+  10-180 s rise of the air's internal energy, J      134674.0       144619.4
+  10-180 s rise of the layers' stored heat, J        224286.3       214291.3
+  10-180 s the unit's heat, J                        358699.8       358699.6
+  unaccounted, % of the unit's heat                    0.0726         0.0589
+  air mass, kg (first and last row)     16.654423620/16.654423620  16.654423620/16.654423620
+  air mass, largest relative change between rows     0.00e+00       0.00e+00
+  up: coldest air below 15 C at the first step (0.0006 s), K: 0.353 at (0.07, 2.31, 0.01) m; from 0.375 s on: 0.000
+  up: warmest air above the supply, K (max over the rows): 0.049
+  down: coldest air below 15 C at the first step (0.0006 s), K: 0.357 at (0.07, 2.31, 0.01) m; from 0.375 s on: 0.000
+  down: warmest air above the supply, K (max over the rows): 0.051

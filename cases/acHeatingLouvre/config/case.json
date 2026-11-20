@@ -1,0 +1,30 @@
+{
+  "_comment": "Read by scripts/make_mesh.py, scripts/unit_patches.py and scripts/make_case.py. The values are the solved runs'. Metres, kelvin, kg/s, watts.",
+  "unit": [[0, 2, 0, 0.24, 2.3, 0.4]],
+  "desk": [[3, 0.72, 0, 3.60, 0.76, 0.72]],
+  "_boxes": "x0 y0 z0 x1 y1 z1; the unit and the desk top are each written as one closed STL by make_mesh.py",
+  "ports": {
+    "intake": {"y": 2.3, "x": [0.02, 0.22], "zMax": 0.38, "area": 0.076},
+    "slotUp": {"x": 0.24, "y": [2.0, 2.06], "zMax": 0.30, "area": 0.018},
+    "slotDown": {"y": 2.0, "x": [0.16, 0.24], "zMax": 0.26, "area": 0.0208},
+    "deskArea": 0.9168,
+    "_ports": "faces of snappyHexMesh's unitWall patch moved into these patches by unit_patches.py, by face centre; the areas are checked to 1%"
+  },
+  "massFlow": 0.1112,
+  "_massFlow": "kg/s through the half unit: 390 CFM, the MSZ-GS12NA's top heating airflow, at 15 C, halved",
+  "Q": 2110,
+  "_Q": "W of heat into the half room: the rated 14,400 BTU/h (4.22 kW) at 47 F outside, halved",
+  "T0": 288.15,
+  "pRef": 100000,
+  "yRef": 1.21,
+  "molWeight": 28.96,
+  "direction": {"up": "0.96593 0.25882 0", "down": "0.5 -0.86603 0"},
+  "_direction": "the jet's direction at the active slot: 15 degrees above horizontal (up) or 60 degrees below (down)",
+  "layers": {
+    "walls": {"thickness": ".0127", "conductivity": ".1587", "rhoCp": "723991"},
+    "floor": {"thickness": ".019", "conductivity": ".106", "rhoCp": "1237411.2"},
+    "nLayers": 24,
+    "_layers": "storedLayerWall79 on unitSideWall, farWall, sideWall and ceiling (12.7 mm gypsum) and on the floor (19 mm wood), 24 layers each, starting at T0, adiabatic backs; written into 0/T as given"
+  },
+  "endTime": 180
+}
