@@ -211,8 +211,6 @@ question "Oven off: door open or shut?". Neither panel carries a number.
 - The parcels are moved through the planes' velocity after the solve, half of each frame's 0.625 s of flow a frame so
   that the plume's parcels do not jump; they are not solved particles, and where the air is nearly still they are not
   drawn.
-  Those two are the assumptions' as much as the solve's: the shut one is the assumed hour's, and the open one rests on
-  the unsourced steel mass.
 
 ## What it cannot
 
