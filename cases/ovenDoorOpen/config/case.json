@@ -1,0 +1,30 @@
+{
+  "_comment": "Read by scripts/make_mesh.py, scripts/kitchen_patches.py and scripts/make_case.py. The values are the solved runs'. Metres, kelvin, watts, kilograms. x across the kitchen from the symmetry plane through the range's centre, y up from the floor, z out from the range's wall.",
+  "kitchen": [1.84, 2.4, 3.04],
+  "solids": {
+    "both": [[0.38, -0.08, -0.08, 1.92, 0.92, 0.64], [0.4, 1.36, -0.08, 1.92, 2.08, 0.32], [-0.08, 1.68, -0.08, 0.4, 1.84, 0.48], [-0.08, 0.92, -0.08, 0.38, 1.2, 0.08]],
+    "shut": [[-0.08, -0.08, -0.08, 0.38, 0.92, 0.64]],
+    "open": [[-0.08, -0.08, -0.08, 0.38, 0.24, 0.64], [-0.08, 0.72, -0.08, 0.38, 0.92, 0.64], [0.3, 0.24, -0.08, 0.38, 0.72, 0.64], [-0.08, 0.24, -0.08, 0.3, 0.72, 0.1], [-0.08, 0.2, 0.64, 0.38, 0.24, 1.24]]
+  },
+  "_solids": "x0 y0 z0 x1 y1 z1, written as one closed STL, their union, by make_mesh.py; each box runs 0.08 m past the kitchen's faces it touches so that the castellated mesh cuts it cleanly at the walls and the symmetry plane. both: the base cabinets beside the range (x 0.38-1.84, 0.92 m high, 0.64 m deep), the wall cabinets (x 0.40-1.84, y 1.36-2.08, 0.32 m deep), the hood (x < 0.40, y 1.68-1.84, 0.48 m deep) and the range's backguard (x < 0.38, y 0.92-1.20, 0.08 m deep). shut: the range a solid block, x < 0.38 (0.76 m wide whole), 0.92 m high, 0.64 m deep. open: the range round its open cavity (x < 0.30, y 0.24-0.72, z 0.10-0.64) and the door lying flat in front of it, y 0.20-0.24, z 0.64-1.24",
+  "cavity": [0, 0.24, 0, 0.3, 0.72, 0.64],
+  "_cavity": "the cells with centres in this box start at the oven's 435.93 K in open, and the monitor leaves them out of the kitchen's zones; z from 0 as the monitor's mask (the cells there are solid)",
+  "expected_areas": {"open": {"cooktop": 0.2128, "rangeFront": 0.1904, "liner": 0.7272, "door": 0.4952, "mouth": 0.144}, "shut": {"cooktop": 0.2128, "rangeFront": 0.3496}},
+  "T0": 293.15,
+  "pRef": 100000,
+  "yRef": 1.2,
+  "molWeight": 28.96,
+  "pRefRequested": [1.2, 1.7, 2.4],
+  "_pRefRequested": "the pressure reference was asked at this point, which lies on cell faces; the solved runs use the nearest cell centre, (1.16, 1.72, 2.36), and the starting pressure there, 99993.93914821558 Pa, written into template/system/fvSolution",
+  "liner": {"mass": 6.5, "rho": 7850, "cp": 470, "k": 50, "nLayers": 2, "Tinit": 435.93},
+  "_liner": "the open oven's stored heat: 6.5 kg of steel for the half oven (13 kg whole, ours, not sourced: an enamelled liner of about 1 mm and two racks) on the liner's 0.7272 m2 in two layers, its thickness the mass over rho times the meshed area, starting at 325 F (162.78 C)",
+  "layers": {
+    "walls":   {"nLayers": 24, "thickness": 0.0127, "k": 0.1587, "rhoCp": 723991},
+    "ceiling": {"nLayers": 24, "thickness": 0.0127, "k": 0.1587, "rhoCp": 723991},
+    "floor":   {"nLayers": 24, "thickness": 0.019, "k": 0.106, "rhoCp": 1237411.2}
+  },
+  "_layers": "12.7 mm gypsum on the walls and the ceiling and 19 mm wood on the floor, stored in layers with an adiabatic back, starting at 293.15 K",
+  "shutQ": 118.5,
+  "_shutQ": "W from the shut range into the half kitchen, as one even heat flux over its front and cooktop: the oven's stored heat (about 247 W whole) given out over an hour, held at its 150 s value of 237 W whole",
+  "endTime": 300
+}

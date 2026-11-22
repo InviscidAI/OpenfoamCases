@@ -1,0 +1,84 @@
+Subject: an electric oven just switched off after roasting at 325 F, its door dropped open or kept shut,
+in a sealed kitchen at 20 C; a 3-D half kitchen on the range's centreline, 0-300 s from switch-off.
+Every heat, flow and mass is for the half kitchen; double it for the whole.
+
+The oven's heat above 20 C at switch-off (both runs): 442.562 kJ
+  steel, 6.5 kg at 162.78 C                436.193 kJ
+  the cavity's air                              6.369 kJ
+
+   t s   heat still in the oven, %   heat the kitchen has gained, kJ
+           open     shut             open      shut   open - shut
+     0   100.000  100.000            0.000     0.000    +0.000
+    15    97.860   99.598            9.471     1.778    +7.693
+    30    96.985   99.197           13.341     3.555    +9.786
+    60    95.267   98.393           20.948     7.110   +13.838
+   120    91.948   96.787           35.634    14.220   +21.414
+   150    90.333   95.984           42.782    17.775   +25.007
+   180    88.754   95.180           49.771    21.330   +28.441
+   240    85.685   93.574           63.351    28.440   +34.911
+   300    82.746   91.967           76.360    35.550   +40.810
+
+Air temperature, C, volume means outside the cavity: the whole kitchen, the floor layer (y < 0.1 m),
+the seated zone (0.1-1.1 m), standing head height (1.5-1.8 m), the ceiling layer (y > 2.2 m), a cook's
+head in front of the range (x < 0.3, y 1.5-1.8, z 1.0-1.4 m) and a head across the kitchen (z 2.0-2.4 m)
+   t s           kitchen           floor          seated            head         ceiling            cook          across
+             open   shut     open   shut     open   shut     open   shut     open   shut     open   shut     open   shut
+    15      20.77  20.17    20.06  20.06    20.12  20.09    20.48  20.20    23.15  20.46    20.20  20.05    20.06  20.05
+    30      21.03  20.31    20.12  20.09    20.20  20.13    21.08  20.26    23.18  21.13    23.66  20.09    22.86  20.09
+    60      21.50  20.55    20.22  20.14    20.33  20.20    22.47  20.65    23.62  21.55    23.50  20.61    22.65  20.80
+   120      22.28  21.00    20.35  20.21    20.74  20.33    23.43  21.49    24.21  22.17    24.39  21.47    23.37  21.41
+   150      22.59  21.20    20.38  20.24    21.05  20.40    23.69  21.83    24.50  22.40    25.59  21.64    23.67  21.75
+   180      22.86  21.39    20.41  20.27    21.35  20.49    23.91  22.04    24.78  22.64    25.63  21.85    23.88  21.86
+   240      23.32  21.73    20.41  20.30    21.88  20.72    24.31  22.45    25.23  23.02    24.81  22.26    24.27  22.40
+   300      23.65  22.01    20.39  20.31    22.33  20.95    24.60  22.76    25.51  23.36    25.55  22.60    24.61  22.66
+  open less shut at standing head height, K: +1.820 at 60 s, +1.858 at 150 s, +1.839 at 300 s
+
+Heat into the air, W (negative: out of the air into the surface)
+   t s        oven              walls            ceiling             floor
+           open     shut      open    shut      open    shut      open    shut
+    15   259.72   118.50   -24.70   -4.18   -71.04  -11.56    -0.19   -0.23
+    30   256.07   118.50   -15.01   -7.48   -64.24  -24.47    -0.38   -0.33
+    60   246.99   118.50   -27.43  -10.37   -76.75  -25.32    -0.66   -0.47
+   120   239.81   118.50   -42.73  -16.03   -81.46  -31.15    -1.03   -0.67
+   150   235.91   118.50   -46.78  -18.15   -89.24  -34.08    -1.12   -0.76
+   180   230.83   118.50   -48.96  -19.61   -92.88  -36.16    -1.18   -0.83
+   240   222.43   118.50   -55.83  -24.98   -98.53  -40.01    -1.17   -0.91
+   300   213.56   118.50   -62.44  -29.40  -103.53  -45.17    -1.10   -0.92
+  open: the liner's mean over 20-30 s 257.04 W; at 25 s the steel at 160.73 C and the cavity's air at 29.13 C, so 2.69 W/m2K over the liner's 0.7272 m2
+  shut: the front 73.662 W and the cooktop 44.838 W, 118.5000 W in all at 150 s
+
+Where the oven's heat is at 300 s, kJ                 open      shut
+  given to the kitchen                           76.360    35.550
+    in the walls' layers                         12.901     5.184
+    in the ceiling's layers                      26.548     9.662
+    in the floor's layers                         0.279     0.206
+    in the air outside the cavity                36.631    20.498
+  (the air's share is the remainder; the cavity's own air is counted with the oven)
+
+The open oven's mouth (x < 0.30, y 0.24-0.72 m at z = 0.64 m), gross flows, L/s, and heat carried out, W
+   t s   out, upper half   in, upper half   in, lower half   out, lower half   heat out   cavity C   out / Cd 0.6 opening flow
+    15            10.55             2.26             7.56              0.00      259.1      29.27    0.964
+    30            10.55             2.43             7.41              0.00      255.8      29.14    0.971
+    60            11.09             2.68             7.72              0.00      295.2      29.19    1.017
+   120            10.46             2.39             7.41              0.00      255.8      28.93    0.974
+   150             9.92             2.58             6.67              0.00      241.2      29.15    0.912
+   180             9.81             2.26             6.91              0.00      231.1      29.04    0.908
+   240             9.56             2.13             6.81              0.00      215.8      29.21    0.877
+   300             9.30             1.98             6.72              0.00      215.7      29.20    0.853
+
+Checks                                                   open          shut
+  end of the monitor, s                                 300.000       300.000
+  heat budget 10 s to the end, % of the oven's heat     +0.2229       +0.0287
+    (the change of the air's (cv/R) int p dV against the heat through every surface, each summed at every step)
+  air's mass in the t = 0 fields, kg                  14.273759     14.222461
+  air's mass at the first row, kg                     14.273746     14.222448
+  largest change of the air's mass from t = 0          8.96e-07      8.96e-07
+  largest change of the air's mass from the first row  0.00e+00      0.00e+00
+  open: the steel's heat lost less the liner's heat given, at the end, J   -0.987
+  open: coldest air 19.886 C at 6.875 s, (1.54, 2.02, 0.38) m; warmest 435.966548 K at 1.25 s, (0.07, 0.69, 0.43) m
+        time step 0.60-29.48 ms at the rows, 23.18 ms at the end
+  shut: coldest air 19.685 C at 71.25 s, (0.07, 1.23, 0.11) m; warmest 326.780010 K at 133.125 s, (0.01, 0.93, 0.09) m
+        time step 0.60-47.24 ms at the rows, 27.17 ms at the end
+  open: the liner's surface, hottest 435.930015 K (starts at 435.93 K)
+  open: log: 13896 steps, 'End' found, k bounded 6634 times (lowest -2.84e-05 m2/s2), final p_rgh solve at its 100-iteration cap 0 times
+  shut: log: 10966 steps, 'End' found, k bounded 2858 times (lowest -9.58e-06 m2/s2), final p_rgh solve at its 100-iteration cap 24 times

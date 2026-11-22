@@ -1,0 +1,16 @@
+FoamFile { version 2.0; format ascii; class dictionary; object planesT0; }
+libs ("libstoredLayerWall73.so");
+functions {
+planes
+{
+ type surfaces; libs (sampling);
+ writeControl adjustableRunTime; writeInterval 0.625;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; } }
+ interpolate true; fields (T U);
+ surfaces
+ {
+ section { type patch; patches (symmetry); interpolate true; }
+ head { type cuttingPlane; point (0 1.60 0); normal (0 1 0); interpolate true; }
+ }
+}
+}
