@@ -1,0 +1,16 @@
+{
+  "_comment": "Read by scripts/make_case.py. The values are the solved runs'. SI units, kelvin. x across the rows, y along them, z up.",
+  "hall": [15.6, 16.2, 3.2],
+  "T0": 293.15,
+  "_T0": "the air at rest and the supply, 20 C (68 F)",
+  "supplyMassFlow": 79.602,
+  "_supplyMassFlow": "kg/s through each end wall's grilles (supply_south, supply_north), 159.204 kg/s in all: exactly the racks' draw, 1,200 x 0.13267 (the operator's 1.00x)",
+  "serverMassFlow": 0.13267,
+  "_serverMassFlow": "kg/s through each server, intake and exhaust alike: 2 kW at a 15 K rise, 2000 / (1005 x 15)",
+  "serverRise": 15,
+  "_serverRise": "K added to each server's intake air at its exhaust (outletMappedUniformInlet offset)",
+  "rhoRef": 1.1883,
+  "_rhoRef": "kg/m3, the flowRate conditions' density for their starting value only; the solver uses the face density",
+  "returnBackflowT": 308.15,
+  "_returnBackflowT": "K of anything drawn back in through a ceiling return: the exhaust's 35 C"
+}

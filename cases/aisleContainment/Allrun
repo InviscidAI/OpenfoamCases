@@ -1,0 +1,78 @@
+#!/bin/bash
+# A hall of 120 air-cooled GPU racks switched on from rest, its hot aisles open or closed off by
+# panels from the rack tops to the ceiling and doors across their ends, cooling units along both
+# end walls supplying exactly what the racks draw, 0-120 s (buoyantPimpleFoam, k-omega SST).
+#
+#   ./Allrun [--planes] [--setup-only] open|contained [endTime [nProcs]]
+#
+# open          no containment: the exhaust can come back over the rack tops and round the rows
+# contained     each hot aisle closed: its air can leave only through its ceiling return
+# endTime       30, 60 or 120 s (default 120); the solved runs went 0-30, 30-60 and 60-120 s in
+#               three segments, each restarting from the last one's binary write, and so does this
+# nProcs        MPI ranks, 1, 2, 4, 8 or 16 (simple decomposition); by default 4, what both solved
+#               runs used
+# --planes      also write the monitor's planes (raw binary, about 3 GB a run over 120 s), which
+#               scripts/convert_planes.py turns into NPZ; the clip was made from them
+# --setup-only  compiles the monitor if needed, builds and checks the mesh, writes the run,
+#               decomposes it and stops before the solve
+#
+# The monitor (src/hallMonitor) is compiled into $FOAM_USER_LIBBIN as libhallMonitor.so. Each run
+# builds its own mesh in runs/<run>/ (scripts/make_mesh.py writes the polyMesh directly; checkMesh
+# must say Mesh OK) and scripts/make_case.py writes 0/, constant/ and system/ from template/ and
+# config/case.json. When both runs have reached 120 s, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/hallMonitor" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+planes=""
+setupOnly=false
+while [ "${1:-}" = "--planes" ] || [ "${1:-}" = "--setup-only" ]; do
+  [ "$1" = "--planes" ] && planes="--planes"
+  [ "$1" = "--setup-only" ] && setupOnly=true
+  shift
+done
+run=${1:-}
+end=${2:-120}
+nproc=${3:-4}
+case "$run" in open|contained) ;; *) echo "usage: $0 [--planes] [--setup-only] open|contained [30|60|120 [nProcs]]" >&2; exit 2 ;; esac
+case "$end" in 30|60|120) ;; *) echo "endTime must be 30, 60 or 120" >&2; exit 2 ;; esac
+
+# the monitor (wmake does nothing if it is up to date)
+wmake libso src/hallMonitor > log.wmake.hallMonitor 2>&1 \
+  || { echo "src/hallMonitor did not compile: log.wmake.hallMonitor" >&2; exit 1; }
+export LD_LIBRARY_PATH="$FOAM_USER_LIBBIN:${LD_LIBRARY_PATH:-}"
+
+r=runs/$run
+if [ ! -f "$r/mesh.npz" ]; then
+  rm -rf "$r"
+  python3 scripts/make_mesh.py "$run" "$r"
+fi
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc" $planes
+(
+  cd "$r"
+  checkMesh > log.checkMesh 2>&1
+  grep -q 'Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' log.checkMesh
+  decomposePar -fileHandler collated -force > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+# the three segments, as solved: start, end, write interval
+for seg in "0 30 30" "30 60 30" "60 120 60"; do
+  set -- $seg
+  [ "$2" -le "$end" ] || break
+  from=latestTime; [ "$1" = 0 ] && from=startTime
+  sed -i -E "s/startFrom [a-zA-Z]+;/startFrom $from;/; s/endTime [0-9.]+;/endTime $2;/; s/writeInterval [0-9.]+;/writeInterval $3;/" "$r/system/controlDict"
+  (
+    cd "$r"
+    mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > "log.buoyantPimpleFoam.$1-$2" 2>&1
+    grep -q '^End' "log.buoyantPimpleFoam.$1-$2" || { echo "$r: the $1-$2 s segment did not end, see log.buoyantPimpleFoam.$1-$2" >&2; exit 1; }
+  )
+  echo "solved: $r to $2 s"
+done
+solved() { [ -f "runs/$1/log.buoyantPimpleFoam.60-120" ] && grep -q '^End' "runs/$1/log.buoyantPimpleFoam.60-120"; }
+if solved open && solved contained; then
+  python3 scripts/extract_results.py runs results
+fi

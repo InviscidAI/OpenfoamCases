@@ -1,0 +1,40 @@
+Aisle containment: an open hall against hot aisles closed off, the same 120 racks from rest.
+From the monitors of the solved runs (src/hallMonitor), by scripts/extract_results.py.
+C and F; flows in m3/s; window means are ratios of time integrals.
+
+The top servers (s09-s10 of all 120 racks), flux-weighted mean intake:
+   14-15  s   open  25.0025 C ( 77.0 F)   contained  19.9946 C ( 68.0 F)   difference 5.0078 K
+   29-30  s   open  25.1364 C ( 77.2 F)   contained  19.9940 C ( 68.0 F)   difference 5.1424 K
+   59-60  s   open  25.1995 C ( 77.4 F)   contained  19.9941 C ( 68.0 F)   difference 5.2054 K
+  110-120 s   open  25.5875 C ( 78.1 F)   contained  19.9942 C ( 68.0 F)   difference 5.5933 K
+Every intake, flux-weighted mean:
+   29-30  s   open  22.2265 C ( 72.0 F)   contained  19.9980 C ( 68.0 F)
+  110-120 s   open  22.2286 C ( 72.0 F)   contained  19.9980 C ( 68.0 F)
+29-30 s:
+  open      hottest intake 36.5286 C (97.8 F) at L01_r12_s10; servers drawing above 27 C (80.6 F): 167 of 1200
+            rack 08 (the clip's section, y 6.3-6.9 m), top servers: the four inner rows 34.80 C (94.6 F), the two outer rows 21.22 C (70.2 F), all six 30.27 C (86.5 F)
+  contained hottest intake 20.0073 C (68.0 F) at L01_r09_s04; servers drawing above 27 C (80.6 F): 0 of 1200
+            rack 08 (the clip's section, y 6.3-6.9 m), top servers: the four inner rows 20.00 C (68.0 F), the two outer rows 20.00 C (68.0 F), all six 20.00 C (68.0 F)
+
+Gross flows over the rack tops and round the hot aisles' ends (six rows, three aisles):
+  open       29-30  s   over the tops hot to cold  20.926 (15.51% of the racks' draw 134.96), cold to hot   6.265;  ends out of the hot aisles   0.613, into them  14.543
+  open       59-60  s   over the tops hot to cold  20.844 (15.45% of the racks' draw 134.94), cold to hot   6.210;  ends out of the hot aisles   0.614, into them  14.536
+  open      110-120 s   over the tops hot to cold  20.847 (15.45% of the racks' draw 134.96), cold to hot   6.106;  ends out of the hot aisles   0.605, into them  14.615
+  contained  29-30  s   over the tops hot to cold   0.000 ( 0.00% of the racks' draw 133.94), cold to hot   0.000;  ends out of the hot aisles   0.000, into them   0.000
+  contained  59-60  s   over the tops hot to cold   0.000 ( 0.00% of the racks' draw 133.94), cold to hot   0.000;  ends out of the hot aisles   0.000, into them   0.000
+  contained 110-120 s   over the tops hot to cold   0.000 ( 0.00% of the racks' draw 133.94), cold to hot   0.000;  ends out of the hot aisles   0.000, into them   0.000
+
+Checks:
+  open      0-120 s, 961 monitor rows, at most 0.1328 s apart
+            servers' heat over 20-30 s 2.400000 MW, mean rise 14.999997 K
+            heat budget over 10-120 s closes to +0.1416% of the servers' heat (2.399997 MW; stored -0.68 W)
+            largest inflow through the ceiling returns after 1 s 0 kg/s
+            coldest air after 1 s 19.9809 C, warmest air 50.8242 C, largest Courant number after 1 s 1.0008
+            logs log.buoyantPimpleFoam.0-30, log.buoyantPimpleFoam.30-60, log.buoyantPimpleFoam.60-120: 10351 steps, 0 bounding messages, 0 fatal errors, largest final p_rgh residual at a step's end 1e-07
+  contained 0-120 s, 961 monitor rows, at most 0.1392 s apart
+            servers' heat over 20-30 s 2.400000 MW, mean rise 15.000000 K
+            heat budget over 10-120 s closes to +0.1924% of the servers' heat (2.400000 MW; stored -3.16 W)
+            largest inflow through the ceiling returns after 1 s 0 kg/s
+            coldest air after 1 s 19.9746 C, warmest air 35.0083 C, largest Courant number after 1 s 1.0003
+            the closed cold side's air mass 505.884986 kg at the first row, 505.885515 kg at the end, largest drift 0.000899%
+            logs log.buoyantPimpleFoam.0-30, log.buoyantPimpleFoam.30-60, log.buoyantPimpleFoam.60-120: 9684 steps, 0 bounding messages, 0 fatal errors, largest final p_rgh residual at a step's end 1e-07
