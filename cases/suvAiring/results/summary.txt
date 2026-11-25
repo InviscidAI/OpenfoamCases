@@ -1,0 +1,73 @@
+fourWindows: 361 monitor rows, 0.0001 to 45 s; the cabin starts with 66840.5 J above 310.93 K (from the mapped start)
+doorFan: 361 monitor rows, 0.0001 to 45 s; the cabin starts with 66842.1 J above 310.93 K (from the mapped start)
+
+Head-height air, the mean of the eight head boxes (20 x 24 x 20 cm at z 1.40-1.60 m), F; rows 1/2/3; the cabin's volume mean, F
+  t, s | fourWindows                          | doorFan                             
+0.0001 | 116.01  116.01/116.01/116.01  cabin 116.01 | 116.01  116.01/116.01/116.01  cabin 116.01
+   0.5 | 115.99  116.01/115.96/116.01  cabin 115.75 | 112.35  115.91/106.32/116.00  cabin 114.83
+     1 | 112.37  109.45/110.68/116.01  cabin 114.59 | 111.04  114.87/103.44/116.08  cabin 114.41
+     2 | 107.32  104.17/100.73/116.00  cabin 111.84 | 109.44  113.03/102.62/113.87  cabin 113.57
+     3 | 106.88  102.58/101.04/115.58  cabin 111.11 | 110.32  112.94/104.31/114.60  cabin 113.11
+     5 | 106.55  101.83/100.79/115.47  cabin 110.74 | 111.54  113.27/108.75/113.17  cabin 112.48
+    10 | 106.88  102.60/100.54/116.08  cabin 109.98 | 109.64  110.68/105.76/112.81  cabin 110.78
+    15 | 106.45  102.71/100.60/114.80  cabin 109.51 | 108.29  109.39/103.96/111.88  cabin 109.78
+    18 | 106.24  102.22/100.67/114.49  cabin 109.29 | 107.95  109.04/103.67/111.49  cabin 109.47
+    20 | 106.14  102.28/100.68/114.17  cabin 109.16 | 109.72  109.15/108.08/111.74  cabin 110.03
+    30 | 106.24  102.31/100.65/114.46  cabin 108.78 | 111.06  110.98/110.39/111.78  cabin 111.16
+    45 | 105.87  102.21/100.63/113.54  cabin 108.47 | 112.50  111.91/112.26/113.13  cabin 111.93
+the heads' means cross after 0.5 s at: 1.172 s (linear between monitor rows); fourWindows is the cooler from then to 45 s
+
+Outside air (the tracer) at the heads and in the cabin, % of the mass; the starting excess heat gone, %
+   0.5 | fourWindows  heads   0.1  cabin   1.7  gone   1.6 | doorFan      heads  23.3  cabin   7.6  gone   7.3
+     1 | fourWindows  heads  23.2  cabin   9.3  gone   8.8 | doorFan      heads  32.4  cabin  11.1  gone   9.8
+     2 | fourWindows  heads  55.0  cabin  27.4  gone  25.9 | doorFan      heads  42.3  cabin  16.7  gone  15.0
+     3 | fourWindows  heads  58.2  cabin  32.9  gone  30.4 | doorFan      heads  37.6  cabin  20.6  gone  17.9
+     5 | fourWindows  heads  60.4  cabin  37.2  gone  32.7 | doorFan      heads  31.1  cabin  26.8  gone  21.7
+    10 | fourWindows  heads  59.7  cabin  47.8  gone  37.3 | doorFan      heads  48.1  cabin  44.2  gone  32.2
+    15 | fourWindows  heads  65.3  cabin  55.3  gone  40.2 | doorFan      heads  60.7  cabin  56.2  gone  38.3
+    18 | fourWindows  heads  67.6  cabin  59.0  gone  41.6 | doorFan      heads  64.9  cabin  61.2  gone  40.3
+    20 | fourWindows  heads  68.6  cabin  61.2  gone  42.4 | doorFan      heads  60.4  cabin  61.4  gone  36.8
+    30 | fourWindows  heads  71.4  cabin  68.8  gone  44.7 | doorFan      heads  61.1  cabin  62.2  gone  29.7
+    45 | fourWindows  heads  77.3  cabin  76.0  gone  46.6 | doorFan      heads  59.9  cabin  63.4  gone  25.0
+
+Gross flow each way through the openings, L/s (in / out), the mean over each period
+  fourWindows    0.5-1    s  frontLeft 501/0, rearLeft 498/0, frontRight 0/532, rearRight 0/467; in all 999 L/s, 8.72 cabin volumes a minute
+  fourWindows      1-3    s  frontLeft 615/1, rearLeft 612/0, frontRight 0/633, rearRight 0/595; in all 1227 L/s, 10.72 cabin volumes a minute
+  fourWindows      3-18   s  frontLeft 686/2, rearLeft 692/0, frontRight 0/701, rearRight 0/678; in all 1377 L/s, 12.03 cabin volumes a minute
+  fourWindows   18.5-30   s  frontLeft 686/2, rearLeft 693/0, frontRight 0/701, rearRight 0/678; in all 1379 L/s, 12.04 cabin volumes a minute
+  fourWindows     30-45   s  frontLeft 685/2, rearLeft 693/0, frontRight 0/703, rearRight 0/677; in all 1378 L/s, 12.03 cabin volumes a minute
+  doorFan        0.5-1    s  rearLeft 487/154, doorAperture 223/536; in all 710 L/s, 6.21 cabin volumes a minute
+  doorFan          1-3    s  rearLeft 678/209, doorAperture 230/716; in all 908 L/s, 7.93 cabin volumes a minute
+  doorFan          3-18   s  rearLeft 629/176, doorAperture 224/678; in all 853 L/s, 7.45 cabin volumes a minute
+  doorFan       18.5-30   s  rearLeft 11/13, doorAperture 0/0; in all 11 L/s, 0.10 cabin volumes a minute
+  doorFan         30-45   s  rearLeft 8/8, doorAperture 0/0; in all 8 L/s, 0.07 cabin volumes a minute
+
+Heat into the cabin's air and where it went, kJ: from the cabin's hot surfaces, carried out by the air through the openings (net), diffused out through the openings' planes, and the change in the cabin's air
+  fourWindows  1-45 s: surfaces 57.49, out with the air 82.62, diffused out 0.16, change in the air -25.28; the full energy budget closes to +22.99 J, +0.040% of the surfaces' heat
+  fourWindows  18-45 s: surfaces 37.65, out with the air 40.89, diffused out 0.12, change in the air -3.35; the full energy budget closes to +2.31 J, +0.006% of the surfaces' heat
+  doorFan      1-45 s: surfaces 35.98, out with the air 42.26, diffused out 3.04, change in the air -10.13; the full energy budget closes to -495.88 J, -1.378% of the surfaces' heat
+  doorFan      18-45 s: surfaces 13.44, out with the air 1.09, diffused out 2.31, change in the air +10.22; the full energy budget closes to +3.49 J, +0.026% of the surfaces' heat
+  doorFan diffusion through the plane of the door (shut from 18 s) at 10 s: 15.78 W
+  doorFan diffusion through the plane of the door (shut from 18 s) at 18 s: 102.03 W
+  doorFan diffusion through the plane of the door (shut from 18 s) at 30 s: 45.72 W
+  doorFan diffusion through the plane of the door (shut from 18 s) at 45 s: 60.93 W
+
+doorFan, air moved each swing, m3: the rear-left window in / out, the door's aperture in / out
+  swing  1,   0.0- 1.2 s: window 0.7961 / 0.2000, door 0.2390 / 0.8373
+  swing  2,   1.2- 2.4 s: window 0.7733 / 0.2068, door 0.2739 / 0.8426
+  swing  3,   2.4- 3.6 s: window 0.7657 / 0.2062, door 0.2610 / 0.8235
+  swing  4,   3.6- 4.8 s: window 0.7742 / 0.2054, door 0.2622 / 0.8344
+  swing  5,   4.8- 6.0 s: window 0.7748 / 0.2053, door 0.2613 / 0.8345
+  swing  6,   6.0- 7.2 s: window 0.7763 / 0.2049, door 0.2583 / 0.8336
+  swing  7,   7.2- 8.4 s: window 0.7755 / 0.2056, door 0.2608 / 0.8349
+  swing  8,   8.4- 9.6 s: window 0.7745 / 0.2052, door 0.2605 / 0.8341
+  swing  9,   9.6-10.8 s: window 0.7747 / 0.2050, door 0.2586 / 0.8328
+  swing 10,  10.8-12.0 s: window 0.7717 / 0.2052, door 0.2598 / 0.8310
+  swing 11,  12.0-13.2 s: window 0.7746 / 0.2046, door 0.2599 / 0.8348
+  swing 12,  13.2-14.4 s: window 0.7770 / 0.2047, door 0.2568 / 0.8340
+  swing 13,  14.4-15.6 s: window 0.7762 / 0.2052, door 0.2579 / 0.8338
+  swing 14,  15.6-16.8 s: window 0.7748 / 0.2054, door 0.2586 / 0.8330
+  swing 15,  16.8-18.0 s: window 0.7732 / 0.2056, door 0.2605 / 0.8331
+
+fourWindows: hottest cabin air 325.216 K, coolest 310.924 K over the run; the dashboard, seats and trim give 288.3, 533.6 and 609.5 W at 45 s
+doorFan: hottest cabin air 329.256 K, coolest 310.916 K over the run; the dashboard, seats and trim give 88.8, 158.9 and 57.0 W at 45 s

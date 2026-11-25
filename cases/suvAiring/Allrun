@@ -1,0 +1,70 @@
+#!/bin/bash
+# Airing out a hot full-size SUV in a light crosswind: all four door windows down, or the rear
+# window behind the driver down and the front passenger door swung fifteen times, then shut.
+# The cabin at 116 F, outside at 100 F, the dashboard and seats held at 157 and 123 F, a neutral
+# log-law breeze of 2.5 m/s at 1.5 m from the driver's side, 0-45 s from the moment the windows
+# open (buoyantPimpleFoam, k-omega SST).
+#
+#   ./Allrun fourWindows|doorFan [nProcs]
+#   ./Allrun --setup-only fourWindows|doorFan [nProcs]
+#
+# fourWindows   all four door windows open from t = 0, every door shut.
+# doorFan       the rear-left window open from t = 0; the front passenger door, a drag term on the
+#               fixed mesh, swung open to 60 degrees and shut 15 times, 1.2 s a swing, then held
+#               shut from 18 s.
+# nProcs        MPI ranks; by default 4, what both solved runs and the precursor used.
+# --setup-only  builds the meshes and solves the precursor if needed, writes the run, writes its
+#               t = 0 planes, decomposes it and stops before the solve.
+#
+# The first call builds all three meshes in runs/mesh/ (scripts/build.py: blockMesh, a serial
+# castellated snappyHexMesh of the whole domain, then the car's solid cells cut out with topoSet
+# and subsetMesh, the patches, the openings' face zones and the head boxes, checkMesh), then
+# solves the precursor in runs/precursor/ (scripts/precursor.py: the wind round the shut car,
+# 640 iterations of buoyantSimpleFoam and 6 s of buoyantPimpleFoam, isothermal at 310.93 K) and
+# maps its last write onto both run meshes as their windy start (scripts/wind.py). The precursor
+# is shared by both runs. scripts/run_case.py then writes runs/<run>/ (scripts/prepare.py) and
+# solves it in two segments, as the solved runs went: 0-10 s with the fields written every 10 s,
+# then on from the 10 s fields to 45 s, written every 5 s. The door's drag term (scripts/door.C)
+# and the monitor (scripts/diagnostics.C) are coded and compiled when the solve starts. When
+# both runs have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  fourWindows|doorFan) nproc=${2:-4} ;;
+  *) echo "usage: $0 [--setup-only] fourWindows|doorFan [nProcs]" >&2; exit 2 ;;
+esac
+export NPROCS=$nproc
+
+# the background mesh, the two run meshes and the precursor's outside-only mesh
+if [ ! -f runs/mesh/precursor/mesh_arrays.npz ]; then
+  rm -rf runs/mesh
+  (cd scripts && python3 build.py) > log.build 2>&1 || { echo "meshing failed, see log.build" >&2; exit 1; }
+  grep -h -E '^ +cells:|Mesh OK|Failed' runs/mesh/{fourWindows,doorFan,precursor}/log.checkMesh
+fi
+
+# the wind round the shut car, and the windy start of both runs
+if [ ! -f runs/mesh/doorFan/wind_start.npz ]; then
+  rm -rf runs/precursor
+  (cd scripts && python3 precursor.py) > log.precursor 2>&1 || { echo "the precursor failed, see log.precursor" >&2; exit 1; }
+fi
+
+r=runs/$run
+if $setupOnly; then
+  (cd scripts && python3 run_case.py "$run" --ranks "$nproc" --end 10 --setup-only)
+  exit 0
+fi
+(cd scripts && python3 run_case.py "$run" --ranks "$nproc" --end 10) > "log.$run" 2>&1 \
+  || { echo "$r: 0-10 s failed, see log.$run and $r/log.buoyantPimpleFoam" >&2; exit 1; }
+(cd scripts && python3 run_case.py "$run" --ranks "$nproc" --resume --end 45 --write-interval 5) >> "log.$run" 2>&1 \
+  || { echo "$r: 10-45 s failed, see log.$run and $r/log.buoyantPimpleFoam" >&2; exit 1; }
+echo "solved: $r"
+solved() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && [ "$(grep -c '^End' "runs/$1/log.buoyantPimpleFoam")" -ge 2 ]; }
+if solved fourWindows && solved doorFan; then
+  python3 scripts/extract_results.py runs results
+fi
