@@ -1,0 +1,76 @@
+#!/bin/bash
+# A gas furnace against a heat pump heating the same US living room on a cold evening, the same
+# heat into the room over every 744 s, a 3-D half room on the register's centreline with
+# heat-storing walls, floor, ceiling and sofa, from rest to 1488 s (buoyantPimpleFoam,
+# k-omega SST).
+#
+#   ./Allrun furnace|heatPump [nProcs]
+#   ./Allrun --setup-only furnace|heatPump [nProcs]
+#
+# furnace       0.02830 kg/s at 32 K above the return, 438 s on and 306 s off, twice (7:18 on,
+#               5:06 off), the return's backflow at the return's own outward mean temperature.
+# heatPump      0.03555 kg/s at 15 K above the return, from t = 0 to the end.
+# nProcs        MPI ranks; by default 4, what both solved runs used.
+# --setup-only  compiles the two boundary conditions if needed, builds the mesh if needed, writes
+#               the run, writes the t = 0 planes, decomposes the run and stops before the solve.
+#
+# Both runs go straight through from rest to 1488 s in one segment, as the solved runs did.
+#
+# The walls, the floor, the ceiling, the sofa and the window are radLayerWall (src/radLayerWall85,
+# compiled into $FOAM_USER_LIBBIN as libwall85.so) and the furnace's return is
+# returnMeanTemperature (src/returnMeanTemperature, libreturn85.so). The mesh is shared: the first
+# call builds it in runs/mesh/ (scripts/make_mesh.py: blockMesh, topoSet, subsetMesh, createPatch;
+# a few seconds), then checkMesh. scripts/make_case.py writes runs/<run>/ from it, template/ and
+# the scripts' code. The register's temperature and the monitor are coded and compiled into the
+# run's dynamicCode when the solve starts. When both runs have solved,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  furnace|heatPump) nproc=${2:-4} ;;
+  *) echo "usage: $0 [--setup-only] furnace|heatPump [nProcs]" >&2; exit 2 ;;
+esac
+
+# the boundary conditions (wmake does nothing if they are up to date)
+for lib in radLayerWall85 returnMeanTemperature; do
+  wmake libso src/$lib > log.wmake.$lib 2>&1 \
+    || { echo "src/$lib did not compile: log.wmake.$lib" >&2; exit 1; }
+done
+
+mesh=runs/mesh
+mkdir -p runs
+if [ ! -f "$mesh/cells.npz" ]; then
+  rm -rf "$mesh"
+  python3 scripts/make_mesh.py "$mesh" || { echo "$mesh: meshing failed, see its logs" >&2; exit 1; }
+  ( cd "$mesh" && checkMesh > log.checkMesh 2>&1 )
+  grep -q 'Mesh OK' "$mesh/log.checkMesh" || { rm -f "$mesh/cells.npz"; echo "$mesh: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  grep -E '^ +cells:' "$mesh/log.checkMesh"
+fi
+
+r=runs/$run
+python3 scripts/make_case.py "$run" "$r" --nprocs "$nproc" --mesh "$mesh"
+(
+  cd "$r"
+  # the section, the three plans and the window and floor at t = 0, before the solve writes its first
+  postProcess -dict system/planesT0 -time 0 -fields '(T U)' > log.planesT0 2>&1
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r"
+solved() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && grep -q '^End' "runs/$1/log.buoyantPimpleFoam"; }
+if solved furnace && solved heatPump; then
+  python3 scripts/extract_results.py runs results
+fi

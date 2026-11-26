@@ -1,0 +1,72 @@
+Furnace against heat pump, the half living room (4.5 x 2.4 x 2.4 m; the whole room is 4.8 m wide).
+All heats and flows are the half room's; double them for the whole. From scripts/extract_results.py.
+Air at the start: 30.385030 kg at 292.04 K, hydrostatic.
+
+== furnace: 2381 monitor rows, 0.0006 to 1487.5 s
+  time s | air K | sofa head K | sofa feet K | head-feet K (F) | occupied seated head K | occupied ankle K | heat W | return in kg/s at K
+   15.000 | 292.363 | 292.041 | 292.040 | 0.001 (0.00) | 292.041 | 292.040 | 910.13 | 0
+   60.000 | 293.230 | 292.314 | 291.638 | 0.676 (1.22) | 292.490 | 291.847 | 910.13 | 0
+  150.000 | 294.705 | 295.121 | 292.052 | 3.069 (5.52) | 295.005 | 291.950 | 910.13 | 0
+  300.000 | 296.572 | 296.862 | 292.489 | 4.373 (7.87) | 296.803 | 292.614 | 910.12 | 0
+  435.000 | 297.728 | 297.960 | 293.984 | 3.977 (7.16) | 297.863 | 294.081 | 910.13 | 0
+  438.125 | 297.751 | 297.988 | 293.964 | 4.024 (7.24) | 297.884 | 294.078 | 853.25 | 0
+  440.000 | 297.733 | 298.006 | 293.983 | 4.023 (7.24) | 297.892 | 294.066 | 0.00 | 0.003682 at 295.573
+  500.000 | 297.024 | 297.437 | 292.820 | 4.617 (8.31) | 297.242 | 294.010 | -0.00 | 0.004749 at 295.523
+  600.000 | 296.193 | 296.478 | 293.692 | 2.786 (5.01) | 296.492 | 293.639 | -0.00 | 0.003470 at 294.349
+  740.000 | 295.285 | 295.487 | 293.001 | 2.486 (4.48) | 295.486 | 293.129 | -0.00 | 0.003033 at 293.361
+  743.750 | 295.264 | 295.477 | 292.987 | 2.490 (4.48) | 295.463 | 293.118 | -0.00 | 0.003097 at 293.419
+  800.000 | 296.061 | 295.862 | 292.728 | 3.134 (5.64) | 295.991 | 293.047 | 910.13 | 0
+  1180.000 | 299.202 | 299.391 | 295.604 | 3.787 (6.82) | 299.355 | 295.361 | 910.13 | 0
+  1181.875 | 299.211 | 299.403 | 295.595 | 3.808 (6.85) | 299.365 | 295.366 | 910.13 | 0
+  1240.000 | 298.411 | 298.911 | 293.808 | 5.103 (9.19) | 298.650 | 294.915 | -0.00 | 0.005919 at 296.846
+  1300.000 | 297.793 | 298.194 | 294.576 | 3.618 (6.51) | 298.061 | 294.698 | -0.00 | 0.004604 at 295.872
+  1487.500 | 296.301 | 296.484 | 293.783 | 2.700 (4.86) | 296.536 | 293.703 | -0.00 | 0.003366 at 294.307
+  whole run (0-1487.5 s): sofa head mean 296.9474 K (74.84 F), feet mean 293.6008 K (68.81 F), head-feet mean 3.3466 K (6.02 F), head-feet 0.000 to 5.192 K (0.00 to 9.35 F); sofa head 66.00 to 79.35 F
+  last cycle (744-1487.5 s): sofa head mean 297.8752 K (76.51 F), feet mean 294.2593 K (70.00 F), head-feet mean 3.6159 K (6.51 F), head-feet 2.451 to 5.192 K (4.41 to 9.35 F); sofa head 72.18 to 79.35 F
+  sofa head after 60 s: 66.50 to 79.35 F
+  the room's mean air: 292.0400 K at the start, 296.3011 K at 1487.5 s, up 4.2611 K (7.67 F)
+  supply: register 324.044 K (123.6 F) at 15 s, 328.897 K (132.3 F) at most while it blows
+  fastest air in the sofa's boxes: 0.1798 m/s; mean speed at the feet 0.0212 m/s, at the head 0.0391 m/s over the run
+  heat above the return: 398641.69 J over 0-744 s, 398642.93 J over 744-1488 s
+  return inflow in 976 rows (439.375-1487.5 s), at most 0.006487 kg/s; its temperature within 0.01769 K of the return's outward mean
+  energy budget: residual +37.029 J at 1487.5 s; over 10-1487.5 s it closes to +3.515e-05 of the heat given (+0.0035%)
+  air mass budget: residual -2.394e-05 kg (-7.88e-07 of the air)
+  coldest and hottest air over the run: 288.1645 and 328.9794 K
+  final pressure solves at their 100-iteration cap: 39, the last at 0.1350073499 s
+
+== heatPump: 2381 monitor rows, 0.0006 to 1487.5 s
+  time s | air K | sofa head K | sofa feet K | head-feet K (F) | occupied seated head K | occupied ankle K | heat W | return in kg/s at K
+   15.000 | 292.221 | 292.041 | 292.040 | 0.001 (0.00) | 292.041 | 292.040 | 535.92 | 0
+   60.000 | 292.710 | 292.989 | 291.574 | 1.416 (2.55) | 292.717 | 291.851 | 535.92 | 0
+  150.000 | 293.532 | 293.704 | 291.937 | 1.767 (3.18) | 293.619 | 291.984 | 535.91 | 0
+  300.000 | 294.524 | 294.611 | 292.302 | 2.308 (4.16) | 294.558 | 292.653 | 535.91 | 0
+  435.000 | 295.121 | 295.141 | 293.045 | 2.097 (3.77) | 295.114 | 293.410 | 535.91 | 0
+  438.125 | 295.132 | 295.165 | 293.043 | 2.122 (3.82) | 295.125 | 293.414 | 535.92 | 0
+  440.000 | 295.139 | 295.174 | 293.053 | 2.121 (3.82) | 295.130 | 293.417 | 535.91 | 0
+  500.000 | 295.339 | 295.331 | 293.253 | 2.078 (3.74) | 295.314 | 293.598 | 535.91 | 0
+  600.000 | 295.619 | 295.663 | 293.547 | 2.116 (3.81) | 295.599 | 293.896 | 535.92 | 0
+  740.000 | 295.937 | 295.983 | 293.919 | 2.064 (3.72) | 295.935 | 294.216 | 535.92 | 0
+  743.750 | 295.944 | 296.016 | 293.914 | 2.102 (3.78) | 295.944 | 294.212 | 535.91 | 0
+  800.000 | 296.052 | 296.135 | 293.896 | 2.239 (4.03) | 296.071 | 294.197 | 535.91 | 0
+  1180.000 | 296.624 | 296.735 | 294.348 | 2.388 (4.30) | 296.651 | 294.596 | 535.91 | 0
+  1181.875 | 296.626 | 296.731 | 294.356 | 2.375 (4.28) | 296.653 | 294.600 | 535.91 | 0
+  1240.000 | 296.701 | 296.829 | 294.405 | 2.424 (4.36) | 296.743 | 294.615 | 535.91 | 0
+  1300.000 | 296.776 | 296.895 | 294.505 | 2.391 (4.30) | 296.810 | 294.691 | 535.91 | 0
+  1487.500 | 297.000 | 297.091 | 294.633 | 2.458 (4.42) | 297.046 | 294.838 | 535.92 | 0
+  whole run (0-1487.5 s): sofa head mean 295.6172 K (72.44 F), feet mean 293.5082 K (68.64 F), head-feet mean 2.1090 K (3.80 F), head-feet -0.000 to 2.472 K (-0.00 to 4.45 F); sofa head 66.00 to 75.14 F
+  last cycle (744-1487.5 s): sofa head mean 296.6035 K (74.22 F), feet mean 294.2671 K (70.01 F), head-feet mean 2.3364 K (4.21 F), head-feet 2.054 to 2.472 K (3.70 to 4.45 F); sofa head 73.17 to 75.14 F
+  sofa head after 60 s: 67.61 to 75.14 F
+  the room's mean air: 292.0400 K at the start, 296.9995 K at 1487.5 s, up 4.9595 K (8.93 F)
+  supply: register 307.044 K (93.0 F) at 15 s, 311.314 K (100.7 F) at most while it blows
+  fastest air in the sofa's boxes: 0.1746 m/s; mean speed at the feet 0.0168 m/s, at the head 0.0665 m/s over the run
+  heat above the return: 398191.87 J over 0-744 s, 398721.18 J over 744-1488 s
+  no air came in through the return after the first row (largest inflow 0 kg/s)
+  energy budget: residual +113.951 J at 1487.5 s; over 10-1487.5 s it closes to +1.398e-04 of the heat given (+0.0140%)
+  air mass budget: residual -2.372e-05 kg (-7.81e-07 of the air)
+  coldest and hottest air over the run: 288.1514 and 311.3248 K
+  final pressure solves at their 100-iteration cap: 38, the last at 0.1350073499 s
+
+== furnace against heatPump
+  heat over 0-744 s: furnace 398.642 kJ, heat pump 398.192 kJ, apart by 0.113% of the heat pump's
+  heat over 744-1488 s: furnace 398.643 kJ, heat pump 398.721 kJ, apart by 0.020% of the heat pump's
+  after 60 s the furnace's head-feet gap is the larger at 98.3% of the furnace's rows, by -1.33 to +4.97 F

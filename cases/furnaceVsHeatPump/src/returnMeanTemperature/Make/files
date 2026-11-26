@@ -1,0 +1,2 @@
+returnMeanTemperature.C
+LIB = $(FOAM_USER_LIBBIN)/libreturn85

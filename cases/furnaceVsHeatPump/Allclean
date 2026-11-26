@@ -1,0 +1,5 @@
+#!/bin/bash
+# Remove both runs and the mesh; the committed inputs and results stay. The compiled boundary
+# conditions in $FOAM_USER_LIBBIN stay too.
+cd "${0%/*}" || exit 1
+rm -rf runs log.* scripts/__pycache__ src/*/lnInclude src/*/Make/linux*

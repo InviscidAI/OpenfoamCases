@@ -1,0 +1,8 @@
+section { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 0.625; surfaceFormat vtk; writeCompression on; formatOptions { vtk { format ascii; } } interpolate false; fields (T U); surfaces { section { type cuttingPlane; point (0 0 0.0125); normal (0 0 1); interpolate false; } } }
+plans { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 2.5; surfaceFormat vtk; writeCompression on; formatOptions { vtk { format ascii; } } interpolate true; fields (T U); surfaces {
+ ankle { type cuttingPlane; point (0 0.11 0); normal (0 1 0); interpolate true; }
+ seatedHead { type cuttingPlane; point (0 1.12 0); normal (0 1 0); interpolate true; }
+ standingHead { type cuttingPlane; point (0 1.72 0); normal (0 1 0); interpolate true; }
+} }
+wallPanel { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 2.5; surfaceFormat vtk; writeCompression on; formatOptions { vtk { format ascii; } } interpolate false; fields (T); surfaces { window { type patch; patches (window); interpolate false; } floor { type patch; patches (floor); interpolate false; } } }
+cycleBoundary { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 744; surfaceFormat vtk; writeCompression on; formatOptions { vtk { format ascii; } } interpolate false; fields (T U); surfaces { section { type cuttingPlane; point (0 0 0.0125); normal (0 0 1); interpolate false; } } }
