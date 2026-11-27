@@ -42,7 +42,7 @@ still air four windows exchanged about 106 L/s and the door-fan car was ahead fo
 
 x runs rearward from the front bumper, y towards the passenger side (the right in a US car, so the driver sits at
 -y) and z up from the ground; metres. Every edge lies on the 4 cm grid of the cabin's mesh. The sizes are rounded
-from the 2025 Chevrolet Suburban's published ones (the GMC Yukon XL is the same body); **the windows, the door and
+from the published ones of a 2025 full-size three-row SUV; **the windows, the door and
 the inside are our estimates from those overall sizes, not measurements**.
 
 | | value | from |
@@ -252,9 +252,9 @@ the door?". Each panel carries one number: the heads' mean, rounded to the neare
   (https://news.asu.edu/20180516-discoveries-asu-study-hot-cars-can-hit-deadly-temperatures-within-one-hour): on hot
   days "in the 100s" in Tempe, Arizona, cars parked in the sun for an hour averaged a cabin of 116 °F, "Dashboards
   averaged 157 degrees, steering wheels 127 degrees, and seats 123 degrees in one hour."
-- Edmunds, 2025 Chevrolet Suburban features and specs (https://www.edmunds.com/chevrolet/suburban/2025/features-specs):
-  226.3 in long, 81.1 in wide without mirrors, 76.2 in tall, 65.6 in front shoulder room; Kelley Blue Book
-  (https://www.kbb.com/chevrolet/suburban/2025/specs): 134.1 in wheelbase. Read from search summaries on 20 Nov 2026.
+- Edmunds, features and specs of a 2025 full-size three-row SUV: 226.3 in long, 81.1 in wide without mirrors, 76.2 in
+  tall, 65.6 in front shoulder room; Kelley Blue Book, the same model's specs: 134.1 in wheelbase. Read from search
+  summaries on 20 Nov 2026.
 - Motor1, Alexandra Samuels, 27 Jun 2025 (https://www.motor1.com/news/764069/scientific-trick-instantly-cool-car/):
   "Open one of your car's rear windows. Then, on the opposite side, rapidly open and close the front door", "multiple
   times", the Reel describing it at "over 6.5 million views".
