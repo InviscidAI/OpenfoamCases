@@ -1,0 +1,4 @@
+FoamFile {version 2.0; format ascii; class dictionary; object radiationProperties;}
+radiation on; radiationModel fvDOM;
+fvDOMCoeffs {nPhi 6; nTheta 8; maxIter 1; tolerance 1e-5;}
+solverFreq 80; absorptionEmissionModel none; scatterModel none; sootModel none;

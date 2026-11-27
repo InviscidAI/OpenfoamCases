@@ -1,0 +1,10 @@
+FoamFile {version 2.0; format ascii; class dictionary; object controlDict;}
+application buoyantPimpleFoam;
+libs (radLayerWall);
+startFrom startTime; startTime 0; stopAt endTime; endTime 300;
+deltaT 0.0005; adjustTimeStep yes; maxCo 1; maxDeltaT 0.05;
+writeControl adjustableRunTime; writeInterval 30; purgeWrite 3;
+writeFormat binary; writeCompression on; writePrecision 12; timeFormat general; timePrecision 10; runTimeModifiable false;
+functions {
+#include "functions"
+}

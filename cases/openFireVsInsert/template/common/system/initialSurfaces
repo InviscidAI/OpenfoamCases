@@ -1,0 +1,36 @@
+FoamFile {version 2.0; format ascii; class dictionary; object initialSurfaces;}
+functions {
+planes {type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 0.625; surfaceFormat vtk; formatOptions {vtk {format ascii;}} interpolate true; fields (T U); surfaces
+{
+ankle {type cuttingPlane; point (0 0.075 0); normal (0 1 0); interpolate true;}
+seat {type cuttingPlane; point (0 1.12 0); normal (0 1 0); interpolate true;}
+head {type cuttingPlane; point (0 1.62 0); normal (0 1 0); interpolate true;}
+underLintel {type cuttingPlane; point (0 1.92 0); normal (0 1 0); interpolate true;}
+section {type cuttingPlane; point (0 0 3.02); normal (0 0 1); interpolate true;}
+sectionClear {type cuttingPlane; point (0 0 2.75); normal (0.33872 0 0.94089); interpolate true;}
+sectionHall {type cuttingPlane; point (0 0 1.02); normal (0 0 1); interpolate true;}
+}}
+wallSurfaces {type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 0.625; surfaceFormat vtk; formatOptions {vtk {format ascii;}} interpolate false; fields (T qr); surfaces {surfaces {type patch; patches (floor hearth sofa); interpolate false;}}}
+volumeTU {
+type coded; libs (utilityFunctionObjects); name clearSnapshotTU84;
+executeControl none; writeControl adjustableRunTime; writeInterval 0.625;
+codeInclude #{
+#include "fvCFD.H"
+#include "fileOperation.H"
+#};
+codeWrite #{
+const fvMesh& m=mesh();
+const auto& T=m.lookupObject<volScalarField>("T");
+const auto& U=m.lookupObject<volVectorField>("U");
+const fileName instance=fileName("retainedTU")/m.time().timeName();
+volScalarField ts(IOobject("T",instance,m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedScalar("zero",T.dimensions(),0),"calculated");
+volVectorField us(IOobject("U",instance,m,IOobject::NO_READ,IOobject::NO_WRITE,false),m,dimensionedVector("zero",U.dimensions(),vector::zero),"calculated");
+ts.primitiveFieldRef()=T.primitiveField();
+us.primitiveFieldRef()=U.primitiveField();
+ts.boundaryFieldRef()==T.boundaryField();
+us.boundaryFieldRef()==U.boundaryField();
+fileHandler().writeObject(ts,IOstreamOption(m.time().writeFormat(),m.time().writeCompression()),true);
+fileHandler().writeObject(us,IOstreamOption(m.time().writeFormat(),m.time().writeCompression()),true);
+#};
+}
+}

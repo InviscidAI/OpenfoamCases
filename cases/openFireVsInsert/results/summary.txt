@@ -1,0 +1,34 @@
+Open fire against stove insert: the same ground floor from lighting, 0-300 s.
+From the monitors of the runs (system/functions), by scripts/extract_results.py. C and F.
+
+The other rooms (hall, study, kitchen-diner) from y = 0.10 to 1.80 m, volume-weighted air temperature:
+     5 s   open  15.9593 C (60.73 F)   insert  15.9946 C (60.79 F)   insert - open +0.0353 K
+    15 s   open  15.8665 C (60.56 F)   insert  15.9807 C (60.77 F)   insert - open +0.1142 K
+    30 s   open  15.7579 C (60.36 F)   insert  15.9581 C (60.72 F)   insert - open +0.2002 K
+    60 s   open  15.5781 C (60.04 F)   insert  15.9251 C (60.67 F)   insert - open +0.3469 K
+   150 s   open  15.2606 C (59.47 F)   insert  15.8924 C (60.61 F)   insert - open +0.6318 K
+   240 s   open  15.0453 C (59.08 F)   insert  16.1504 C (61.07 F)   insert - open +1.1052 K
+   300 s   open  14.9057 C (58.83 F)   insert  16.4187 C (61.55 F)   insert - open +1.5130 K
+
+The living room and the whole floor, every height, volume-weighted:
+     5 s   living open  15.997 insert  16.203 C;   whole open  15.965 insert  16.088 C;   living ceiling (y > 2.2 m) open  16.00 insert  17.03 C
+    15 s   living open  15.993 insert  16.512 C;   whole open  15.907 insert  16.221 C;   living ceiling (y > 2.2 m) open  16.01 insert  19.92 C
+    30 s   living open  15.950 insert  16.895 C;   whole open  15.833 insert  16.393 C;   living ceiling (y > 2.2 m) open  16.01 insert  21.80 C
+    60 s   living open  15.842 insert  17.552 C;   whole open  15.705 insert  16.718 C;   living ceiling (y > 2.2 m) open  16.04 insert  23.85 C
+   150 s   living open  15.545 insert  18.708 C;   whole open  15.424 insert  17.484 C;   living ceiling (y > 2.2 m) open  16.09 insert  26.68 C
+   240 s   living open  15.319 insert  19.267 C;   whole open  15.228 insert  18.051 C;   living ceiling (y > 2.2 m) open  16.17 insert  27.89 C
+   300 s   living open  15.220 insert  19.572 C;   whole open  15.125 insert  18.369 C;   living ceiling (y > 2.2 m) open  16.22 insert  28.45 C
+
+Air (kg/s) and heat (W):
+  open    15 s   outdoor air in 0.0852 (1.67 air changes an hour), 0.0852 of it under the doors; house air out through the gaps 0.0035; up the chimney 0.0783; radiation into the room 1803 W; air to the ceiling -3 W, to the walls -53 W, to the floor -360 W
+  open    60 s   outdoor air in 0.0841 (1.65 air changes an hour), 0.0841 of it under the doors; house air out through the gaps 0.0033; up the chimney 0.0783; radiation into the room 1801 W; air to the ceiling -4 W, to the walls -113 W, to the floor -510 W
+  open   150 s   outdoor air in 0.0834 (1.63 air changes an hour), 0.0834 of it under the doors; house air out through the gaps 0.0034; up the chimney 0.0783; radiation into the room 1799 W; air to the ceiling -6 W, to the walls -150 W, to the floor -625 W
+  open   300 s   outdoor air in 0.0825 (1.62 air changes an hour), 0.0825 of it under the doors; house air out through the gaps 0.0032; up the chimney 0.0783; radiation into the room 1798 W; air to the ceiling -5 W, to the walls -191 W, to the floor -676 W
+  insert  15 s   outdoor air in 0.0291 (0.57 air changes an hour), 0.0291 of it under the doors; house air out through the gaps 0.0297; up the chimney 0.0068; radiation into the room 3498 W; air to the ceiling 751 W, to the walls 246 W, to the floor -156 W
+  insert  60 s   outdoor air in 0.0303 (0.59 air changes an hour), 0.0303 of it under the doors; house air out through the gaps 0.0296; up the chimney 0.0068; radiation into the room 3496 W; air to the ceiling 1076 W, to the walls 367 W, to the floor -289 W
+  insert 150 s   outdoor air in 0.0322 (0.63 air changes an hour), 0.0322 of it under the doors; house air out through the gaps 0.0296; up the chimney 0.0068; radiation into the room 3493 W; air to the ceiling 1503 W, to the walls 499 W, to the floor -385 W
+  insert 300 s   outdoor air in 0.0335 (0.66 air changes an hour), 0.0335 of it under the doors; house air out through the gaps 0.0299; up the chimney 0.0068; radiation into the room 3491 W; air to the ceiling 1741 W, to the walls 584 W, to the floor -456 W
+
+Checks:
+  open   481 monitor rows, 0-300 s; coldest air after 5 s -0.080 C, warmest 25.94 C; last time step 0.01689 s
+  insert 481 monitor rows, 0-300 s; coldest air after 5 s 0.019 C, warmest 97.75 C; last time step 0.01562 s

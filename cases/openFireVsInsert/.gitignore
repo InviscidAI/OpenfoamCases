@@ -1,0 +1,7 @@
+runs/
+log.*
+__pycache__/
+*.pyc
+src/*/lnInclude/
+src/*/Make/linux*/
+src/*/Make/darwin*/

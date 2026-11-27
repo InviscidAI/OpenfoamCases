@@ -1,0 +1,26 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvSolution; }
+solvers
+{
+    "(Ii|ILambda.*)" { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-7; relTol 0; maxIter 10; }
+    "rho.*"     { solver PCG; preconditioner DIC; tolerance 0; relTol 0; }
+    // windowAiring's tolerance. radiatorUnderWindow's 1e-8 is below this mesh's round-off
+    // floor (about 2.1e-8): in a first pilot both final pressure solves of every step ran to
+    // the cap, 2.4 s a step
+    p_rgh       { solver GAMG; smoother DICGaussSeidel; tolerance 1e-7; relTol 0.01; }
+    // radiatorUnderWindow's cap, kept in case the floor rises
+    p_rghFinal  { $p_rgh; relTol 0; maxIter 100; }
+    "(U|h|e|k|omega)"      { solver PBiCGStab; preconditioner DILU; tolerance 1e-7; relTol 0.1; }
+    "(U|h|e|k|omega)Final" { $U; relTol 0; }
+}
+PIMPLE
+{
+    momentumPredictor        yes;
+    nOuterCorrectors         2;
+    nCorrectors              2;
+    nNonOrthogonalCorrectors 0;
+    // a closed room: radiatorUnderWindow's reference in mid-room, not in a corner cell, where its
+    // continuity error ran away against an adiabatic floor
+    pRefPoint                (2.003 1.174 0.013);
+    pRefValue                1e5;
+}
+relaxationFactors { equations { ".*" 1; } }

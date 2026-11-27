@@ -1,0 +1,87 @@
+#!/bin/bash
+# An old house's ground floor at rest at 16 C (61 F), 0 C outside, the fire lit at t = 0 in the
+# living room's fireplace: an open fire radiating 1.8 kW with its chimney drawing 0.0783 kg/s of
+# room air, or a closed insert in the same opening radiating 3.5 kW through its glass and blowing
+# 3.4 kW of warm air from its jacket, its chimney drawing 0.0068 kg/s. 0-300 s,
+# buoyantPimpleFoam with k-omega SST and fvDOM radiation (192 directions), heat-storing surfaces.
+#
+#   ./Allrun [--setup-only] [--no-volume] open|insert [endTime [nProcs]]
+#
+# open          the open fire: a 0.40 m recess, its back a 0.28 m2 panel at 624.73 K, the
+#               throat in its top drawing 0.0783 kg/s
+# insert        the insert closing the opening flush with the wall: glass at 708.88 K, a jacket
+#               returning 0.041 kg/s of room air 3,380 W warmer, combustion air 0.0068 kg/s
+# endTime       s of flow, default 300, what both solved runs did in one segment from rest
+# nProcs        MPI ranks, default 4 (what both solved runs used, scotch decomposition)
+# --setup-only  compiles, builds and checks the mesh, writes the case and its starting radiation,
+#               decomposes it and stops before the solve
+# --no-volume   leaves out the 3-D T and U writes every 0.625 s (about 3.4 GB a run over 300 s);
+#               the solved runs wrote them, so by default this does too
+#
+# src/radLayerWall (the heat-storing wall condition) is compiled into $FOAM_USER_LIBBIN and
+# src/radiationInit (a radiation-only solve) into $FOAM_USER_APPBIN. Each run is built in
+# runs/<run>/: scripts/make_mesh.py (blockMesh, castellated snappyHexMesh, the patch split),
+# scripts/make_case.py (template/ and the hydrostatic p and p_rgh), scripts/init_radiation.py
+# (the 192 ray fields, G and qr at t = 0). When both runs have reached 300 s,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+volume=true
+while [ "${1:-}" = "--setup-only" ] || [ "${1:-}" = "--no-volume" ]; do
+  [ "$1" = "--setup-only" ] && setupOnly=true
+  [ "$1" = "--no-volume" ] && volume=false
+  shift
+done
+run=${1:-}
+end=${2:-300}
+nproc=${3:-4}
+case "$run" in open|insert) ;; *) echo "usage: $0 [--setup-only] [--no-volume] open|insert [endTime [nProcs]]" >&2; exit 2 ;; esac
+
+# the wall condition and the radiation-only solver (wmake does nothing if they are up to date)
+wmake libso src/radLayerWall > log.wmake.radLayerWall 2>&1 || { echo "src/radLayerWall did not compile: log.wmake.radLayerWall" >&2; exit 1; }
+wmake src/radiationInit > log.wmake.radiationInit 2>&1 || { echo "src/radiationInit did not compile: log.wmake.radiationInit" >&2; exit 1; }
+export LD_LIBRARY_PATH="$FOAM_USER_LIBBIN:${LD_LIBRARY_PATH:-}"
+
+r=runs/$run
+if [ ! -f "$r/mesh.npz" ]; then
+  rm -rf "$r"
+  python3 scripts/make_mesh.py "$run" "$r"
+fi
+rm -rf "$r"/0 "$r"/processor* "$r"/postProcessing "$r"/log.*
+python3 scripts/make_case.py "$run" "$r"
+sed -i -E "s/numberOfSubdomains [0-9]+;/numberOfSubdomains $nproc;/" "$r/system/decomposeParDict"
+sed -i -E "s/endTime [0-9.]+;/endTime $end;/" "$r/system/controlDict"
+if ! $volume; then
+  python3 - "$r" <<'EOF'
+import re, sys
+from pathlib import Path
+for n in ['functions', 'initialSurfaces']:
+    p = Path(sys.argv[1]) / 'system' / n
+    s = p.read_text(); a = s.index('volumeTU {'); b = s.index('#};\n}\n', a) + len('#};\n}\n')
+    p.write_text(s[:a] + s[b:])
+EOF
+fi
+python3 scripts/init_radiation.py "$run" "$r" "$nproc"
+(
+  cd "$r"
+  # the planes and surfaces at t = 0, as the solved runs wrote them before their first step
+  postProcess -time 0 -fields '(T U qr)' -dict system/initialSurfaces > log.postProcess 2>&1
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+(
+  cd "$r"
+  mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+  grep -q '^End' log.buoyantPimpleFoam || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+)
+echo "solved: $r to $end s"
+done300() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && grep -q '^End' "runs/$1/log.buoyantPimpleFoam" \
+            && grep -q 'endTime 300;' "runs/$1/system/controlDict"; }
+if done300 open && done300 insert; then
+  python3 scripts/extract_results.py runs results
+fi
