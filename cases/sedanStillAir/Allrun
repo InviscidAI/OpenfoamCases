@@ -1,0 +1,58 @@
+#!/bin/bash
+# Airing out a hot mid-size sedan in dead-still air: all four door windows down, or the rear
+# window behind the driver down and the front passenger door fanned for the whole minute.
+# The cabin at 321.85 K (119.7 F), outside at 310.93 K (100 F), the dashboard and seats held at
+# 346.95 and 327.05 K (164.8 and 129.0 F), no wind, 0-60 s from the moment the windows open
+# (buoyantPimpleFoam, k-omega SST).
+#
+#   ./Allrun fourWindows|doorFan [nProcs]
+#   ./Allrun --setup-only fourWindows|doorFan [nProcs]
+#
+# fourWindows   all four door windows open from t = 0, every door shut.
+# doorFan       the rear-left window open from t = 0; the front passenger door, a drag term on the
+#               fixed mesh, swung open to 65 degrees and shut again every 1.2 s from 0 to 60 s
+#               (50 swings, shut at the end).
+# nProcs        MPI ranks; by default 8, what both solved runs used. Extra mpirun arguments
+#               (e.g. MPIRUN_ARGS="--cpu-set 0-7 --bind-to core") are passed through.
+# --setup-only  builds the meshes if needed, writes the run and its t = 0 planes, decomposes it
+#               and stops before the solve.
+#
+# The first call builds both meshes in runs/mesh/ (scripts/build.py: blockMesh, a serial
+# castellated snappyHexMesh, then the car's solid cells cut out with topoSet and subsetMesh, the
+# patches, the openings' face zones and the head boxes, checkMesh). scripts/run_case.py then
+# writes runs/<run>/ (scripts/prepare.py), decomposes it by scotch and solves it from 0 to 60 s.
+# The door's drag term and the monitor (scripts/diagnostics.template) are coded and compiled
+# when the solve starts. When both runs have solved, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+if [ "${1:-}" = "--setup-only" ]; then setupOnly=true; shift; fi
+run=${1:-}
+case "$run" in
+  fourWindows|doorFan) nproc=${2:-8} ;;
+  *) echo "usage: $0 [--setup-only] fourWindows|doorFan [nProcs]" >&2; exit 2 ;;
+esac
+
+# the background mesh and the two run meshes
+if [ ! -f runs/mesh/doorFan/mesh_arrays.npz ]; then
+  rm -rf runs/mesh
+  mkdir -p runs
+  (cd scripts && python3 build.py) > log.build 2>&1 || { echo "meshing failed, see log.build" >&2; exit 1; }
+  grep -h -E '^ +cells:|Mesh OK|Failed' runs/mesh/{fourWindows,doorFan}/log.checkMesh
+fi
+
+r=runs/$run
+if $setupOnly; then
+  (cd scripts && python3 run_case.py "$run" --ranks "$nproc" --setup-only)
+  exit 0
+fi
+(cd scripts && python3 run_case.py "$run" --ranks "$nproc") > "log.$run" 2>&1 \
+  || { echo "$r: the solve failed, see log.$run and $r/log.buoyantPimpleFoam" >&2; exit 1; }
+echo "solved: $r"
+solved() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && grep -q '^End' "runs/$1/log.buoyantPimpleFoam"; }
+if solved fourWindows && solved doorFan; then
+  python3 scripts/extract_results.py runs results
+fi

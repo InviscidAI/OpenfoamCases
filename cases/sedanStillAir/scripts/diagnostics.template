@@ -1,0 +1,116 @@
+diagnostics89
+{
+ type coded; libs (utilityFunctionObjects); name diagnostics89;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include "turbulentFluidThermoModel.H"
+ #include <fstream>
+ #include <iomanip>
+ #include <map>
+ #include <string>
+ #include <vector>
+ #include <algorithm>
+ #};
+ codeOptions
+ #{
+ -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude -I$(LIB_SRC)/transportModels/compressible/lnInclude -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude
+ #};
+ codeLibs
+ #{
+ -lfluidThermophysicalModels -lcompressibleTurbulenceModels
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ if(!m.foundObject<volScalarField>("outdoor"))return true;
+ const auto& T=m.lookupObject<volScalarField>("T");
+ const auto& rho=m.lookupObject<volScalarField>("rho");
+ const auto& h=m.lookupObject<volScalarField>("h");
+ const auto& s=m.lookupObject<volScalarField>("outdoor");
+ const auto& U=m.lookupObject<volVectorField>("U");
+ const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+ const auto& turb=m.lookupObject<compressible::turbulenceModel>("turbulenceProperties");
+ auto ae=turb.alphaEff();auto rf=fvc::interpolate(rho);auto sf=fvc::interpolate(s);auto tf=fvc::interpolate(T);
+ surfaceScalarField hf(fvc::flux(phi,h,"div(phi,h)"));
+ surfaceScalarField of(fvc::flux(phi,s,"div(phi,outdoor)"));
+ surfaceScalarField df(1005*fvc::interpolate(ae())*fvc::snGrad(T)*m.magSf());
+ std::map<std::string,scalar> v;
+ for(const std::string reg:{"head1","head2","head3","head4","head5","heads","row1","row2","cabin"})
+ {
+  for(const std::string q:{"V","mass","TV","TM","outdoorMass","H"})v[reg+"_"+q]=0;
+  label zid=m.cellZones().findZoneID(reg);if(zid<0)continue;
+  for(const label i:m.cellZones()[zid]){scalar vol=m.V()[i],mass=rho[i]*vol;v[reg+"_V"]+=vol;v[reg+"_mass"]+=mass;v[reg+"_TV"]+=T[i]*vol;v[reg+"_TM"]+=T[i]*mass;v[reg+"_outdoorMass"]+=s[i]*mass;v[reg+"_H"]+=1005*(T[i]-310.93)*mass;}
+ }
+ for(const std::string p:{"dashboard","seats","cabinInterior"}){
+ v[p+"_W"]=0;label b=m.boundaryMesh().findPatchID(p);if(b>=0)v[p+"_W"]=sum(ae().boundaryField()[b]*h.boundaryField()[b].snGrad()*m.magSf().boundaryField()[b]);
+ }
+ std::vector<std::string> opens={"rearLeft"};
+ if(ISDOOR)opens.push_back("doorAperture");else{opens.push_back("frontLeft");opens.push_back("frontRight");opens.push_back("rearRight");}
+ for(const auto& n:opens)for(const std::string q:{"Qin","Qout","Min","Mout","Hin","Hout","outdoorIn","outdoorOut","diffusionInto_W","area"})v[n+"_"+q]=0;
+ auto flux=[&](const vector& c,const vector& a,scalar mass,scalar den,scalar heat,scalar tracer,scalar diff,scalar weight){
+ if(mag(a.y())<.99*mag(a))return;
+ for(const auto& n:opens){
+ scalar yy=-.72,x0=2.96,x1=3.60,z0=.96,z1=1.32;
+ if(n=="frontLeft"){x0=2.16;x1=2.84;}
+ if(n=="frontRight"){yy=.72;x0=2.16;x1=2.84;}
+ if(n=="rearRight")yy=.72;
+ if(n=="doorAperture"){yy=.72;x0=1.96;x1=2.96;z0=.24;}
+ if(mag(c.y()-yy)>1e-6||c.x()<x0||c.x()>x1||c.z()<z0||c.z()>z1)continue;
+ scalar sign=(a.y()>0?1:-1)*(yy<0?1:-1),f=weight*sign*mass;
+ std::string direction=f>=0?"in":"out";
+ scalar flip=f>=0?1:-1;
+ v[n+"_Q"+direction]+=flip*f/den;v[n+"_M"+direction]+=flip*f;
+ // Cp reference is Tref=310.93: scheme-consistent advective sensible enthalpy.
+ v[n+"_H"+direction]+=flip*weight*sign*heat;
+ v[n+"_outdoor"+(direction=="in"?"In":"Out")]+=flip*weight*sign*tracer;
+ v[n+"_diffusionInto_W"]-=weight*sign*diff;v[n+"_area"]+=weight*mag(a);
+ }
+ };
+ forAll(m.neighbour(),f)flux(m.Cf()[f],m.Sf()[f],phi[f],rf()[f],hf[f],of[f],df[f],1);
+ forAll(m.boundary(),b)if(m.boundary()[b].coupled())forAll(m.boundary()[b],j)flux(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j],rf().boundaryField()[b][j],hf.boundaryField()[b][j],of.boundaryField()[b][j],df.boundaryField()[b][j],.5);
+ scalar t=m.time().value()+DOOROFFSET,theta=0,w=0;const scalar pi=constant::mathematical::pi;
+ if(ISDOOR&&!DOORHOLD&&t<=SWINGEND){theta=65*pi/360*(1-cos(2*pi*t/1.2));w=65*pi/360*2*pi/1.2*sin(2*pi*t/1.2);}
+ v["door_maskVolume"]=0;v["door_power_W"]=0;v["door_core_error_sum"]=0;v["door_core_count"]=0;
+ scalar worst=0,umax=0,tmax=-GREAT,tmin=GREAT;vector worstAt(Zero),umaxAt(Zero),hot(Zero),cold(Zero);
+ const auto& km=m.lookupObject<volScalarField>("doorKm");
+ const_cast<volScalarField&>(km).writeOpt()=IOobject::AUTO_WRITE;
+ forAll(T,i){
+ scalar speed=mag(U[i]);if(speed>umax){umax=speed;umaxAt=m.C()[i];}
+ if(ISDOOR){vector ub=w*vector(-(m.C()[i].y()-.92),m.C()[i].x()-1.96,0);v["door_maskVolume"]+=km[i]/1e6*m.V()[i];v["door_power_W"]+=km[i]*rho[i]*((ub-U[i])&ub)*m.V()[i];if(km[i]>1e6*(1-1e-8)&&mag(ub)>1e-6){scalar err=mag(U[i]-ub)/mag(ub);v["door_core_error_sum"]+=err;v["door_core_count"]+=1;if(err>worst){worst=err;worstAt=m.C()[i];}}}
+ }
+ for(const label i:m.cellZones()[m.cellZones().findZoneID("cabin")]){if(T[i]>tmax){tmax=T[i];hot=m.C()[i];}if(T[i]<tmin){tmin=T[i];cold=m.C()[i];}}
+ for(auto& q:v)reduce(q.second,sumOp<scalar>());
+ auto extremum=[&](scalar& a,vector& loc,bool maximum){scalar glob=a;if(maximum)reduce(glob,maxOp<scalar>());else reduce(glob,minOp<scalar>());label rank=(a==glob?Pstream::myProcNo():labelMax);reduce(rank,minOp<label>());if(rank!=Pstream::myProcNo())loc=Zero;reduce(loc,sumOp<vector>());a=glob;};
+ extremum(umax,umaxAt,true);extremum(tmax,hot,true);extremum(tmin,cold,false);extremum(worst,worstAt,true);
+ static scalar runningUmax=0;runningUmax=max(runningUmax,umax);v["Umax_allSteps"]=runningUmax;v["Umax"]=umax;v["Umax_x"]=umaxAt.x();v["Umax_y"]=umaxAt.y();v["Umax_z"]=umaxAt.z();
+ v["Tmax"]=tmax;v["hot_x"]=hot.x();v["hot_y"]=hot.y();v["hot_z"]=hot.z();v["Tmin"]=tmin;v["cold_x"]=cold.x();v["cold_y"]=cold.y();v["cold_z"]=cold.z();
+ v["door_worstRelativeError"]=worst;v["door_worst_x"]=worstAt.x();v["door_worst_y"]=worstAt.y();v["door_worst_z"]=worstAt.z();
+ v["theta_rad"]=theta;v["deltaT"]=m.time().deltaTValue();v["wall_s"]=m.time().elapsedClockTime();v["step"]=m.time().timeIndex();
+ static scalar cumHeat=0,cumAdv=0,cumDiff=0;
+ scalar heat=v["dashboard_W"]+v["seats_W"]+v["cabinInterior_W"],adv=0,diff=0;
+ for(const auto& n:opens){adv+=v[n+"_Hin"]-v[n+"_Hout"];diff+=v[n+"_diffusionInto_W"];}
+ cumHeat+=v["deltaT"]*heat;cumAdv+=v["deltaT"]*adv;cumDiff+=v["deltaT"]*diff;
+ v["cumulative_surfaces_J"]=cumHeat;v["cumulative_adv_J"]=cumAdv;v["cumulative_diff_J"]=cumDiff;
+ fileName dir=m.time().globalPath()/"postProcessing/diagnostics89";mkDir(dir);
+ static bool first=true;static scalar next=0;
+ bool emit=m.time().value()+1e-8>=next|| (STEPSTOP>0&&m.time().timeIndex()>=STEPSTOP);
+ if(emit){
+ next=(std::floor((m.time().value()+1e-8)/.125)+1)*.125;
+ if(Pstream::master()){
+ std::ofstream out((dir/"diagnostics.csv").c_str(),first?std::ios::out:std::ios::app);out<<std::setprecision(14);
+ if(first){out<<"time";for(auto& q:v)out<<','<<q.first;out<<'\n';}
+ out<<m.time().value();for(auto& q:v)out<<','<<q.second;out<<'\n';
+ }
+ auto sums=fvc::surfaceSum(mag(phi));
+ std::vector<std::pair<scalar,label>> co;forAll(T,i)co.push_back({.5*m.time().deltaTValue()*sums()[i]/(rho[i]*m.V()[i]),i});
+ std::partial_sort(co.begin(),co.begin()+min(label(12),T.size()),co.end(),[](auto a,auto b){return a.first>b.first;});
+ std::ofstream out((dir/("courant_rank"+Foam::name(Pstream::myProcNo())+".csv")).c_str(),first?std::ios::out:std::ios::app);out<<std::setprecision(14);
+ if(first)out<<"time,rank,cell,Co,size_m,speed_ms,x,y,z,mask\n";
+ for(label j=0;j<min(label(12),T.size());j++){label i=co[j].second;out<<m.time().value()<<','<<Pstream::myProcNo()<<','<<i<<','<<co[j].first<<','<<cbrt(m.V()[i])<<','<<mag(U[i])<<','<<m.C()[i].x()<<','<<m.C()[i].y()<<','<<m.C()[i].z()<<','<<km[i]/1e6<<'\n';}
+ first=false;
+ }
+ if(STEPSTOP>0&&m.time().timeIndex()>=STEPSTOP)const_cast<Time&>(m.time()).stopAt(Time::saWriteNow);
+ #};
+}

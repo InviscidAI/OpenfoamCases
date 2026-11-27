@@ -1,0 +1,77 @@
+{
+  "still": {
+    "end_time": 0.54,
+    "steps": 50.0,
+    "wall_s": 208.0,
+    "max_speed_recorded": 0.0003536482256099,
+    "pressure_solves": 200,
+    "pressure_1000": 23,
+    "pressure_100": 0,
+    "clean_end": true,
+    "passed": true
+  },
+  "doorMoves": {
+    "end_time": 0.27188668109384,
+    "steps": 51.0,
+    "wall_s": 47.0,
+    "max_speed_recorded": 3.1060234455406,
+    "pressure_solves": 204,
+    "pressure_1000": 0,
+    "pressure_100": 0,
+    "clean_end": true,
+    "step50_worst_error_percent": 0.26218375882925,
+    "step50_mean_error_percent": 0.026108547517326386,
+    "step50_volume": 0.21664709314475,
+    "worst_cell": [
+      2.02,
+      0.94,
+      0.86
+    ],
+    "passed": true
+  },
+  "shutDoor": {
+    "end_time": 2.0,
+    "steps": 120.0,
+    "wall_s": 77.0,
+    "max_speed_recorded": 0.29778598863881,
+    "pressure_solves": 480,
+    "pressure_1000": 0,
+    "pressure_100": 0,
+    "clean_end": true,
+    "leakage": {
+      "in": {
+        "max_ratio": 0.0,
+        "mean_ratio": 0.0,
+        "door_Q_mean": 0.0,
+        "rearLeft_Q_mean": 0.011539003676648969
+      },
+      "out": {
+        "max_ratio": 0.016789479068833938,
+        "mean_ratio": 0.0094080999261998,
+        "door_Q_mean": 0.00011063052087037778,
+        "rearLeft_Q_mean": 0.011704381963485923
+      }
+    },
+    "passed": true
+  },
+  "heatStart": {
+    "end_time": 0.54,
+    "steps": 50.0,
+    "wall_s": 36.0,
+    "max_speed_recorded": 0.12585363838483,
+    "pressure_solves": 200,
+    "pressure_1000": 0,
+    "pressure_100": 0,
+    "clean_end": true,
+    "surface_W": {
+      "dashboard_W": 53.92118232112,
+      "seats_W": 38.747464748809,
+      "cabinInterior_W": -0.24149937901396
+    },
+    "deltaH_J": 35.844928756996524,
+    "rhs_J": 35.9390880989421,
+    "closure_error_percent": 0.26199702587431184,
+    "budget_passed": true,
+    "all_surfaces_positive": false
+  }
+}
