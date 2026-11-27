@@ -148,11 +148,13 @@ the rear half of the body to about 3.3 body lengths behind the tail. The far fie
 0.1 m at the top and the bottom, stretching only z < -1.5 and z > 3 m. `checkMesh` OK: fly's
 non-orthogonality 63.2° at most and skewness 3.57; swim's 64.2° and 3.57 as solved.
 
-**Swim's mesh does not rebuild exactly.** The same script and profile gave 72,366 cells (78,148 points)
-in the cloud on 9 Nov 2026. Here gmsh 4.15.2 gives 72,578 (78,360 points), with the same 706 faces on
-the bird and the same far-field patches, but its nodes near the bird are not those of the solved planes;
-gmsh 4.11.1 to 4.15.1 gave 72,296-72,578, none 72,366, and the solved swim mesh itself was not kept. A
-rebuilt swim is therefore a near copy of the solved run, not the run itself. Fly's 130,504-cell mesh,
+**Swim runs on its solved mesh, which gmsh does not rebuild exactly.** The same script and profile gave
+72,366 cells (78,148 points) in the cloud on 9 Nov 2026. Here gmsh 4.15.2 gives 72,578 (78,360 points),
+with the same 706 faces on the bird and the same far-field patches, but its nodes near the bird are not
+those of the solved planes; gmsh 4.11.1 to 4.15.1 gave 72,296-72,578, none 72,366. So the solved swim
+mesh itself is included, gzipped, in `template/swim/polyMesh/` (3.7 MB), and `Allrun swim` copies it
+into the run instead of meshing; `scripts/make_case.py swim <runDir> --gmsh` meshes with gmsh instead,
+which gives a near copy of the solved run, not the run itself. Fly's 130,504-cell mesh,
 built with the same script and the wake box, rebuilds with gmsh 4.15.2 to the solved run's point set
 exactly (gmsh lists the points in a different order from one run to the next).
 
@@ -244,9 +246,9 @@ on 8 ranks. That run is the one in `results/`.
 ## Running it
 
 You need [OpenFOAM](https://www.openfoam.com) v2512 or near it with MPI, and Python 3 with NumPy; the 2-D
-runs need the gmsh Python module (and swim PyVista); the 3-D runs need `geometry/penguin.stl`, which
-`scripts/make_case.py` draws with `scripts/penguin_geometry.py` (trimesh, SciPy, Shapely, manifold3d,
-matplotlib) if it is missing.
+runs need the gmsh Python module (swim only without `template/swim/polyMesh/`) and swim PyVista; the
+3-D runs need `geometry/penguin.stl`, which `scripts/make_case.py` draws with
+`scripts/penguin_geometry.py` (trimesh, SciPy, Shapely, manifold3d, matplotlib) if it is missing.
 
     cd cases/penguinFlight
     ./Allrun lift50              # [nProcs], default 4
@@ -256,9 +258,9 @@ matplotlib) if it is missing.
     python3 scripts/extract_results.py runs results
 
 `Allrun` writes the run into `runs/<run>/` with `scripts/make_case.py` (`template/lift/` and
-`template/lift50|lift64/` for the 3-D runs, `template/swim|fly/` for the 2-D runs; the mesh, `0/` and,
-for swim, the frame's pressure), checks the mesh, writes the 2-D runs' t = 0 planes
-(`pimpleFoam -postProcess -time 0`), decomposes by scotch, solves, and once all four have solved writes
+`template/lift50|lift64/` for the 3-D runs, `template/swim|fly/` for the 2-D runs; the mesh, swim's the
+solved one from `template/swim/polyMesh/`, `0/` and, for swim, the frame's pressure), checks the mesh,
+writes the 2-D runs' t = 0 planes (`pimpleFoam -postProcess -time 0`), decomposes by scotch, solves, and once all four have solved writes
 `results/`. `./Allrun --setup-only <run> [nProcs]` stops before the solve; `./Allclean` removes the runs.
 The four runs are independent but for lift64 starting from lift50. On the machines used, lift50 took
 about 1.7 h and lift64 0.9 h on 4 cores, swim 15 minutes on 4 and fly 3.2 h on 8.
@@ -278,10 +280,12 @@ fields, meshes, planes or logs.
 
 Checked from a clean copy of the case, with no solve run, on OpenFOAM v2512 with gmsh 4.15.2:
 `scripts/make_case.py` for lift50, swim and fly, then `checkMesh`. **fly**: 130,504 cells, Mesh OK,
-non-orthogonality 63.2° at most, skewness 3.57, the solved mesh's point set. **swim**: 72,578 cells
-against 72,366 solved (above), Mesh OK, non-orthogonality 80.3° at one face (64.2° solved), skewness
-3.57. **lift50**, snappyHexMesh in serial (5.4 minutes on one core): 607,368 cells against 607,535
-solved, Mesh OK; the bird's 13,675 body and 42,691 flipper faces, the layers (2.68 on average, 88% of
+non-orthogonality 63.2° at most, skewness 3.57, the solved mesh's point set. **swim**, from
+`template/swim/polyMesh/`: 72,366 cells and 78,148 points, Mesh OK, non-orthogonality 64.25° at most
+and skewness 3.57, as the solved run's `checkMesh`; its `0/p` written from it is the solved run's byte
+for byte. With `--gmsh` instead: 72,578 cells (above), Mesh OK, non-orthogonality 80.3° at one face,
+skewness 3.57. **lift50**, snappyHexMesh in serial (5.4 minutes on one core): 607,368 cells against
+607,535 solved, Mesh OK; the bird's 13,675 body and 42,691 flipper faces, the layers (2.68 on average, 88% of
 the target thickness), the largest non-orthogonality (64.96°), skewness (3.90) and aspect ratio (99.3)
 are the solved mesh's; the 167 cells' difference is probably in the layers by the symmetry plane, which
 has 12,070 faces against 12,073. Whether the solved mesh was made in serial or on 4 ranks is

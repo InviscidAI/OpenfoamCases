@@ -1,6 +1,6 @@
 """Write one run of the penguin case: its mesh, its fields and its dictionaries.
 
-    python3 scripts/make_case.py lift50|lift64|swim|fly <runDir> [--nprocs N] [--from <lift50 runDir>]
+    python3 scripts/make_case.py lift50|lift64|swim|fly <runDir> [--nprocs N] [--from <lift50 runDir>] [--gmsh]
 
 Needs OpenFOAM (v2512) sourced, Python 3 with NumPy, and for the 2-D runs the gmsh Python module
 (and PyVista for swim's pressure). The bird's surface, geometry/penguin.stl, is drawn by
@@ -26,6 +26,9 @@ swim, fly        the 2-D side section, the bird's outline in its plane of symmet
                  (z < -1.5 and z > 3 m stretched, nothing near the bird moved). swim's 0/p is the
                  pressure potential of its falling frame, 9.81 (10.6 - z), written from PyVista's
                  cell centres as the study's swim_pressure_init.py did.
+                 swim takes the solved run's own mesh from template/swim/polyMesh/ (gzipped,
+                 72,366 cells) instead of gmsh when that folder is there, unless --gmsh is given;
+                 gmsh does not rebuild that mesh exactly (README.md).
 
 The files under template/<lift|swim|fly>/ and template/<run>/ are copied in unchanged;
 system/decomposeParDict is rewritten when --nprocs differs from the solved run's.
@@ -296,11 +299,17 @@ def swim_pressure(r):
     (r / "0/p").write_text(s)
 
 
-def make_2d(name, r):
+def make_2d(name, r, use_gmsh=False):
     copy_tree(TEMPLATE / name / "system", r / "system")
     copy_tree(TEMPLATE / name / "constant", r / "constant")
     (r / f"{name}.foam").touch()
-    clip_mesh(r, CFG["runs"][name]["wakeBox"])
+    solved = TEMPLATE / name / "polyMesh"
+    if solved.is_dir() and not use_gmsh:
+        # the solved run's own mesh, padded far field included (swim: 72,366 cells), gzipped
+        shutil.copytree(solved, r / "constant/polyMesh")
+        print(f"{name}: the solved mesh from {solved.relative_to(TEMPLATE.parent)}")
+    else:
+        clip_mesh(r, CFG["runs"][name]["wakeBox"])
     shutil.copytree(TEMPLATE / name / "0.orig", r / "0")
     if name == "swim":
         swim_pressure(r)
@@ -312,6 +321,8 @@ def main():
     ap.add_argument("runDir")
     ap.add_argument("--nprocs", type=int)
     ap.add_argument("--from", dest="src", help="lift64: the solved lift50 run (default <runDir>/../lift50)")
+    ap.add_argument("--gmsh", action="store_true",
+                    help="swim: mesh with gmsh even though template/swim/polyMesh/ holds the solved mesh")
     a = ap.parse_args()
     r = Path(a.runDir).resolve()
     if r.exists():
@@ -320,7 +331,7 @@ def main():
     if CFG["runs"][a.run]["dims"] == 3:
         make_lift(a.run, r, a.src)
     else:
-        make_2d(a.run, r)
+        make_2d(a.run, r, a.gmsh)
     n = a.nprocs or CFG["runs"][a.run]["nProcs"]
     if n != CFG["runs"][a.run]["nProcs"]:
         (r / "system/decomposeParDict").write_text(H("decomposeParDict") + f"numberOfSubdomains {n}; method scotch;\n")

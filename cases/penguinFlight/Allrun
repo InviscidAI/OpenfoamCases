@@ -12,9 +12,10 @@
 #               scripts/penguin_geometry.py draws if it is missing.
 # lift64        the same mesh, 1200 iterations at 64 m/s, started from lift50's last fields;
 #               needs runs/lift50 solved (it is reconstructed at its last iteration here).
-# swim          2-D section, pimpleFoam, k-omega SST, 72,366 cells when solved (gmsh; README.md
-#               says why a rebuild may differ), the air at (2, 0, 9.81 t) m/s in the bird's
-#               falling frame, 0-0.5 s.
+# swim          2-D section, pimpleFoam, k-omega SST, on the solved run's own 72,366-cell mesh
+#               (template/swim/polyMesh/, gzipped; without that folder it is meshed with gmsh,
+#               which README.md says does not rebuild it exactly), the air at (2, 0, 9.81 t)
+#               m/s in the bird's falling frame, 0-0.5 s.
 # fly           2-D section with a fine wake box, pimpleFoam, kOmegaSSTSAS, 130,504 cells, the air
 #               at (64, 0, 0) m/s, 0-0.5 s.
 # nProcs        MPI ranks; by default what the solved run used: 4, but 8 for fly.
@@ -39,7 +40,8 @@ case "$run" in
   *) echo "usage: $0 [--setup-only] lift50|lift64|swim|fly [nProcs]" >&2; exit 2 ;;
 esac
 case "$run" in
-  swim|fly) python3 -c "import gmsh" 2> /dev/null || { echo "the 2-D runs need the gmsh Python module" >&2; exit 1; } ;;
+  swim) [ -d template/swim/polyMesh ] || python3 -c "import gmsh" 2> /dev/null || { echo "swim needs template/swim/polyMesh/ or the gmsh Python module" >&2; exit 1; } ;;
+  fly) python3 -c "import gmsh" 2> /dev/null || { echo "fly needs the gmsh Python module" >&2; exit 1; } ;;
 esac
 [ "$run" = swim ] && { python3 -c "import pyvista" 2> /dev/null || { echo "swim needs PyVista for its 0/p" >&2; exit 1; }; }
 
