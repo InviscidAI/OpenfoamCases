@@ -1,0 +1,5 @@
+#!/bin/bash
+# Remove the runs (the mesh, the shared pre-run and both runs) and the build logs; the committed
+# inputs and results stay. The compiled library in $FOAM_USER_LIBBIN stays too.
+cd "${0%/*}" || exit 1
+rm -rf runs log.* scripts/__pycache__ src/*/lnInclude src/*/Make/linux* src/*/Make/darwin*

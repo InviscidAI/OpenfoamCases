@@ -1,0 +1,33 @@
+FoamFile { version 2.0; format ascii; class dictionary; object mapsT0; }
+functions {
+maps { type coded; libs (utilityFunctionObjects); name maps86; executeControl timeStep; writeControl none;
+ codeInclude #{
+ #include "fvCFD.H"
+ #include <fstream>
+ #include <iomanip>
+ #};
+ codeExecute #{
+const fvMesh& m=mesh();const scalar t=m.time().value();
+// The planes' time controls land the steps at every requested sample time.
+scalar interval=t<=3.00000001?.025:.125;scalar tick=round(t/interval);
+if(mag(t-tick*interval)>1e-7)return true;
+const auto& c=m.lookupObject<volScalarField>("cough");const auto& rho=m.lookupObject<volScalarField>("rho");const auto& U=m.lookupObject<volVectorField>("U");const auto& C=m.C();const auto& V=m.V();
+for(label map=0;map<4;map++){
+ label n0=map<2?55:60,n1=map==3?55:88,nf=map==0?4:2;scalarList bins(n0*n1*nf,0);
+ forAll(V,i){const vector& p=C[i];bool in=map==0?(p.x()>1.20&&p.x()<1.72):(map==1?(p.x()>.92&&p.x()<1.72):(map==2?(p.y()>.44&&p.y()<1.60):(p.z()>.28&&p.z()<1.72)));if(!in)continue;
+ label i0=floor((map<2?p.y():p.x())/.04+1e-8);label i1=floor((map==3?p.y():p.z()+1.76)/.04+1e-8);if(i0<0||i0>=n0||i1<0||i1>=n1)continue;
+ label idx=i0*n1+i1;scalar w=rho[i]*V[i];bins[idx]+=w*c[i];if(map==0){bins[n0*n1+idx]+=w*U[i].y();bins[2*n0*n1+idx]+=w*U[i].z();}bins[(nf-1)*n0*n1+idx]+=w;
+ }
+ Pstream::listCombineReduce(bins,plusEqOp<scalar>());
+ if(Pstream::master()){
+ word names[4]={"gap_yz","row_yz","above_xz","side_xy"};fileName dir=m.time().globalPath()/"postProcessing"/"maps"/m.time().timeName();mkDir(dir);
+ fileName final=dir/(names[map]+".bin"),temporary=dir/(names[map]+".bin.tmp");std::ofstream out(temporary.c_str(),std::ios::binary);
+ out<<"{\"shape\":["<<n0<<","<<n1<<"],\"fields\":"<<(map==0?"[\"cough\",\"Uy\",\"Uz\",\"weight_kg\"]":"[\"cough\",\"weight_kg\"]")<<",\"dtype\":\"float32\",\"order\":\"field-major,C\",\"spacing_m\":0.04,\"time_s\":"<<std::setprecision(12)<<t<<",\"axes\":"<<(map<2?"[\"y\",\"z\"]":(map==2?"[\"x\",\"z\"]":"[\"x\",\"y\"]"))<<",\"origin_m\":"<<(map==3?"[0,0]":(map<2?"[0,-1.76]":"[0,-1.76]"))<<"}\n";
+ for(label f=0;f<nf;f++)for(label i=0;i<n0*n1;i++){scalar w=bins[(nf-1)*n0*n1+i];float value=f==nf-1?float(w):float(w>SMALL?bins[f*n0*n1+i]/w:0);out.write(reinterpret_cast<const char*>(&value),sizeof(float));}
+ out.close();mv(temporary,final);
+ }
+}
+
+#};
+}
+}

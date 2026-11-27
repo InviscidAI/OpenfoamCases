@@ -1,0 +1,33 @@
+== vents ==
+cough released 0.69958 L of air, 5.970038e-04 kg of tracer; solved to 60 s in 20620 steps
+half of it has left the row by 21.61 s
+share of the release, %          1 s       2 s       3 s       5 s      10 s      20 s      30 s      45 s      60 s
+row                           100.14     99.09     95.96     89.28     82.02     54.59     34.57     21.57     12.67   the cougher's row, x 0.92-1.72 m, whole section
+gap                            99.52     97.75     94.47     86.46     67.83     41.64     26.95     16.11      8.96   between the cougher's seat back and the seat back ahead, x 1.20-1.72 m
+seatR                         100.14     99.08     95.88     89.07     75.23     46.28     27.84     15.53      8.61   the row's block at z > 0.28 m (the cougher's)
+aisle                           0.00      0.00      0.08      0.21      6.53      6.11      4.02      3.25      1.78   the row's aisle, |z| < 0.28 m
+seatL                           0.00      0.00      0.00      0.00      0.26      2.19      2.72      2.79      2.29   the row's other block, z < -0.28 m
+ahead                           0.00      1.15      4.39     11.30     15.54     13.32      9.96      5.65      3.76   the row ahead, x > 1.72 m
+behind                          0.00      0.00      0.00      0.05      1.46      7.10      9.57      8.10      7.11   the row behind, x < 0.92 m
+exhaustR                        0.00      0.00      0.00      0.00      1.66     20.29     35.42     47.62     55.02   out through the exhaust on the cougher's side
+exhaustL                        0.00      0.00      0.00      0.00      0.00      0.32      2.28      5.73      8.33   out through the other exhaust
+endLayers                      -0.14     -0.24     -0.35     -0.64     -0.68      4.38      8.19     11.33     13.10   taken by the two end layers (the account's remainder)
+at 60 s: the six nozzles 6.45 g/s in, side slots 127.4 g/s, ceiling 24.3 g/s, exhausts 79.0 and 79.0 g/s out
+largest speed over 1-60 s 5.60 m/s, Courant at most 1.000
+
+== noVents ==
+cough released 0.69941 L of air, 5.968570e-04 kg of tracer; solved to 60 s in 5087 steps
+half of it has left the row by 37.02 s
+share of the release, %          1 s       2 s       3 s       5 s      10 s      20 s      30 s      45 s      60 s
+row                           100.05    100.07    100.10     99.91     95.93     75.39     63.52     40.00     24.97   the cougher's row, x 0.92-1.72 m, whole section
+gap                           100.04     99.89     99.62     98.71     89.16     60.15     48.82     28.97     16.51   between the cougher's seat back and the seat back ahead, x 1.20-1.72 m
+seatR                         100.05    100.07    100.10     99.91     95.65     60.23     45.09     25.71     13.84   the row's block at z > 0.28 m (the cougher's)
+aisle                           0.00      0.00      0.00      0.00      0.27     11.45      7.91      6.86      4.60   the row's aisle, |z| < 0.28 m
+seatL                          -0.00      0.00      0.00      0.00      0.02      3.72     10.52      7.43      6.52   the row's other block, z < -0.28 m
+ahead                           0.00      0.00      0.00      0.22      3.00      7.44      5.72      4.43      2.56   the row ahead, x > 1.72 m
+behind                          0.00      0.00      0.00      0.03      0.98     17.16     22.65     23.31     21.53   the row behind, x < 0.92 m
+exhaustR                        0.00      0.00      0.00      0.00      0.38      0.49      3.26     12.68     19.05   out through the exhaust on the cougher's side
+exhaustL                       -0.00      0.00      0.00      0.00      0.00      0.01      4.14     12.82     18.13   out through the other exhaust
+endLayers                      -0.05     -0.07     -0.10     -0.16     -0.29     -0.49      0.71      6.75     13.76   taken by the two end layers (the account's remainder)
+at 60 s: the six nozzles 0.00 g/s in, side slots 127.4 g/s, ceiling 24.3 g/s, exhausts 76.2 and 75.5 g/s out
+largest speed over 1-60 s 1.47 m/s, Courant at most 0.985

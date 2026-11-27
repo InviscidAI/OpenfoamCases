@@ -1,0 +1,36 @@
+FoamFile { version 2.0; format ascii; class dictionary; object fvOptions; }
+buoyancyTurb { type buoyancyTurbSource; selectionMode all; }
+energyFluxObserver
+{
+ type scalarCodedSource;
+ selectionMode all;
+ fields (h);
+ name energyFluxObserver74;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #};
+ codeAddSup #{ (void)eqn; (void)fieldi; #};
+ codeAddSupRho #{ (void)rho; (void)eqn; (void)fieldi; #};
+ codeConstrain #{ (void)eqn; (void)fieldi; #};
+ codeCorrect
+ #{
+ // Diagnostic only: no source, constraint, or modification of fld.
+ // Capture the flux with the diffusivity used by this energy solve,
+ // before the subsequent turbulence correction changes alphat.
+ const fvMesh& m=mesh();
+ if(!m.foundObject<volScalarField>("assembledWallHeatFlux"))
+ {
+  auto* f=new volScalarField(IOobject("assembledWallHeatFlux",m.time().timeName(),m,IOobject::NO_READ,IOobject::NO_WRITE),m,dimensionedScalar("zero",dimensionSet(1,0,-3,0,0,0,0),0));
+  f->store();
+ }
+ auto& f=const_cast<volScalarField&>(m.lookupObject<volScalarField>("assembledWallHeatFlux"));
+ const auto& at=m.lookupObject<volScalarField>("alphat");
+ forAll(f.boundaryField(),b)
+ {
+  if(m.boundaryMesh()[b].type()!="wall")continue;
+  f.boundaryFieldRef()[b]=(scalar(1.82e-5/.71)+at.boundaryField()[b])*fld.boundaryField()[b].snGrad();
+ }
+ #};
+}
+ceilingForce { type vectorSemiImplicitSource; selectionMode cellSet; cellSet ceilingForce; volumeMode absolute; sources { U { explicit (0.0 -0.0539 0.0); implicit 0; } } }

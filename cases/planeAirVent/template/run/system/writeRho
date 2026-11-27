@@ -1,0 +1,2 @@
+FoamFile {version 2.0; format ascii; class dictionary; object writeRho;}
+functions { rhoWrite { type writeObjects; libs (utilityFunctionObjects); objects (rho); writeOption anyWrite; } }

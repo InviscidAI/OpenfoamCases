@@ -1,0 +1,44 @@
+FoamFile { version 2.0; format ascii; class dictionary; object planesT0; }
+functions {
+planes { type surfaces; libs (sampling); writeControl timeStep; writeInterval 1;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; legacy false; precision 8; } } interpolate true; fields (U T cough);
+surfaces {
+nozzlePlane { type cuttingPlane; point (1.33 0 0); normal (1 0 0); interpolate true; }
+mouthPlan { type cuttingPlane; point (0 1.1 0); normal (0 1 0); interpolate true; }
+lengthwise { type cuttingPlane; point (0 0 1.01); normal (0 0 1); interpolate true; }
+}
+}
+early { type surfaces; libs (sampling); writeControl timeStep; writeInterval 1;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; legacy false; precision 8; } } interpolate true; fields (U T cough);
+timeStart 0; timeEnd 3;
+surfaces {
+nozzlePlane { type cuttingPlane; point (1.33 0 0); normal (1 0 0); interpolate true; }
+mouthPlan { type cuttingPlane; point (0 1.1 0); normal (0 1 0); interpolate true; }
+lengthwise { type cuttingPlane; point (0 0 1.01); normal (0 0 1); interpolate true; }
+}
+}
+crossPlanes { type surfaces; libs (sampling); writeControl timeStep; writeInterval 1;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; legacy false; precision 8; } } interpolate true; fields (U T cough);
+surfaces {
+x123 { type cuttingPlane; point (1.23 0 0); normal (1 0 0); interpolate true; }
+x146 { type cuttingPlane; point (1.46 0 0); normal (1 0 0); interpolate true; }
+x160 { type cuttingPlane; point (1.6 0 0); normal (1 0 0); interpolate true; }
+}
+}
+compressPlanes { type coded; libs (utilityFunctionObjects); name compressPlanes86; executeControl timeStep; writeControl none;
+ codeInclude #{
+ #include "fvCFD.H"
+ #include <dirent.h>
+ #include <fstream>
+ #include <zlib.h>
+ #};
+ codeLibs #{ -lz #};
+ codeExecute #{
+ if(Pstream::master())for(const word fn:wordList({"planes","early","crossPlanes"})){
+ fileName dir=mesh().time().globalPath()/"postProcessing"/fn/mesh().time().timeName();
+ DIR* dp=opendir(dir.c_str());if(!dp)continue;
+ while(auto* e=readdir(dp)){std::string n=e->d_name;if(n.size()<4)continue;std::string ext=n.substr(n.size()-4);if(ext!=".vtp"&&ext!=".vtk")continue;
+ std::string path=std::string(dir.c_str())+"/"+n;std::ifstream in(path,std::ios::binary);gzFile out=gzopen((path+".gz").c_str(),"wb1");if(!out)FatalErrorInFunction<<"Cannot gzip plane"<<exit(FatalError);char buf[65536];while(in){in.read(buf,sizeof(buf));if(in.gcount()>0)gzwrite(out,buf,in.gcount());}gzclose(out);in.close();std::remove(path.c_str());
+ }closedir(dp);}
+ #}; }
+}

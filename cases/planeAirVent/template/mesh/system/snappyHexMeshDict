@@ -1,0 +1,49 @@
+FoamFile { version 2.0; format ascii; class dictionary; object snappyHexMeshDict; }
+
+castellatedMesh true; snap false; addLayers false;
+geometry {
+jetA { type searchableBox; min (1.2 0.8 1.3599999999999999); max (1.44 1.6 1.6); }
+jetB { type searchableBox; min (1.2 0.8 0.88); max (1.44 1.6 1.12); }
+jetC { type searchableBox; min (1.2 0.8 0.4); max (1.44 1.6 0.8); }
+jetD { type searchableBox; min (1.2 0.8 -0.8); max (1.44 1.6 -0.4); }
+jetE { type searchableBox; min (1.2 0.8 -1.12); max (1.44 1.6 -0.88); }
+jetF { type searchableBox; min (1.2 0.8 -1.6); max (1.44 1.6 -1.3599999999999999); }
+slotR { type searchableBox; min (0 1.48 1.56); max (2.4 1.6 1.68); }
+slotL { type searchableBox; min (0 1.48 -1.68); max (2.4 1.6 -1.56); }
+exitR { type searchableBox; min (0 0 1.6); max (2.4 0.12 1.68); }
+exitL { type searchableBox; min (0 0 -1.68); max (2.4 0.12 -1.6); }
+path { type searchableBox; min (1.2 0.72 0.84); max (1.72 1.16 1.16); }
+lips { type searchableBox; min (1.2 1.01 0.95); max (1.28 1.11 1.05); }
+}
+castellatedMeshControls {
+ maxLocalCells 600000; maxGlobalCells 600000; minRefinementCells 0;
+ nCellsBetweenLevels 1; maxLoadUnbalance 0.1;
+ features ();
+ refinementSurfaces {}
+ resolveFeatureAngle 30;
+ refinementRegions {
+jetA { mode inside; levels ((1e15 1)); }
+jetB { mode inside; levels ((1e15 1)); }
+jetC { mode inside; levels ((1e15 1)); }
+jetD { mode inside; levels ((1e15 1)); }
+jetE { mode inside; levels ((1e15 1)); }
+jetF { mode inside; levels ((1e15 1)); }
+slotR { mode inside; levels ((1e15 1)); }
+slotL { mode inside; levels ((1e15 1)); }
+exitR { mode inside; levels ((1e15 1)); }
+exitL { mode inside; levels ((1e15 1)); }
+path { mode inside; levels ((1e15 1)); }
+lips { mode inside; levels ((1e15 2)); }
+}
+ locationInMesh (0.8 1.4 0); allowFreeStandingZoneFaces true;
+}
+snapControls { nSmoothPatch 3; tolerance 1.2; nSolveIter 40; nRelaxIter 5;
+ nFeatureSnapIter 15; implicitFeatureSnap false; explicitFeatureSnap true; multiRegionFeatureSnap true; }
+addLayersControls { relativeSizes true; layers {}; expansionRatio 1; finalLayerThickness 0.3; minThickness 0.1; nGrow 0; featureAngle 60; nRelaxIter 3; nSmoothSurfaceNormals 1; nSmoothNormals 3; nSmoothThickness 10; maxFaceThicknessRatio 0.5; maxThicknessToMedialRatio 0.3; minMedianAxisAngle 90; nBufferCellsNoExtrude 0; nLayerIter 0; }
+meshQualityControls {
+ maxNonOrtho 65; maxBoundarySkewness 20; maxInternalSkewness 4; maxConcave 80;
+ minVol 1e-12; minTetQuality 1e-20; minArea -1; minTwist 0.02;
+ minDeterminant 0.001; minFaceWeight 0.05; minVolRatio 0.01; minTriangleTwist -1;
+ nSmoothScale 4; errorReduction 0.75;
+}
+mergeTolerance 1e-6;

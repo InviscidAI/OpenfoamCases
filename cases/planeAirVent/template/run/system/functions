@@ -1,0 +1,190 @@
+transport { type scalarTransport; libs (solverFunctionObjects); executeControl timeStep; writeControl writeTime; writeInterval 1; field cough; phi phi; rho rho; alphaD 1; alphaDt 1.1765; resetOnStartUp false; nCorr 0;
+ fvOptions {
+ sinkAft { type scalarFixedValueConstraint; selectionMode cellSet; cellSet sinkAft; fieldValues { cough 0; } }
+ sinkFore { type scalarFixedValueConstraint; selectionMode cellSet; cellSet sinkFore; fieldValues { cough 0; } }
+ } }
+ coughRange { type fieldMinMax; libs (fieldFunctionObjects); fields (cough); mode component; executeControl timeStep; writeControl timeStep; writeInterval 1; }
+metrics { type coded; libs (utilityFunctionObjects); name metrics86; executeControl timeStep; writeControl none;
+ codeInclude #{
+ #include "fvCFD.H"
+ #include "fvOptions.H"
+ #include <fstream>
+ #include <iomanip>
+ #include <vector>
+ #include <algorithm>
+ #};
+ codeExecute #{
+const fvMesh& m=mesh();
+const auto& T=m.lookupObject<volScalarField>("T");const auto& U=m.lookupObject<volVectorField>("U");const auto& rho=m.lookupObject<volScalarField>("rho");const auto& phi=m.lookupObject<surfaceScalarField>("phi");
+const auto& V=m.V();const auto& C=m.C();const scalar dt=m.time().deltaTValue(),t=m.time().value();
+const volScalarField* cough=m.findObject<volScalarField>("cough");
+DynamicList<scalar> row;row.append(t);row.append(dt);row.append(m.time().elapsedClockTime());
+scalar mass=0,enthalpy=0,air=0,maxU=0;vector maxP(Zero);scalar minc=GREAT,maxc=-GREAT;
+forAll(V,i){mass+=rho[i]*V[i];enthalpy+=rho[i]*1005*(T[i]-296.45)*V[i];if(cough){air+=rho[i]*(*cough)[i]*V[i];minc=min(minc,(*cough)[i]);maxc=max(maxc,(*cough)[i]);}if(mag(U[i])>maxU){maxU=mag(U[i]);maxP=C[i];}}
+for(scalar* a:{&mass,&enthalpy,&air})reduce(*a,sumOp<scalar>());scalar gm=maxU;reduce(gm,maxOp<scalar>());label rank=maxU==gm?Pstream::myProcNo():labelMax;reduce(rank,minOp<label>());if(Pstream::myProcNo()!=rank)maxP=Zero;reduce(maxP,sumOp<vector>());reduce(minc,minOp<scalar>());reduce(maxc,maxOp<scalar>());
+row.append(mass);row.append(enthalpy);row.append(air);row.append(gm);for(direction d=0;d<3;d++)row.append(maxP[d]);row.append(minc);row.append(maxc);
+static scalar release=0,exR=0,exL=0,volume=0;
+for(const word name:wordList({"sideSlotR","sideSlotL","ceilingSlot","nozzleA","nozzleB","nozzleC","nozzleD","nozzleE","nozzleF","exhaustR","exhaustL","mouth"})){
+ label b=m.boundaryMesh().findPatchID(name);scalar pos=0,neg=0,ts=0,w=0,hpos=0,hneg=0,trpos=0,trneg=0,q=0;
+ const auto& ph=phi.boundaryField()[b];const auto& tt=T.boundaryField()[b];const auto& rr=rho.boundaryField()[b];
+ forAll(ph,i){pos+=max(ph[i],scalar(0));neg+=max(-ph[i],scalar(0));ts+=mag(ph[i])*tt[i];w+=mag(ph[i]);hpos+=max(ph[i],scalar(0))*1005*(tt[i]-296.45);hneg+=max(-ph[i],scalar(0))*1005*(tt[i]-296.45);if(cough){scalar cc=cough->boundaryField()[b][i];trpos+=max(ph[i],scalar(0))*cc;trneg+=max(-ph[i],scalar(0))*cc;}q+=max(-ph[i],scalar(0))/rr[i];}
+ for(scalar* a:{&pos,&neg,&ts,&w,&hpos,&hneg,&trpos,&trneg,&q})reduce(*a,sumOp<scalar>());
+ row.append(pos);row.append(neg);row.append(w>SMALL?ts/w:296.45);row.append(hpos);row.append(hneg);row.append(trpos);row.append(trneg);
+ if(name=="mouth"){release+=dt*(trneg-trpos);volume+=dt*q;}if(name=="exhaustR")exR+=dt*(trpos-trneg);if(name=="exhaustL")exL+=dt*(trpos-trneg);
+}
+row.append(release);row.append(exR);row.append(exL);row.append(release-exR-exL-air);row.append(volume);
+for(label r=0;r<12;r++){
+ scalar content=0,vol=0,ts=0;
+ forAll(V,i){const vector& c=C[i];bool in=false;
+ if(r==0)in=c.x()>.92&&c.x()<1.72;if(r==1)in=c.x()>1.20&&c.x()<1.72;
+ if(r>=2&&r<=4)in=c.x()>.92&&c.x()<1.72&&(r==2?c.z()>.28:(r==3?mag(c.z())<.28:c.z()<-.28));
+ if(r>=5&&r<=9){scalar lo[5]={0,.4,.96,1.24,1.6},hi[5]={.4,.96,1.24,1.6,2.2};in=c.y()>lo[r-5]&&c.y()<hi[r-5];}
+ if(r==10)in=c.x()>1.72;if(r==11)in=c.x()<.92;
+ if(in){vol+=V[i];ts+=V[i]*T[i];if(cough)content+=rho[i]*(*cough)[i]*V[i];}}
+ for(scalar* a:{&content,&vol,&ts})reduce(*a,sumOp<scalar>());row.append(content);if(r==0)row.append(ts/max(vol,SMALL));
+}
+const scalar zs[6]={1.48,1,.52,-.52,-1,-1.48};
+for(label r=0;r<3;r++)for(label j=0;j<6;j++){
+ scalar vol=0,cc=0,uu=0,tt=0;scalar face=.4+.8*r;
+ forAll(V,i)if(C[i].x()>face&&C[i].x()<face+.2&&C[i].y()>.98&&C[i].y()<1.18&&mag(C[i].z()-zs[j])<.10){vol+=V[i];uu+=V[i]*mag(U[i]);tt+=V[i]*T[i];if(cough)cc+=V[i]*(*cough)[i];}
+ for(scalar* a:{&vol,&cc,&uu,&tt})reduce(*a,sumOp<scalar>());row.append(cc/max(vol,SMALL));row.append(uu/max(vol,SMALL));row.append(tt/max(vol,SMALL));
+}
+for(scalar s:scalarList({.20,.30,.40,.48,.55}))for(label j=0;j<6;j++){
+ scalar vol=0,speed=0;
+ scalar jy=(j==2||j==3)?1.60-.9680*s:1.60-s;
+ scalar jz=j==2?.66-.2509*s:(j==3?-.66+.2509*s:zs[j]);
+ forAll(V,i){scalar w=max(1-mag(C[i].x()-1.32)/.02,scalar(0))*max(1-mag(C[i].z()-jz)/.02,scalar(0))*max(1-mag(C[i].y()-jy)/.02,scalar(0));if(w>0){vol+=w;speed+=w*mag(U[i]);}}
+ reduce(vol,sumOp<scalar>());reduce(speed,sumOp<scalar>());row.append(speed/max(vol,SMALL));
+}
+auto fs=fvc::surfaceSum(mag(phi));scalar maxCo=0;vector coP(Zero);scalar coSpeed=0;
+forAll(V,i){scalar co=.5*dt*fs()[i]/(rho[i]*V[i]);if(co>maxCo){maxCo=co;coP=C[i];coSpeed=mag(U[i]);}}
+scalar gc=maxCo;reduce(gc,maxOp<scalar>());label cr=maxCo==gc?Pstream::myProcNo():labelMax;reduce(cr,minOp<label>());if(Pstream::myProcNo()!=cr){coP=Zero;coSpeed=0;}reduce(coP,sumOp<vector>());reduce(coSpeed,sumOp<scalar>());row.append(gc);for(direction d=0;d<3;d++)row.append(coP[d]);row.append(coSpeed);
+// Read-only check of the actual fvOptions momentum matrix: its negative source is the delivered force.
+auto src=fv::options::New(const_cast<fvMesh&>(m))(rho,const_cast<volVectorField&>(U));
+for(label j=0;j<7;j++){
+ vector force(Zero);
+ forAll(V,i){bool in=j==6?(C[i].y()>2.16&&mag(C[i].z())<.04):(mag(C[i].x()-1.32)<.02&&C[i].y()>1.56&&C[i].y()<1.60&&mag(C[i].z()-(j==2?.66:(j==3?-.66:zs[j])))<.02);if(in)force-=src().source()[i];}
+ reduce(force,sumOp<vector>());for(direction d=0;d<3;d++)row.append(force[d]);
+}
+vector momentum(Zero);forAll(V,i)momentum+=rho[i]*U[i]*V[i];reduce(momentum,sumOp<vector>());for(direction d=0;d<3;d++)row.append(momentum[d]);
+scalar heat=0;if(m.foundObject<volScalarField>("assembledWallHeatFlux")){const auto& wh=m.lookupObject<volScalarField>("assembledWallHeatFlux");label b=m.boundaryMesh().findPatchID("people");heat=gSum(wh.boundaryField()[b]*m.magSf().boundaryField()[b]);}row.append(heat);
+scalar sinkmax=0;if(cough)forAll(V,i)if(C[i].x()<.04||C[i].x()>2.36)sinkmax=max(sinkmax,mag((*cough)[i]));reduce(sinkmax,maxOp<scalar>());row.append(sinkmax);
+if(0>0&&m.time().timeIndex()>=0)const_cast<Time&>(m.time()).writeAndEnd();
+if(Pstream::master()){
+ fileName dir=m.time().globalPath()/"postProcessing"/"metrics";mkDir(dir);
+ std::ofstream out((dir/"metrics.csv").c_str(),std::ios::app);out<<std::setprecision(14);forAll(row,i){if(i)out<<',';out<<row[i];}out<<'\n';
+}
+
+#};
+}
+abort { type abort; libs (utilityFunctionObjects); file "$FOAM_CASE/STOP_AT_NEXT_WRITE"; action nextWrite; }
+planes { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 0.125;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; legacy false; precision 8; } } interpolate true; fields (U T cough);
+surfaces {
+nozzlePlane { type cuttingPlane; point (1.33 0 0); normal (1 0 0); interpolate true; }
+mouthPlan { type cuttingPlane; point (0 1.1 0); normal (0 1 0); interpolate true; }
+lengthwise { type cuttingPlane; point (0 0 1.01); normal (0 0 1); interpolate true; }
+}
+}
+early { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 0.025;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; legacy false; precision 8; } } interpolate true; fields (U T cough);
+timeStart 0; timeEnd 3;
+surfaces {
+nozzlePlane { type cuttingPlane; point (1.33 0 0); normal (1 0 0); interpolate true; }
+mouthPlan { type cuttingPlane; point (0 1.1 0); normal (0 1 0); interpolate true; }
+lengthwise { type cuttingPlane; point (0 0 1.01); normal (0 0 1); interpolate true; }
+}
+}
+crossPlanes { type surfaces; libs (sampling); writeControl adjustableRunTime; writeInterval 0.5;
+ surfaceFormat vtk; formatOptions { vtk { format ascii; legacy false; precision 8; } } interpolate true; fields (U T cough);
+surfaces {
+x123 { type cuttingPlane; point (1.23 0 0); normal (1 0 0); interpolate true; }
+x146 { type cuttingPlane; point (1.46 0 0); normal (1 0 0); interpolate true; }
+x160 { type cuttingPlane; point (1.6 0 0); normal (1 0 0); interpolate true; }
+}
+}
+compressPlanes { type coded; libs (utilityFunctionObjects); name compressPlanes86; executeControl timeStep; writeControl none;
+ codeInclude #{
+ #include "fvCFD.H"
+ #include <dirent.h>
+ #include <fstream>
+ #include <zlib.h>
+ #};
+ codeLibs #{ -lz #};
+ codeExecute #{
+ if(Pstream::master())for(const word fn:wordList({"planes","early","crossPlanes"})){
+ fileName dir=mesh().time().globalPath()/"postProcessing"/fn/mesh().time().timeName();
+ DIR* dp=opendir(dir.c_str());if(!dp)continue;
+ while(auto* e=readdir(dp)){std::string n=e->d_name;if(n.size()<4)continue;std::string ext=n.substr(n.size()-4);if(ext!=".vtp"&&ext!=".vtk")continue;
+ std::string path=std::string(dir.c_str())+"/"+n;std::ifstream in(path,std::ios::binary);gzFile out=gzopen((path+".gz").c_str(),"wb1");if(!out)FatalErrorInFunction<<"Cannot gzip plane"<<exit(FatalError);char buf[65536];while(in){in.read(buf,sizeof(buf));if(in.gcount()>0)gzwrite(out,buf,in.gcount());}gzclose(out);in.close();std::remove(path.c_str());
+ }closedir(dp);}
+ #}; }
+maps { type coded; libs (utilityFunctionObjects); name maps86; executeControl timeStep; writeControl none;
+ codeInclude #{
+ #include "fvCFD.H"
+ #include <fstream>
+ #include <iomanip>
+ #};
+ codeExecute #{
+const fvMesh& m=mesh();const scalar t=m.time().value();
+// The planes' time controls land the steps at every requested sample time.
+scalar interval=t<=3.00000001?.025:.125;scalar tick=round(t/interval);
+if(mag(t-tick*interval)>1e-7)return true;
+const auto& c=m.lookupObject<volScalarField>("cough");const auto& rho=m.lookupObject<volScalarField>("rho");const auto& U=m.lookupObject<volVectorField>("U");const auto& C=m.C();const auto& V=m.V();
+for(label map=0;map<4;map++){
+ label n0=map<2?55:60,n1=map==3?55:88,nf=map==0?4:2;scalarList bins(n0*n1*nf,0);
+ forAll(V,i){const vector& p=C[i];bool in=map==0?(p.x()>1.20&&p.x()<1.72):(map==1?(p.x()>.92&&p.x()<1.72):(map==2?(p.y()>.44&&p.y()<1.60):(p.z()>.28&&p.z()<1.72)));if(!in)continue;
+ label i0=floor((map<2?p.y():p.x())/.04+1e-8);label i1=floor((map==3?p.y():p.z()+1.76)/.04+1e-8);if(i0<0||i0>=n0||i1<0||i1>=n1)continue;
+ label idx=i0*n1+i1;scalar w=rho[i]*V[i];bins[idx]+=w*c[i];if(map==0){bins[n0*n1+idx]+=w*U[i].y();bins[2*n0*n1+idx]+=w*U[i].z();}bins[(nf-1)*n0*n1+idx]+=w;
+ }
+ Pstream::listCombineReduce(bins,plusEqOp<scalar>());
+ if(Pstream::master()){
+ word names[4]={"gap_yz","row_yz","above_xz","side_xy"};fileName dir=m.time().globalPath()/"postProcessing"/"maps"/m.time().timeName();mkDir(dir);
+ fileName final=dir/(names[map]+".bin"),temporary=dir/(names[map]+".bin.tmp");std::ofstream out(temporary.c_str(),std::ios::binary);
+ out<<"{\"shape\":["<<n0<<","<<n1<<"],\"fields\":"<<(map==0?"[\"cough\",\"Uy\",\"Uz\",\"weight_kg\"]":"[\"cough\",\"weight_kg\"]")<<",\"dtype\":\"float32\",\"order\":\"field-major,C\",\"spacing_m\":0.04,\"time_s\":"<<std::setprecision(12)<<t<<",\"axes\":"<<(map<2?"[\"y\",\"z\"]":(map==2?"[\"x\",\"z\"]":"[\"x\",\"y\"]"))<<",\"origin_m\":"<<(map==3?"[0,0]":(map<2?"[0,-1.76]":"[0,-1.76]"))<<"}\n";
+ for(label f=0;f<nf;f++)for(label i=0;i<n0*n1;i++){scalar w=bins[(nf-1)*n0*n1+i];float value=f==nf-1?float(w):float(w>SMALL?bins[f*n0*n1+i]/w:0);out.write(reinterpret_cast<const char*>(&value),sizeof(float));}
+ out.close();mv(temporary,final);
+ }
+}
+
+#};
+}
+energyExtras { type coded; libs (utilityFunctionObjects); name energyExtras86; executeControl timeStep; writeControl none;
+codeInclude #{
+#include "fvCFD.H"
+#include <fstream>
+#include <iomanip>
+#};
+codeExecute #{
+const fvMesh& m=mesh();const auto& p=m.lookupObject<volScalarField>("p");const auto& rho=m.lookupObject<volScalarField>("rho");const auto& U=m.lookupObject<volVectorField>("U");const auto& phi=m.lookupObject<surfaceScalarField>("phi");const auto& V=m.V();
+scalar intp=0,K=0,Kflux=0,Gwork=0;forAll(V,i){intp+=p[i]*V[i];K+=.5*rho[i]*magSqr(U[i])*V[i];Gwork-=9.81*rho[i]*U[i].y()*V[i];}
+forAll(m.boundary(),b)if(!m.boundary()[b].coupled()){const auto& ph=phi.boundaryField()[b];const auto& u=U.boundaryField()[b];forAll(ph,i)Kflux+=ph[i]*.5*magSqr(u[i]);}
+for(scalar* v:{&intp,&K,&Kflux,&Gwork})reduce(*v,sumOp<scalar>());
+if(Pstream::master()){fileName dir=m.time().globalPath()/"postProcessing"/"metrics";mkDir(dir);std::ofstream out((dir/"energyExtras.csv").c_str(),std::ios::app);out<<std::setprecision(14)<<m.time().value()<<','<<intp<<','<<K<<','<<Kflux<<','<<Gwork<<'\n';}
+#}; }
+negativeTracer { type coded; libs (utilityFunctionObjects); name negativeTracer86; executeControl timeStep; writeControl none;
+codeInclude #{
+#include "fvCFD.H"
+#include <fstream>
+#include <iomanip>
+#};
+codeExecute #{
+const fvMesh& m=mesh();const auto& c=m.lookupObject<volScalarField>("cough");const auto& rho=m.lookupObject<volScalarField>("rho");const auto& phi=m.lookupObject<surfaceScalarField>("phi");const auto& V=m.V();const auto& C=m.C();
+scalar negative=0,minimum=GREAT,maximum=-GREAT;vector minp(Zero),centroid(Zero);label count=0;
+forAll(V,i){scalar w=max(-c[i],scalar(0))*rho[i]*V[i];negative+=w;centroid+=w*C[i];if(c[i]<0)count++;if(c[i]<minimum){minimum=c[i];minp=C[i];}maximum=max(maximum,c[i]);}
+reduce(negative,sumOp<scalar>());reduce(centroid,sumOp<vector>());reduce(count,sumOp<label>());scalar gm=minimum;reduce(gm,minOp<scalar>());reduce(maximum,maxOp<scalar>());label rank=minimum==gm?Pstream::myProcNo():labelMax;reduce(rank,minOp<label>());if(Pstream::myProcNo()!=rank)minp=Zero;reduce(minp,sumOp<vector>());if(negative>1e-20)centroid/=negative;else centroid=Zero;
+label b=m.boundaryMesh().findPatchID("mouth");scalar releasedRate=0;const auto& ph=phi.boundaryField()[b];const auto& cc=c.boundaryField()[b];forAll(ph,i)releasedRate-=ph[i]*cc[i];reduce(releasedRate,sumOp<scalar>());static scalar released=0;released+=releasedRate*m.time().deltaTValue();
+if(Pstream::master()){fileName dir=m.time().globalPath()/"postProcessing"/"metrics";mkDir(dir);std::ofstream out((dir/"negativeTracer.csv").c_str(),std::ios::app);out<<std::setprecision(14)<<m.time().value()<<','<<negative<<','<<released<<','<<(released>1e-20?100*negative/released:0)<<','<<gm;for(direction d=0;d<3;d++)out<<','<<minp[d];out<<','<<maximum;for(direction d=0;d<3;d++)out<<','<<centroid[d];out<<','<<count<<'\n';}
+#}; }
+stopCheckpoint { type coded; libs (utilityFunctionObjects); name stopCheckpoint86; executeControl timeStep; writeControl none; codeInclude #{ #include "fvCFD.H" #}; codeExecute #{ if(isFile(mesh().time().globalPath()/"STOP_AT_NEXT_WRITE"))const_cast<Time&>(mesh().time()).writeAndEnd(); #}; }
+boundedWriteTimeStep { type boundedWriteTimeStep86; libs ("libboundedWriteTimeStep86.so"); clipWindow true; coughWindow true; executeControl timeStep; writeControl none; }
+endCheckpoint { type coded; libs (utilityFunctionObjects); name endCheckpoint86; executeControl timeStep; writeControl none;
+ codeInclude #{ #include "fvCFD.H" #};
+ codeExecute #{
+ const fvMesh& m=mesh();Time& t=const_cast<Time&>(m.time());
+ if(t.value()>=t.endTime().value()-max(1e-8,.5*t.deltaTValue())){
+ t.writeAndEnd();
+ if(m.foundObject<volScalarField>("rho"))m.lookupObject<volScalarField>("rho").write();
+ if(m.foundObject<volScalarField>("cough"))m.lookupObject<volScalarField>("cough").write();
+ }
+ #}; }

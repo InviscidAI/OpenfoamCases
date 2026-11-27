@@ -1,0 +1,124 @@
+#!/bin/bash
+# Three rows of a single-aisle economy cabin in cruise (2.40 x 2.20 x 3.52 m, periodic fore and
+# aft, 18 seated box passengers at 40 W each, the cabin's supply along the tops of the side walls
+# and the ceiling and its exhaust low on the side walls, 75.3 kPa). The passenger in the middle seat
+# of one block coughs once, 0.7 L in 0.4 s, followed as a passive tracer, with the six overhead air
+# nozzles of that row open (1.2 L/s each) or shut. buoyantPimpleFoam with k-omega SST, 0-60 s
+# from the cough.
+#
+#   ./Allrun [--setup-only] [--no-planes] vents|noVents [endTime [nProcs [prerunEnd [coughAt]]]]
+#
+# vents         the row's six nozzles open, each a 4 x 4 cm face at 1.2 L/s and a momentum source
+#               of 0.03046 N just below it
+# noVents       the six nozzles shut (walls)
+# endTime       s from the cough, default 60, what both solved runs did
+# nProcs        MPI ranks, default 4 (what the solved runs used, scotch decomposition)
+# prerunEnd     s of the shared flow from rest with every nozzle shut, default 70
+# coughAt       s at which the cough starts, default 90: the 20 s after prerunEnd let the opened
+#               nozzles' jets set up (vents) or the flow carry on (noVents). Give short ones
+#               (./Allrun vents 0.01 4 0.01 0.02) to test the chain quickly
+# --setup-only  compiles src/, builds and checks the mesh, writes the shared pre-run, decomposes it
+#               and stops before its solve (the later stages start from solved fields)
+# --no-planes   leaves out the clip's planes and maps (VTK every 0.125 s, every 0.025 s over the
+#               first 3 s, and the cough maps, about 0.5 GB a run); the solved runs wrote them
+#
+# MPIRUN_OPTS (default "--bind-to core --map-by core") is passed to mpirun, e.g.
+# MPIRUN_OPTS="--cpu-set 4,5,6,7 --bind-to core" to keep off cores another solve is using.
+#
+# src/timeStepGuard (the cloud's time-step guard: Courant 1 and landing on the write times, and the
+# cough's first 0.4 s at 1% of a mouth cell a step) is compiled into $FOAM_USER_LIBBIN. Everything
+# is built in runs/: the mesh once (scripts/make_mesh.py), the pre-run once (runs/prerun, shared by
+# both runs), then runs/pre_<run> and runs/<run> (scripts/make_case.py), each stage carrying the
+# last one's fields. When both runs have reached 60 s, scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+planes=true
+while [ "${1:-}" = "--setup-only" ] || [ "${1:-}" = "--no-planes" ]; do
+  [ "$1" = "--setup-only" ] && setupOnly=true
+  [ "$1" = "--no-planes" ] && planes=false
+  shift
+done
+run=${1:-}
+end=${2:-60}
+nproc=${3:-4}
+prerunEnd=${4:-70}
+coughAt=${5:-90}
+mpiOpts=${MPIRUN_OPTS:---bind-to core --map-by core}
+case "$run" in vents|noVents) ;; *) echo "usage: $0 [--setup-only] [--no-planes] vents|noVents [endTime [nProcs [prerunEnd [coughAt]]]]" >&2; exit 2 ;; esac
+
+# the time-step guard (wmake does nothing if it is up to date)
+wmake libso src/timeStepGuard > log.wmake.timeStepGuard 2>&1 || { echo "src/timeStepGuard did not compile: log.wmake.timeStepGuard" >&2; exit 1; }
+export LD_LIBRARY_PATH="$FOAM_USER_LIBBIN:${LD_LIBRARY_PATH:-}"
+
+# decompose, solve and reconstruct the last time of one stage
+solve() {
+  (
+    cd "$1"
+    sed -i -E "s/numberOfSubdomains [0-9]+;/numberOfSubdomains $nproc;/" system/decomposeParDict
+    decomposePar -fileHandler collated -force > log.decomposePar 2>&1
+    # shellcheck disable=SC2086
+    mpirun -np "$nproc" $mpiOpts buoyantPimpleFoam -parallel -fileHandler collated > log.buoyantPimpleFoam 2>&1
+    grep -q '^End' log.buoyantPimpleFoam || { echo "$1: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+    reconstructPar -latestTime -fileHandler collated > log.reconstructPar 2>&1
+  )
+}
+
+mkdir -p runs
+if [ ! -f runs/mesh/mesh_arrays.npz ] || ! grep -q '^Mesh OK' runs/mesh/log.checkMesh 2> /dev/null; then
+  rm -rf runs/mesh
+  python3 scripts/make_mesh.py runs/mesh
+fi
+
+# the shared pre-run, kept when it has already reached prerunEnd
+if [ "$(cat runs/prerun/SOLVED_TO 2> /dev/null)" != "$prerunEnd" ]; then
+  rm -rf runs/prerun
+  python3 scripts/make_case.py prerun runs/prerun runs/mesh "$prerunEnd"
+  if $setupOnly; then
+    (cd runs/prerun && sed -i -E "s/numberOfSubdomains [0-9]+;/numberOfSubdomains $nproc;/" system/decomposeParDict \
+      && decomposePar -fileHandler collated -force > log.decomposePar 2>&1)
+    echo "set up, not solved: runs/prerun"
+    exit 0
+  fi
+  solve runs/prerun
+  echo "$prerunEnd" > runs/prerun/SOLVED_TO
+fi
+$setupOnly && { echo "runs/prerun is solved already; nothing more to set up without solving"; exit 0; }
+
+# the 20 s after it, the nozzles opened (vents) or not
+q=runs/pre_$run
+rm -rf "$q"
+# the pre-run's last written time: prerunEnd, or the step just short of it that a short test ends on
+from=$(cd runs/prerun && ls -d [0-9]* | sort -g | tail -1)
+python3 scripts/make_case.py pre "$run" "$q" runs/mesh runs/prerun "$from" "$coughAt"
+solve "$q"
+
+# the cough, its clock from 0
+r=runs/$run
+rm -rf "$r"
+python3 scripts/make_case.py run "$run" "$r" runs/mesh "$q" "$end"
+if $planes; then
+  (
+    cd "$r"
+    postProcess -dict system/planesT0 -time 0 -fields '(U T cough)' > log.postProcess.planesT0 2>&1
+    postProcess -dict system/mapsT0 -time 0 -fields '(U rho cough)' > log.postProcess.mapsT0 2>&1
+  )
+else
+  python3 - "$r/system/functions" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = s.index('\nplanes {'); b = s.index('\nenergyExtras {')
+open(p, 'w').write(s[:a] + s[b:])
+PY
+fi
+solve "$r"
+echo "solved: $r to $end s"
+done60() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && grep -q '^End' "runs/$1/log.buoyantPimpleFoam" \
+           && grep -q 'endTime 60;' "runs/$1/system/controlDict"; }
+if done60 vents && done60 noVents; then
+  python3 scripts/extract_results.py runs results
+fi
