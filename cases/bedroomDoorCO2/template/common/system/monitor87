@@ -1,0 +1,54 @@
+monitor87
+{
+ type coded; libs (utilityFunctionObjects); name monitor87;
+ executeControl timeStep; executeInterval 1; writeControl none;
+ codeInclude
+ #{
+ #include "fvCFD.H"
+ #include <fstream>
+ #include <iomanip>
+ #include <algorithm>
+ #include <array>
+ #};
+ codeExecute
+ #{
+ const fvMesh& m=mesh();
+ const auto& T=m.lookupObject<volScalarField>("T");const auto& C=m.lookupObject<volScalarField>("CO2");const auto& rho=m.lookupObject<volScalarField>("rho");const auto& U=m.lookupObject<volVectorField>("U");const auto& phi=m.lookupObject<surfaceScalarField>("phi");const auto& h=m.lookupObject<volScalarField>("h");const auto& at=m.lookupObject<volScalarField>("alphat");
+ const auto cf=fvc::interpolate(C),tf=fvc::interpolate(T),rf=fvc::interpolate(rho);const auto uf=fvc::interpolate(U);
+ const auto cflux=fvc::flux(phi,C,"div(phi,CO2)");const auto hf=fvc::flux(phi,h,"div(phi,h)");
+ const auto dc=-(fvc::interpolate(at)+dimensionedScalar("ac",at.dimensions(),1.40845*1.82e-5))*fvc::snGrad(C)*m.magSf();
+ const auto dh=-(fvc::interpolate(at)+dimensionedScalar("a",at.dimensions(),1.82e-5/.71))*fvc::snGrad(h)*m.magSf();
+ const auto fs=fvc::surfaceSum(mag(phi));
+ std::vector<std::array<scalar,4>> profiles;scalarList v(150,0);scalar doorK=0,doorNut=0,doorAlphat=0;const auto& kfield=m.lookupObject<volScalarField>("k");const auto& nutfield=m.lookupObject<volScalarField>("nut");std::vector<std::pair<scalar,label>> co;
+ forAll(T,i){const vector c=m.C()[i];scalar vol=m.V()[i];if(c.x()>3.5 && c.x()<3.6 && c.y()<2.03){doorK=max(doorK,kfield[i]);doorNut=max(doorNut,nutfield[i]);doorAlphat=max(doorAlphat,at[i]);}bool rois[]={c.x()>1 && c.x()<2.5 && c.y()>.9 && c.y()<1.2,c.x()<3.5,c.x()<3.5 && c.y()>1.22,c.x()<3.5 && c.y()<1.22,c.x()>3.6,c.x()>3.6 && c.y()>1.22,c.x()<3.5 && c.y()>2.2};
+ for(label k=0;k<7;k++)if(rois[k]){v[5*k]+=vol;v[5*k+1]+=C[i]*vol;v[5*k+2]+=T[i]*vol;v[5*k+3]+=rho[i]*h[i]*vol;v[5*k+4]+=rho[i]*vol;}
+ if(c.x()<3.5){v[35]+=vol*5.55555555556e-5*(C[i]-425);v[36]+=vol*rho[i]*1005*5.55555555556e-5*(T[i]-273.15);}
+ co.push_back({.5*m.time().deltaTValue()*fs()[i]/(rho[i]*vol),i});}
+ // each plane: gross volume/mass/carbon/heat out then in, full scalar and heat net
+ auto add=[&](label k,scalar a,scalar r,scalar carb,scalar temp,scalar cx,scalar cd,scalar hx,scalar hd,scalar wt){label b=40+12*k;label j=a>=0?0:1;v[b+j]+=wt*mag(a)/r;v[b+2+j]+=wt*mag(a);v[b+4+j]+=wt*mag(a)/r*carb;v[b+6+j]+=wt*mag(a)*1005*(temp-291.15);v[b+8]+=wt*cx/r;v[b+9]+=wt*cd/r;v[b+10]+=wt*hx;v[b+11]+=wt*hd;};
+ auto face=[&](const vector& pos,const vector& sf,scalar ph,scalar r,scalar carb,scalar temp,scalar cx,scalar cd,scalar hx,scalar hd,scalar wt){if(mag(sf.x())<SMALL || pos.y()>2.03)return;scalar s=sf.x()>0?1:-1;
+ if(mag(pos.x()-3.55)<1e-8){profiles.push_back({0,pos.y(),wt*mag(sf.x()),wt*ph/r*(sf.x()>0?1:-1)});add(0,s*ph,r,carb,temp,s*cx,s*cd,s*hx,s*hd,wt);label band=pos.y()<.02?1:(pos.y()<2.01?2:3);add(band,s*ph,r,carb,temp,s*cx,s*cd,s*hx,s*hd,wt);}
+ if(mag(pos.x()-3.5)<1e-8)add(4,s*ph,r,carb,temp,s*cx,s*cd,s*hx,s*hd,wt);};
+ forAll(m.neighbour(),f)face(m.Cf()[f],m.Sf()[f],phi[f],rf()[f],cf()[f],tf()[f],cflux()[f],dc()[f],hf()[f],dh()[f],1);
+ const wordList walls({"window","outsideWall","floor","ceiling","doorWall","sleeperMan","sleeperWoman","bed"});
+ forAll(m.boundary(),b){const auto& patch=m.boundary()[b];if(patch.type()=="empty")continue;
+ forAll(patch,j){if(patch.coupled()){face(m.Cf().boundaryField()[b][j],m.Sf().boundaryField()[b][j],phi.boundaryField()[b][j],rf().boundaryField()[b][j],cf().boundaryField()[b][j],tf().boundaryField()[b][j],cflux().boundaryField()[b][j],dc().boundaryField()[b][j],hf().boundaryField()[b][j],dh().boundaryField()[b][j],.5);continue;}
+ if(patch.name()=="doorLeafWall")v[37]+=dh().boundaryField()[b][j];
+ if(patch.name()=="house"){profiles.push_back({1,m.Cf().boundaryField()[b][j].y(),patch.magSf()[j],phi.boundaryField()[b][j]/rho.boundaryField()[b][j]});}
+ if(patch.name()=="house")add(5,phi.boundaryField()[b][j],rho.boundaryField()[b][j],C.boundaryField()[b][j],T.boundaryField()[b][j],cflux().boundaryField()[b][j],dc().boundaryField()[b][j],hf().boundaryField()[b][j],dh().boundaryField()[b][j],1);
+ forAll(walls,k)if(patch.name()==walls[k]){v[112+k]+=dh().boundaryField()[b][j];if(k==4 && mag(m.Cf().boundaryField()[b][j].x()-3.5)<1e-8)v[125]+=dh().boundaryField()[b][j];scalar ov=k==0?.81:k==1?.34:1.5;scalar ta=k<2?273.15:291.15;if(k<5)v[120+k]+=ov*patch.magSf()[j]*(T[patch.faceCells()[j]]-ta);}
+ }}
+ Pstream::listCombineReduce(v,plusEqOp<scalar>());reduce(doorK,maxOp<scalar>());reduce(doorNut,maxOp<scalar>());reduce(doorAlphat,maxOp<scalar>());v[127]=doorK;v[128]=doorNut;v[129]=doorAlphat;
+ scalar tlo=gMin(T.primitiveField()),thi=gMax(T.primitiveField()),clo=gMin(C.primitiveField()),chi=gMax(C.primitiveField()),uhi=gMax(mag(U.primitiveField()));
+ static scalar allTlo=GREAT,allThi=-GREAT,allClo=GREAT,allChi=-GREAT,allUhi=0;allTlo=min(allTlo,tlo);allThi=max(allThi,thi);allClo=min(allClo,clo);allChi=max(allChi,chi);allUhi=max(allUhi,uhi);v[142]=tlo;v[143]=thi;v[144]=clo;v[145]=chi;v[146]=uhi;v[147]=allTlo;v[148]=allThi;v[149]=allClo;
+ static scalar cumC=0,cumH=0,leakC=0,leakH=0,cumDoorWallBedroom=0;static scalarList wallInt(8,0);scalar dt=m.time().deltaTValue();cumC+=dt*(v[96]+v[97]);cumH+=dt*(v[98]+v[99]);leakC+=dt*v[35];leakH+=dt*v[36];forAll(wallInt,k)wallInt[k]+=dt*v[112+k];
+ cumDoorWallBedroom+=dt*v[125];v[126]=cumDoorWallBedroom;v[130]=cumC;v[131]=cumH;v[132]=leakC;v[133]=leakH;forAll(wallInt,k)v[134+k]=wallInt[k];
+ static scalar nextDump=0;bool dump=m.time().value()+1e-8>=nextDump || m.time().timeIndex()==50 || m.time().timeIndex()==200 || m.time().writeTime();if(dump)nextDump=5*(floor(m.time().value()/5+1e-7)+1);
+ if(dump && Pstream::master()){fileName dir=m.time().globalPath()/"postProcessing/monitor87";mkDir(dir);bool first=!isFile(dir/"monitor.csv");std::ofstream f((dir/"monitor.csv").c_str(),first?std::ios::out:std::ios::app);f<<std::setprecision(14);
+ if(first){f<<"time,dt,wall";const wordList regions({"heads","bedroom","bedroomUpper","bedroomLower","hall","hallUpper","ceiling"});forAll(regions,k)for(const char* q:{"V","VC","VT","H","mass"})f<<','<<regions[k]<<'_'<<q;f<<",leakC,leakH,doorLeafWall_heatOut,unused38,unused39";const wordList planes({"doorPlane","doorUnder","doorLeaf","doorHead","bedroomSide","house"});forAll(planes,k)for(const char* q:{"Qout","Qin","Mout","Min","Cout","Cin","Hout","Hin","CadvNet","CdiffNet","HadvNet","HdiffNet"})f<<','<<planes[k]<<'_'<<q;forAll(walls,k)f<<','<<walls[k]<<"_heatOut";for(label k=0;k<5;k++)f<<','<<walls[k]<<"_UA_deltaT";f<<",doorWallBedroom_heatOut,cum_doorWallBedroom_heatOut,doorKmax,doorNutmax,doorAlphatmax";f<<",cumDoorC,cumDoorH,cumLeakC,cumLeakH";forAll(walls,k)f<<",cum_"<<walls[k]<<"_heatOut";f<<",airTmin,airTmax,airCmin,airCmax,airUmax,airTminAll,airTmaxAll,airCminAll";f<<'\n';}
+ f<<m.time().value()<<','<<dt<<','<<m.time().elapsedClockTime();forAll(v,i)f<<','<<v[i];f<<'\n';}
+ if(dump){fileName dir=m.time().globalPath()/"postProcessing/monitor87";mkDir(dir);fileName path=dir/("profile_rank"+Foam::name(Pstream::myProcNo())+".csv");bool first=!isFile(path);std::ofstream out(path.c_str(),first?std::ios::out:std::ios::app);if(first)out<<"time,plane,y,area,flux\n";out<<std::setprecision(14);for(const auto& row:profiles){out<<m.time().value();for(scalar a:row)out<<','<<a;out<<'\n';}
+ std::sort(co.begin(),co.end(),[](const auto&a,const auto&b){return a.first>b.first;});List<scalarList> tops(Pstream::nProcs());scalarList top(12*8,0);for(label k=0;k<12 && k<label(co.size());k++){label i=co[k].second;vector c=m.C()[i];scalar ax=0,ay=0;for(label f:m.cells()[i]){ax=max(ax,mag(m.faceAreas()[f].x()));ay=max(ay,mag(m.faceAreas()[f].y()));}top[8*k]=co[k].first;top[8*k+1]=mag(U[i]);top[8*k+2]=c.x();top[8*k+3]=c.y();top[8*k+4]=m.V()[i]/max(ax,SMALL);top[8*k+5]=m.V()[i]/max(ay,SMALL);top[8*k+6]=U[i].x();top[8*k+7]=U[i].y();}tops[Pstream::myProcNo()]=top;Pstream::gatherList(tops);
+ if(Pstream::master()){std::vector<std::array<scalar,8>> rows;forAll(tops,r)for(label k=0;k<12;k++){std::array<scalar,8>a;for(label j=0;j<8;j++)a[j]=tops[r][8*k+j];rows.push_back(a);}std::sort(rows.begin(),rows.end(),[](const auto&a,const auto&b){return a[0]>b[0];});fileName dir=m.time().globalPath()/"postProcessing/monitor87";bool first=!isFile(dir/"courant.csv");std::ofstream f((dir/"courant.csv").c_str(),first?std::ios::out:std::ios::app);if(first)f<<"time,rankOrder,Co,speed_ms,x_m,y_m,dx_m,dy_m,Ux_ms,Uy_ms\n";f<<std::setprecision(14);for(label k=0;k<12;k++){f<<m.time().value()<<','<<k+1;for(scalar a:rows[k])f<<','<<a;f<<'\n';}}}
+ #};
+}

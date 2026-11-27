@@ -1,0 +1,3 @@
+FoamFile { version 2.0; format ascii; class dictionary; object controlDict; }
+functions { planes { type surfaces; libs (sampling); executeControl timeStep; executeInterval 1; writeControl adjustableRunTime; writeInterval 5; surfaceFormat vtk; formatOptions {vtk {format binary; compression true;}} fields (T U CO2); surfaces { section {type cuttingPlane; point (0 0 .5); normal (0 0 1); interpolate true;} sectionCells {type cuttingPlane; point (0 0 .5); normal (0 0 1); interpolate false;} } }
+ }

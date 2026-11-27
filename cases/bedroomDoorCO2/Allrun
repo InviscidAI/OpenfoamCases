@@ -1,0 +1,108 @@
+#!/bin/bash
+# A bedroom on a winter night, 0 C (32 F) outside, the window shut, two sleepers breathing out CO2
+# from lights-out, the door shut (a 12 mm undercut and 3 mm gaps) or ajar by 10 cm (4 in), the
+# rest of the house a reservoir at 18 C beyond the upstairs hall. A 2-D section, 0-28,800 s (8 h),
+# buoyantPimpleFoam with k-omega SST and the CO2 as a scalar.
+#
+#   ./Allrun [--setup-only] [--no-planes] shut|ajar [endTime [nProcs [restartAt]]]
+#
+# shut          the leaf solid, the door's free area in a 2 cm undercut band and a 2 cm head band
+# ajar          a 10 cm latch gap: the doorway's whole height a porous column with its free area
+# endTime       s of flow, default 28800, what both solved runs did
+# nProcs        MPI ranks, default 4 (what both solved runs used, scotch decomposition)
+# restartAt     s, default 7200: where the run stops, is reconstructed, checked, decomposed again
+#               and goes on, as both solved runs did at 2 h; a multiple of the 1800 s write
+#               interval. Give a short one (./Allrun shut 1900 4 1800) to test a restart quickly
+# --setup-only  compiles, builds and checks the mesh, writes the case, decomposes it and stops
+#               before the solve
+# --no-planes   leaves out the section's CO2, T and U as VTK (every 5 s over 0-30 min, 2:30-3:00,
+#               5:00-5:30 and 7:30-8:00 h and every 60 s between, about 1.8 GB a run); the solved
+#               runs wrote them, so by default this does too
+#
+# src/restartSafeConstant (externalWallHeatFluxTemperature with its h kept through a restart) is
+# compiled into $FOAM_USER_LIBBIN and loaded by system/controlDict, so the solver, decomposePar and
+# reconstructPar all use it. The run is built in runs/<run>/ (scripts/make_mesh.py,
+# scripts/make_case.py) and solved as the solved runs were: 0-7200 s, then the 7200 s fields
+# reconstructed, checked (scripts/check_coefficients.py: every wall's h and Ta against 0/),
+# decomposed again and solved on to endTime. When both runs have reached 28,800 s,
+# scripts/extract_results.py writes results/.
+cd "${0%/*}" || exit 1
+set -euo pipefail
+command -v buoyantPimpleFoam > /dev/null || { echo "source OpenFOAM's etc/bashrc first (v2512)" >&2; exit 1; }
+command -v wmake > /dev/null || { echo "wmake is needed to compile src/" >&2; exit 1; }
+python3 -c "import numpy" 2> /dev/null || { echo "python3 needs NumPy" >&2; exit 1; }
+
+setupOnly=false
+planes=true
+while [ "${1:-}" = "--setup-only" ] || [ "${1:-}" = "--no-planes" ]; do
+  [ "$1" = "--setup-only" ] && setupOnly=true
+  [ "$1" = "--no-planes" ] && planes=false
+  shift
+done
+run=${1:-}
+end=${2:-28800}
+nproc=${3:-4}
+joint=${4:-7200}
+case "$run" in shut|ajar) ;; *) echo "usage: $0 [--setup-only] [--no-planes] shut|ajar [endTime [nProcs [restartAt]]]" >&2; exit 2 ;; esac
+[ $((joint % 1800)) = 0 ] || { echo "restartAt must be a multiple of the 1800 s write interval" >&2; exit 2; }
+
+# the wall condition (wmake does nothing if it is up to date)
+wmake libso src/restartSafeConstant > log.wmake.restartSafeConstant 2>&1 || { echo "src/restartSafeConstant did not compile: log.wmake.restartSafeConstant" >&2; exit 1; }
+export LD_LIBRARY_PATH="$FOAM_USER_LIBBIN:${LD_LIBRARY_PATH:-}"
+
+r=runs/$run
+rm -rf "$r"
+mkdir -p "$r"
+python3 scripts/make_mesh.py "$run" "$r" > "$r/log.make_mesh"
+python3 scripts/make_case.py "$run" "$r"
+sed -i -E "s/numberOfSubdomains [0-9]+;/numberOfSubdomains $nproc;/" "$r/system/decomposeParDict"
+first=$end
+[ "$(python3 -c "print(int($end > $joint))")" = 1 ] && first=$joint
+sed -i -E "s/endTime [0-9.]+;/endTime $first;/" "$r/system/controlDict"
+if ! $planes; then
+  python3 - "$r/system/controlDict" <<'EOF'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+open(p, 'w').write(re.sub(r'planes_window\d \{.*?\} \} \}\n', '', s, flags=re.S))
+EOF
+fi
+(
+  cd "$r"
+  checkMesh > log.checkMesh 2>&1
+  grep -q '^Mesh OK' log.checkMesh || { echo "$r: checkMesh failed, see log.checkMesh" >&2; exit 1; }
+  # the section at t = 0, as the solved runs sampled it before their first step
+  $planes && postProcess -time 0 -fields '(T U CO2)' -dict system/initialSurfaces > log.postProcess 2>&1
+  decomposePar -fileHandler collated > log.decomposePar 2>&1
+)
+$setupOnly && { echo "set up, not solved: $r"; exit 0; }
+solve() {
+  (
+    cd "$r"
+    mpirun -np "$nproc" buoyantPimpleFoam -parallel -fileHandler collated >> log.buoyantPimpleFoam 2>&1
+    [ "$(grep -c '^End' log.buoyantPimpleFoam)" = "$1" ] || { echo "$r: the solve did not end, see log.buoyantPimpleFoam" >&2; exit 1; }
+  )
+}
+solve 1
+if [ "$first" != "$end" ]; then
+  (
+    cd "$r"
+    # every written time, since decomposePar -force replaces the processor directories
+    reconstructPar -fileHandler collated > log.reconstructPar.$joint 2>&1
+    python3 ../../scripts/check_coefficients.py . $joint
+    decomposePar -force -latestTime -fileHandler collated > log.decomposePar.$joint 2>&1
+    sed -i -E "s/endTime [0-9.]+;/endTime $end;/" system/controlDict
+    echo "// continued from $joint s" >> log.buoyantPimpleFoam
+  )
+  solve 2
+fi
+(
+  cd "$r"
+  reconstructPar -latestTime -fileHandler collated > log.reconstructPar 2>&1
+  python3 ../../scripts/check_coefficients.py . latest
+)
+echo "solved: $r to $end s"
+done8h() { [ -f "runs/$1/log.buoyantPimpleFoam" ] && [ "$(grep -c '^End' "runs/$1/log.buoyantPimpleFoam")" = 2 ] \
+           && grep -q 'endTime 28800;' "runs/$1/system/controlDict"; }
+if done8h shut && done8h ajar; then
+  python3 scripts/extract_results.py runs results
+fi

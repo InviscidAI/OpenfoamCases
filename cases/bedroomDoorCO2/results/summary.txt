@@ -1,0 +1,48 @@
+Bedroom door shut or ajar: two sleepers from lights-out, 0-28,800 s (8 h).
+From the monitors of the runs (system/monitor87), by scripts/extract_results.py. Flows and heat for the
+whole 3.5 m deep room; CO2 in ppm by volume; "heads" is x 1.00-2.50 m, y 0.90-1.20 m.
+
+CO2 at the heads (the clip's number, rounded to 50) and in the whole bedroom:
+     0 h   heads shut   500.0 (  500)   ajar   500.0 (  500)   shut - ajar     0.0   bedroom shut   500.0 ajar   500.0
+   0.1 h   heads shut   619.5 (  600)   ajar   613.5 (  600)   shut - ajar     6.1   bedroom shut   591.3 ajar   588.9
+   0.5 h   heads shut   945.2 (  950)   ajar   898.0 (  900)   shut - ajar    47.2   bedroom shut   934.8 ajar   877.6
+     1 h   heads shut  1332.4 ( 1350)   ajar  1206.4 ( 1200)   shut - ajar   126.0   bedroom shut  1330.9 ajar  1173.7
+     2 h   heads shut  2020.9 ( 2000)   ajar  1630.8 ( 1650)   shut - ajar   390.1   bedroom shut  2007.6 ajar  1600.0
+     3 h   heads shut  2552.9 ( 2550)   ajar  1869.3 ( 1850)   shut - ajar   683.5   bedroom shut  2550.9 ajar  1837.0
+     4 h   heads shut  3005.9 ( 3000)   ajar  2027.9 ( 2050)   shut - ajar   977.9   bedroom shut  2992.3 ajar  1988.7
+     5 h   heads shut  3355.4 ( 3350)   ajar  2116.7 ( 2100)   shut - ajar  1238.7   bedroom shut  3345.6 ajar  2075.7
+     6 h   heads shut  3635.4 ( 3650)   ajar  2169.2 ( 2150)   shut - ajar  1466.1   bedroom shut  3628.1 ajar  2131.8
+     7 h   heads shut  3853.8 ( 3850)   ajar  2198.6 ( 2200)   shut - ajar  1655.2   bedroom shut  3849.2 ajar  2157.0
+     8 h   heads shut  4029.2 ( 4050)   ajar  2218.6 ( 2200)   shut - ajar  1810.6   bedroom shut  4023.6 ajar  2175.3
+
+The air and the door:
+  shut 0.5 h   bedroom 17.706 C, hall 18.000 C (-0.293 K); hall CO2 519 ppm; through the door 0.347 L/s out and 0.354 in; the door's CO2 removal 0.044 air changes an hour (+ 0.2 leakage)
+  ajar 0.5 h   bedroom 17.682 C, hall 18.003 C (-0.321 K); hall CO2 542 ppm; through the door 3.991 L/s out and 3.995 in; the door's CO2 removal 0.480 air changes an hour (+ 0.2 leakage)
+  shut   1 h   bedroom 17.633 C, hall 18.000 C (-0.366 K); hall CO2 534 ppm; through the door 0.164 L/s out and 0.166 in; the door's CO2 removal 0.007 air changes an hour (+ 0.2 leakage)
+  ajar   1 h   bedroom 17.625 C, hall 18.002 C (-0.377 K); hall CO2 585 ppm; through the door 3.603 L/s out and 3.602 in; the door's CO2 removal 0.378 air changes an hour (+ 0.2 leakage)
+  shut   2 h   bedroom 17.606 C, hall 18.000 C (-0.393 K); hall CO2 585 ppm; through the door 0.166 L/s out and 0.167 in; the door's CO2 removal 0.019 air changes an hour (+ 0.2 leakage)
+  ajar   2 h   bedroom 17.609 C, hall 18.001 C (-0.392 K); hall CO2 669 ppm; through the door 3.860 L/s out and 3.859 in; the door's CO2 removal 0.284 air changes an hour (+ 0.2 leakage)
+  shut   4 h   bedroom 17.605 C, hall 18.000 C (-0.395 K); hall CO2 733 ppm; through the door 0.275 L/s out and 0.277 in; the door's CO2 removal 0.020 air changes an hour (+ 0.2 leakage)
+  ajar   4 h   bedroom 17.611 C, hall 18.001 C (-0.390 K); hall CO2 714 ppm; through the door 3.713 L/s out and 3.712 in; the door's CO2 removal 0.299 air changes an hour (+ 0.2 leakage)
+  shut   6 h   bedroom 17.605 C, hall 18.000 C (-0.395 K); hall CO2 890 ppm; through the door 0.074 L/s out and 0.073 in; the door's CO2 removal 0.010 air changes an hour (+ 0.2 leakage)
+  ajar   6 h   bedroom 17.611 C, hall 18.000 C (-0.390 K); hall CO2 758 ppm; through the door 3.423 L/s out and 3.423 in; the door's CO2 removal 0.318 air changes an hour (+ 0.2 leakage)
+  shut   8 h   bedroom 17.605 C, hall 18.000 C (-0.395 K); hall CO2 1038 ppm; through the door 0.213 L/s out and 0.214 in; the door's CO2 removal 0.028 air changes an hour (+ 0.2 leakage)
+  ajar   8 h   bedroom 17.608 C, hall 18.002 C (-0.393 K); hall CO2 767 ppm; through the door 3.838 L/s out and 3.836 in; the door's CO2 removal 0.360 air changes an hour (+ 0.2 leakage)
+
+Heat out of the bedroom air, W (negative: into it):
+  shut   1 h   window 60.70 (U A dT 59.92), outside wall 21.84 (21.65), floor -11.48 (-11.48), ceiling -1.18 (-1.18), door wall 0.01, sleepers -100.0
+  ajar   1 h   window 60.29 (U A dT 59.81), outside wall 21.80 (21.58), floor -12.18 (-12.18), ceiling -0.75 (-0.75), door wall -0.03, sleepers -100.0
+  shut   2 h   window 60.58 (U A dT 59.76), outside wall 21.83 (21.59), floor -11.45 (-11.45), ceiling -1.17 (-1.17), door wall -0.16, sleepers -100.0
+  ajar   2 h   window 60.14 (U A dT 59.69), outside wall 21.77 (21.55), floor -12.10 (-12.10), ceiling -1.19 (-1.19), door wall 0.06, sleepers -100.0
+  shut   8 h   window 60.29 (U A dT 59.71), outside wall 21.81 (21.56), floor -11.53 (-11.53), ceiling -1.03 (-1.03), door wall 0.03, sleepers -100.0
+  ajar   8 h   window 60.22 (U A dT 59.74), outside wall 21.77 (21.56), floor -12.07 (-12.07), ceiling -1.16 (-1.16), door wall -0.05, sleepers -100.0
+
+Across the restart at 7,200 s (the monitor rows either side, not interpolated):
+  shut t = 7200.000000 s   heads 2020.946123 ppm, bedroom 17.606332969 C, window 60.5777 W, floor -11.4490 W, door out 0.16567 L/s
+  shut t = 7200.090253 s   heads 2021.032552 ppm, bedroom 17.606332023 C, window 60.5769 W, floor -11.4494 W, door out 0.16447 L/s
+  ajar t = 7200.000000 s   heads 1630.829620 ppm, bedroom 17.609005315 C, window 60.1440 W, floor -12.0951 W, door out 3.85975 L/s
+  ajar t = 7200.088827 s   heads 1630.830974 ppm, bedroom 17.609007200 C, window 60.1437 W, floor -12.0950 W, door out 3.85862 L/s
+
+Checks:
+  shut 5764 monitor rows, 0.12-28800 s; air 14.840 to 27.506 C after 60 s; highest CO2 in a cell 4597 ppm; fastest air 0.367 m/s; time step 0.0907 s at mid-run; the window's heat at most 2.2% off U A dT after 60 s
+  ajar 5764 monitor rows, 0.12-28800 s; air 14.825 to 27.444 C after 60 s; highest CO2 in a cell 2584 ppm; fastest air 0.366 m/s; time step 0.0907 s at mid-run; the window's heat at most 1.8% off U A dT after 60 s
